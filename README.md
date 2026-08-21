@@ -47,9 +47,6 @@ O serviço inclui um Dashboard visual responsivo (Tailwind CSS + DaisyUI) proteg
 # Linux / Mac
 ./run_api.sh
 ```
-Acesse o Dashboard em: **`http://localhost:8001/dashboard`**  
-Acesse o Swagger OpenAPI em: **`http://localhost:8001/docs`**
-
 ### 2. Rodar os Testes Automatizados
 ```bash
 # Windows
@@ -58,6 +55,22 @@ Acesse o Swagger OpenAPI em: **`http://localhost:8001/docs`**
 # Linux / Mac
 ./run_tests.sh
 ```
+
+### 3. Deploy no Coolify (Docker)
+
+1. No painel do Coolify, crie um novo recurso apontando para este repositório Git.
+2. Selecione o tipo de build como **Dockerfile**.
+3. Em **Port Mapping / Destination Port**, configure: `8001`.
+4. Em **Persistent Storage (Volumes)**, adicione:
+   * **Source:** `scraper-data` (nome do volume no host)
+   * **Destination:** `/data`
+5. Em **Environment Variables**, defina:
+   * `BASIC_AUTH_USERNAME=seu_usuario`
+   * `BASIC_AUTH_PASSWORD=sua_senha_forte`
+   * `DATABASE_URL=sqlite+aiosqlite:////data/scraper.db`
+   * `PORT=8001`
+   * `HOST=0.0.0.0`
+   * `APP_ENV=production`
 
 ---
 
