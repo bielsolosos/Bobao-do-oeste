@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.router import api_router
+from src.api.router import main_router
 from src.core.config import settings
 from src.core.database import init_db
 from src.core.logger import logger
@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Stateless & Resilient Marketplace Scraper Service with SQLite Execution History",
+    description="Stateless & Resilient Marketplace Scraper Service with SQLite Execution History and Web UI",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -31,13 +31,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount API routers
-app.include_router(api_router)
+# Mount all application routers (Dashboard + API v1)
+app.include_router(main_router)
 
 
 @app.get("/health", tags=["Health"])
-@app.get("/", tags=["Health"])
 async def health_check():
+    """Public healthcheck endpoint."""
     return {
         "status": "healthy",
         "app": settings.APP_NAME,

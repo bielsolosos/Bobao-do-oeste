@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<!-- 
+  TODO: [TEMPORARY-UI]
+  Template Jinja2 temporário para validação rápida das tabelas do scraper.
+  Excluir este arquivo e a pasta 'src/views/' quando a SPA (Angular/Next.js) for desenvolvida.
+-->
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace Scraper - Dashboard</title>
+  <!-- Tailwind CSS & DaisyUI via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Suporte a transição suave de tema */
+    html {
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+  </style>
+</head>
+<body class="bg-base-200 min-h-screen text-base-content font-sans antialiased">
+
+  <!-- Navbar -->
+  <div class="navbar bg-base-100 shadow-sm px-6 sticky top-0 z-50 border-b border-base-300">
+    <div class="flex-1 gap-3">
+      <div class="p-2 bg-primary/10 text-primary rounded-xl">
+        <i data-lucide="bot" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">Marketplace Scraper</h1>
+        <p class="text-xs text-base-content/60">Worker de Extração & Telemetria em Tempo Real</p>
+      </div>
+    </div>
+    <div class="flex-none gap-3">
+      <!-- Theme Toggle (Light / Dark) -->
+      <button onclick="toggleTheme()" class="btn btn-ghost btn-circle btn-sm" title="Alternar Modo Claro / Escuro">
+        <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+      </button>
+
+      <div class="badge badge-success gap-2 py-3 px-3 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+        API Online
+      </div>
+
+      <button onclick="document.getElementById('scrape_modal').showModal()" class="btn btn-primary btn-sm gap-2">
+        <i data-lucide="play" class="w-4 h-4"></i>
+        Nova Coleta
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+
+    <!-- KPI Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="stat bg-base-100 border border-base-300 rounded-2xl p-5 shadow-sm">
+        <div class="stat-figure text-primary">
+          <i data-lucide="database" class="w-8 h-8 opacity-80"></i>
+        </div>
+        <div class="stat-title text-xs font-semibold uppercase tracking-wider text-base-content/60">Total de Anúncios</div>
+        <div class="stat-value text-primary text-3xl font-bold">{{ listings|length }}</div>
+        <div class="stat-desc text-xs mt-1">Registros na tabela `scraped_listings`</div>
+      </div>
+
+      <div class="stat bg-base-100 border border-base-300 rounded-2xl p-5 shadow-sm">
+        <div class="stat-figure text-secondary">
+          <i data-lucide="history" class="w-8 h-8 opacity-80"></i>
+        </div>
+        <div class="stat-title text-xs font-semibold uppercase tracking-wider text-base-content/60">Execuções Realizadas</div>
+        <div class="stat-value text-secondary text-3xl font-bold">{{ executions|length }}</div>
+        <div class="stat-desc text-xs mt-1">Rodadas na tabela `scraping_executions`</div>
+      </div>
+
+      <div class="stat bg-base-100 border border-base-300 rounded-2xl p-5 shadow-sm">
+        <div class="stat-figure text-accent">
+          <i data-lucide="search" class="w-8 h-8 opacity-80"></i>
+        </div>
+        <div class="stat-title text-xs font-semibold uppercase tracking-wider text-base-content/60">Consultas Distintas</div>
+        <div class="stat-value text-accent text-3xl font-bold">{{ queries|length }}</div>
+        <div class="stat-desc text-xs mt-1">Padrões na tabela `search_queries`</div>
+      </div>
+
+      <div class="stat bg-base-100 border border-base-300 rounded-2xl p-5 shadow-sm">
+        <div class="stat-figure text-info">
+          <i data-lucide="shield-check" class="w-8 h-8 opacity-80"></i>
+        </div>
+        <div class="stat-title text-xs font-semibold uppercase tracking-wider text-base-content/60">Engine de Rede</div>
+        <div class="stat-value text-info text-2xl font-bold">curl_cffi</div>
+        <div class="stat-desc text-xs mt-1">Chrome 120 TLS Impersonation</div>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs tabs-boxed bg-base-100 p-1 rounded-xl mb-6 inline-flex border border-base-300 shadow-sm">
+      <a class="tab tab-active gap-2 font-medium" onclick="switchTab('listings-tab', this)">
+        <i data-lucide="table" class="w-4 h-4"></i>
+        Tabela de Anúncios ({{ listings|length }})
+      </a>
+      <a class="tab gap-2 font-medium" onclick="switchTab('executions-tab', this)">
+        <i data-lucide="activity" class="w-4 h-4"></i>
+        Tabela de Execuções ({{ executions|length }})
+      </a>
+      <a class="tab gap-2 font-medium" onclick="switchTab('queries-tab', this)">
+        <i data-lucide="filter" class="w-4 h-4"></i>
+        Tabela de Consultas ({{ queries|length }})
+      </a>
+    </div>
+
+    <!-- TAB 1: LISTINGS TABLE (Sorted by Scraped Date) -->
+    <div id="listings-tab" class="tab-content block">
+      <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-base-300 flex flex-wrap items-center justify-between gap-3 bg-base-200/40">
+          <div class="flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-primary"></i>
+            <span class="text-xs font-semibold text-base-content/80">Ordenado por Data de Coleta (Mais recentes primeiro)</span>
+          </div>
+          <div class="text-xs text-base-content/60">
+            Mostrando os últimos <strong>{{ listings|length }}</strong> anúncios capturados
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="table table-zebra table-sm w-full text-sm">
+            <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/70">
+              <tr>
+                <th>Data / Hora da Coleta</th>
+                <th>Plataforma</th>
+                <th>Título do Anúncio</th>
+                <th>Preço</th>
+                <th>Entrega / OLX Pay</th>
+                <th>Localização</th>
+                <th>ID Anúncio</th>
+                <th class="text-center">Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in listings %}
+              <tr class="hover">
+                <!-- Data de Coleta formatada -->
+                <td class="font-mono text-xs text-primary font-bold whitespace-nowrap">
+                  {{ item.scraped_at.strftime('%d/%m/%Y %H:%M:%S') if item.scraped_at else '-' }}
+                </td>
+
+                <!-- Plataforma -->
+                <td>
+                  <span class="badge badge-primary badge-sm font-semibold">
+                    {{ item.vendor.value if hasattr(item.vendor, 'value') else item.vendor }}
+                  </span>
+                </td>
+
+                <!-- Título -->
+                <td class="max-w-md">
+                  <div class="font-semibold text-sm line-clamp-1 hover:line-clamp-none transition-all" title="{{ item.title }}">
+                    {{ item.title }}
+                  </div>
+                </td>
+
+                <!-- Preço -->
+                <td class="whitespace-nowrap">
+                  <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                    R$ {{ "%.2f"|format(item.price) }}
+                  </span>
+                  {% if item.original_price and item.original_price > item.price %}
+                  <span class="text-[10px] line-through text-base-content/40 block">
+                    R$ {{ "%.2f"|format(item.original_price) }}
+                  </span>
+                  {% endif %}
+                </td>
+
+                <!-- Entrega -->
+                <td class="whitespace-nowrap">
+                  {% if item.has_delivery %}
+                  <span class="badge badge-success badge-sm text-xs font-semibold gap-1">
+                    <i data-lucide="truck" class="w-3 h-3"></i>
+                    OLX Pay
+                  </span>
+                  {% else %}
+                  <span class="badge badge-ghost badge-sm text-xs text-base-content/50">
+                    Retirada
+                  </span>
+                  {% endif %}
+                </td>
+
+                <!-- Localização -->
+                <td class="text-xs text-base-content/70 whitespace-nowrap">
+                  {{ item.neighborhood or item.city or 'Região' }} - {{ item.state or 'BR' }}
+                </td>
+
+                <!-- ID -->
+                <td class="font-mono text-[11px] text-base-content/50 whitespace-nowrap">
+                  {{ item.vendor_listing_id }}
+                </td>
+
+                <!-- Link Direto -->
+                <td class="text-center whitespace-nowrap">
+                  <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-xs text-primary gap-1">
+                    <span>Acessar</span>
+                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                  </a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-12 text-base-content/50">
+                  <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-30"></i>
+                  Nenhum anúncio armazenado no banco de dados.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: EXECUTIONS TABLE -->
+    <div id="executions-tab" class="tab-content hidden">
+      <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="table table-zebra table-sm w-full text-sm">
+            <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/70">
+              <tr>
+                <th>Data / Hora Início</th>
+                <th>Status</th>
+                <th>Plataforma</th>
+                <th>ID da Execução</th>
+                <th>Total Coletado</th>
+                <th>Itens Novos</th>
+                <th>Duração</th>
+                <th>Fallback Usado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for exec in executions %}
+              <tr class="hover">
+                <td class="font-mono text-xs text-base-content/70 whitespace-nowrap">
+                  {{ exec.started_at.strftime('%d/%m/%Y %H:%M:%S') if exec.started_at else '-' }}
+                </td>
+                <td>
+                  {% if exec.status.value == 'SUCCESS' or exec.status == 'SUCCESS' %}
+                  <span class="badge badge-success badge-sm font-medium">SUCCESS</span>
+                  {% elif exec.status.value == 'RUNNING' or exec.status == 'RUNNING' %}
+                  <span class="badge badge-warning badge-sm font-medium">RUNNING</span>
+                  {% else %}
+                  <span class="badge badge-error badge-sm font-medium">FAILED</span>
+                  {% endif %}
+                </td>
+                <td class="font-bold">{{ exec.vendor.value if hasattr(exec.vendor, 'value') else exec.vendor }}</td>
+                <td class="font-mono text-xs text-base-content/60">{{ exec.id[:8] }}...</td>
+                <td class="font-bold text-primary">{{ exec.total_found }}</td>
+                <td>
+                  <span class="badge badge-neutral text-xs font-semibold">+{{ exec.new_items_count }} novos</span>
+                </td>
+                <td class="font-mono text-xs">{{ exec.duration_ms or 0 }} ms</td>
+                <td>
+                  {% if exec.used_fallback %}
+                  <span class="badge badge-secondary badge-xs">Playwright</span>
+                  {% else %}
+                  <span class="badge badge-ghost badge-xs">HTTP Direto</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-8 text-base-content/50">Nenhuma execução registrada</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SEARCH QUERIES TABLE -->
+    <div id="queries-tab" class="tab-content hidden">
+      <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="table table-zebra table-sm w-full text-sm">
+            <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/70">
+              <tr>
+                <th>Data de Registro</th>
+                <th>Plataforma</th>
+                <th>Palavra-Chave</th>
+                <th>Região / Estado</th>
+                <th>Faixa de Preço</th>
+                <th>Exige Entrega</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for q in queries %}
+              <tr class="hover">
+                <td class="font-mono text-xs text-base-content/60 whitespace-nowrap">
+                  {{ q.created_at.strftime('%d/%m/%Y %H:%M:%S') if q.created_at else '-' }}
+                </td>
+                <td class="font-bold">{{ q.vendor.value if hasattr(q.vendor, 'value') else q.vendor }}</td>
+                <td class="font-semibold text-primary">{{ q.keyword }}</td>
+                <td>{{ q.state_region or 'Brasil (Nacional)' }}</td>
+                <td class="font-mono text-xs">
+                  {% if q.min_price or q.max_price %}
+                  R$ {{ q.min_price or 0 }} - R$ {{ q.max_price or '∞' }}
+                  {% else %}
+                  Qualquer preço
+                  {% endif %}
+                </td>
+                <td>
+                  {% if q.require_delivery %}
+                  <span class="badge badge-success badge-sm font-semibold">Sim (OLX Pay)</span>
+                  {% else %}
+                  <span class="badge badge-ghost badge-sm">Indiferente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="6" class="text-center py-8 text-base-content/50">Nenhuma consulta cadastrada</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL: NOVA COLETA -->
+  <dialog id="scrape_modal" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-base-100 border border-base-300 max-w-lg shadow-xl">
+      <h3 class="font-bold text-lg mb-1 flex items-center gap-2">
+        <i data-lucide="radar" class="w-5 h-5 text-primary"></i>
+        Disparar Nova Coleta de Scraping
+      </h3>
+      <p class="text-xs text-base-content/60 mb-6">Executa o worker contra a OLX e persiste os resultados no banco.</p>
+
+      <form id="scrapeForm" onsubmit="handleTriggerScrape(event)" class="space-y-4">
+        <div class="form-control">
+          <label class="label"><span class="label-text font-semibold text-xs">Palavra-chave do Produto *</span></label>
+          <input type="text" id="keyword" required placeholder="ex: thinkpad t480, macbook m1, rtx 3060" class="input input-bordered input-sm w-full bg-base-200" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label"><span class="label-text font-semibold text-xs">Estado (UF)</span></label>
+            <input type="text" id="state" placeholder="ex: sp, rj, mg" class="input input-bordered input-sm w-full bg-base-200" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-semibold text-xs">Plataforma</span></label>
+            <select id="vendor" class="select select-bordered select-sm w-full bg-base-200">
+              <option value="OLX" selected>OLX Brasil</option>
+              <option value="MERCADO_LIVRE" disabled>Mercado Livre (Em breve)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label"><span class="label-text font-semibold text-xs">Preço Mínimo (R$)</span></label>
+            <input type="number" id="min_price" placeholder="ex: 500" class="input input-bordered input-sm w-full bg-base-200" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-semibold text-xs">Preço Máximo (R$)</span></label>
+            <input type="number" id="max_price" placeholder="ex: 2500" class="input input-bordered input-sm w-full bg-base-200" />
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="cursor-pointer label justify-start gap-3 mt-2">
+            <input type="checkbox" id="require_delivery" class="checkbox checkbox-primary checkbox-sm" checked />
+            <span class="label-text text-xs font-semibold">Exigir opção de Entrega / OLX Pay</span>
+          </label>
+        </div>
+
+        <div id="scrapeFeedback" class="hidden alert alert-info text-xs py-2 mt-2">
+          <span id="feedbackText">Coletando anúncios na OLX... Aguarde.</span>
+        </div>
+
+        <div class="modal-action mt-6">
+          <button type="button" onclick="document.getElementById('scrape_modal').close()" class="btn btn-ghost btn-sm">Cancelar</button>
+          <button type="submit" id="submitBtn" class="btn btn-primary btn-sm gap-2">
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            Iniciar Scraping
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <script>
+    // Theme Management (Light by default, with toggle)
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('theme-icon');
+      if (icon) {
+        icon.setAttribute('data-lucide', theme === 'light' ? 'moon' : 'sun');
+        lucide.createIcons();
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const nextTheme = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('theme', nextTheme);
+      updateThemeIcon(nextTheme);
+    }
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+    updateThemeIcon(savedTheme);
+
+    function switchTab(tabId, element) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('block'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active'));
+
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(tabId).classList.add('block');
+      element.classList.add('tab-active');
+    }
+
+    async function handleTriggerScrape(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      const feedback = document.getElementById('scrapeFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Coletando...';
+      feedback.classList.remove('hidden');
+      feedbackText.innerText = "Conectando ao marketplace e extraindo anúncios...";
+
+      const payload = {
+        vendor: document.getElementById('vendor').value,
+        keyword: document.getElementById('keyword').value,
+        state: document.getElementById('state').value || null,
+        min_price: parseFloat(document.getElementById('min_price').value) || null,
+        max_price: parseFloat(document.getElementById('max_price').value) || null,
+        require_delivery: document.getElementById('require_delivery').checked,
+        max_pages: 1
+      };
+
+      try {
+        const res = await fetch('/api/v1/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          feedback.className = "alert alert-success text-xs py-2 mt-2";
+          feedbackText.innerText = `Sucesso! ${data.execution.total_found} anúncios encontrados (${data.execution.new_items_count} novos) em ${data.execution.duration_ms}ms. Recarregando...`;
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          feedback.className = "alert alert-error text-xs py-2 mt-2";
+          feedbackText.innerText = `Erro: ${data.execution?.error_message || 'Falha na coleta'}`;
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="zap" class="w-4 h-4"></i> Iniciar Scraping';
+          lucide.createIcons();
+        }
+      } catch (err) {
+        feedback.className = "alert alert-error text-xs py-2 mt-2";
+        feedbackText.innerText = `Erro de comunicação: ${err.message}`;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="zap" class="w-4 h-4"></i> Iniciar Scraping';
+        lucide.createIcons();
+      }
+    }
+  </script>
+</body>
+</html>
