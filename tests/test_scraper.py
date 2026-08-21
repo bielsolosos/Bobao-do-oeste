@@ -5,7 +5,37 @@ from src.providers.olx.url_builder import OlxUrlBuilder
 from src.providers.olx.parser import OlxPayloadParser
 
 
-def test_olx_url_builder_basic():
+def test_olx_url_builder_national_search_default():
+    """Valida busca nacional no Brasil todo quando state é None ou 'brasil' ou 'br'"""
+    req1 = ScrapeRequest(
+        vendor=VendorEnum.OLX,
+        keyword="thinkpad",
+    )
+    url1 = OlxUrlBuilder.build(req1)
+    assert url1 == "https://www.olx.com.br/brasil?q=thinkpad"
+
+    req2 = ScrapeRequest(
+        vendor=VendorEnum.OLX,
+        keyword="notebook",
+        state="brasil",
+        min_price=500.0,
+        max_price=1000.0,
+        require_delivery=True,
+    )
+    url2 = OlxUrlBuilder.build(req2)
+    assert url2 == "https://www.olx.com.br/brasil?q=notebook&ps=500&pe=1000&olxpay=1"
+
+    req3 = ScrapeRequest(
+        vendor=VendorEnum.OLX,
+        keyword="rtx 4090",
+        state="br",
+    )
+    url3 = OlxUrlBuilder.build(req3)
+    assert url3 == "https://www.olx.com.br/brasil?q=rtx+4090"
+
+
+def test_olx_url_builder_state_search():
+    """Valida busca por estado específico (ex: SP)"""
     req = ScrapeRequest(
         vendor=VendorEnum.OLX,
         keyword="thinkpad t480",

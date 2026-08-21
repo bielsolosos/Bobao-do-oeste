@@ -2,7 +2,7 @@
 Construtor de URLs Canônicas para a OLX Brasil.
 
 A OLX possui uma hierarquia de roteamento muito específica em seu frontend Next.js:
-1. Rota Nacional: `https://www.olx.com.br/brasil`
+1. Rota Nacional (Brasil Todo): `https://www.olx.com.br/brasil`
 2. Categoria: `https://www.olx.com.br/{categoria}`
 3. Categoria + Estado: `https://www.olx.com.br/{categoria}/estado-{uf}`
 4. Categoria + Estado + Região: `https://www.olx.com.br/{categoria}/estado-{uf}/{regiao}`
@@ -17,6 +17,12 @@ Parâmetros de Busca (Query String):
 
 import urllib.parse
 from src.domain.schemas import ScrapeRequest
+
+VALID_UFS = {
+    "ac", "al", "ap", "am", "ba", "ce", "df", "es", "go", "ma",
+    "mt", "ms", "mg", "pa", "pb", "pr", "pe", "pi", "rj", "rn",
+    "rs", "ro", "rr", "sc", "sp", "se", "to",
+}
 
 
 class OlxUrlBuilder:
@@ -45,21 +51,23 @@ class OlxUrlBuilder:
             cleaned_cat = request.category.strip("/")
             path_parts.append(cleaned_cat)
 
-        # 2. Estado (garante o prefixo canônico 'estado-', ex: 'sp' -> 'estado-sp')
+        # 2. Estado (apenas se for uma UF brasileira válida, ex: 'sp' -> 'estado-sp')
         if request.state:
-            state_slug = request.state.lower().strip()
-            if not state_slug.startswith("estado-"):
-                state_slug = f"estado-{state_slug}"
-            path_parts.append(state_slug)
+            raw_state = request.state.lower().strip().replace("estado-", "")
+            if raw_state in VALID_UFS:
+                path_parts.append(f"estado-{raw_state}")
 
         # 3. Sub-região (ex: 'sao-paulo-e-regiao', 'grande-campinas')
         if request.region:
             region_slug = request.region.lower().strip("/")
             path_parts.append(region_slug)
 
-        # Monta o caminho base da URL
+        # Se nenhum estado ou categoria foi especificado (busca no Brasil todo), usa rota canônica /brasil
+        if not path_parts:
+            path_parts.append("brasil")
+
         path = "/".join(path_parts)
-        url = f"{cls.BASE_DOMAIN}/{path}" if path else f"{cls.BASE_DOMAIN}/brasil"
+        url = f"{cls.BASE_DOMAIN}/{path}"
 
         # 4. Parâmetros de Query String
         query_params = {}
