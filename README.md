@@ -61,13 +61,10 @@ O serviço inclui um Dashboard visual responsivo (Tailwind CSS + DaisyUI) proteg
 1. No painel do Coolify, crie um novo recurso apontando para este repositório Git.
 2. Selecione o tipo de build como **Dockerfile**.
 3. Em **Port Mapping / Destination Port**, configure: `8001`.
-4. Em **Persistent Storage (Volumes)**, adicione:
-   * **Source:** `scraper-data` (nome do volume no host)
-   * **Destination:** `/data`
-5. Em **Environment Variables**, defina:
-   * `BASIC_AUTH_USERNAME=seu_usuario`
-   * `BASIC_AUTH_PASSWORD=sua_senha_forte`
-   * `DATABASE_URL=sqlite+aiosqlite:////data/scraper.db`
+4. Em **Environment Variables**, defina (se desejar sobrescrever):
+   * `BASIC_AUTH_USERNAME=admin`
+   * `BASIC_AUTH_PASSWORD=sua_senha_segura`
+   * `DATABASE_URL=sqlite+aiosqlite:////tmp/scraper.db`
    * `PORT=8001`
    * `HOST=0.0.0.0`
    * `APP_ENV=production`

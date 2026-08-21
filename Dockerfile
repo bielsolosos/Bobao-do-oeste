@@ -24,7 +24,7 @@ ENV PYTHONUNBUFFERED=1 \
     PORT=8001 \
     HOST=0.0.0.0 \
     APP_ENV=production \
-    DATABASE_URL=sqlite+aiosqlite:////data/scraper.db
+    DATABASE_URL=sqlite+aiosqlite:////tmp/scraper.db 
 
 # 1. Copiar definições de pacotes para cache de camadas do Docker
 COPY pyproject.toml uv.lock ./
@@ -39,9 +39,6 @@ RUN /app/.venv/bin/playwright install --with-deps chromium
 COPY src/ ./src/
 COPY docs/ ./docs/
 COPY README.md ./
-
-# Volume persistente para o banco de dados SQLite no Coolify
-VOLUME /data
 
 # Porta exposta da API / Dashboard
 EXPOSE 8001
