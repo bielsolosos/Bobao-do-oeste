@@ -1,0 +1,24 @@
+[project]
+name = "teste-scrap"
+version = "0.1.0"
+description = "Stateless Marketplace Scraper Service"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "curl-cffi>=0.16.1",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "playwright>=1.62.0",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.15.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "selectolax>=0.4.11",
+    "sqlmodel>=0.0.39",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
