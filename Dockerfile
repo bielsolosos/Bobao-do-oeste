@@ -1,9 +1,9 @@
 # ===================================================
 # Dockerfile - Marketplace Scraper Service
-# Imagem oficial Microsoft Playwright + UV (Zero build overhead, rápido e estável no Coolify)
+# Base oficial Microsoft Playwright + UV com download do Chromium correspondente
 # ===================================================
 
-FROM mcr.microsoft.com/playwright/python:v1.49.1-noble
+FROM mcr.microsoft.com/playwright/python:v1.50.0-noble
 
 # Instalar o gerenciador UV da Astral
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -23,10 +23,13 @@ ENV PYTHONUNBUFFERED=1 \
 # 1. Copiar manifesto de dependências
 COPY pyproject.toml uv.lock ./
 
-# 2. Instalar dependências Python via UV (rápido e determinístico)
+# 2. Instalar dependências Python via UV
 RUN uv sync --frozen --no-dev --no-install-project
 
-# 3. Copiar código-fonte da aplicação
+# 3. Baixa o binário do Chromium compatível com a versão exata instalada pelo UV
+RUN /app/.venv/bin/playwright install chromium
+
+# 4. Copiar código-fonte da aplicação
 COPY src/ ./src/
 COPY docs/ ./docs/
 COPY README.md ./
