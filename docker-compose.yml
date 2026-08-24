@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # Banco de Dados Principal para o Backend Java (BI / Analytics)
+  postgres:
+    image: postgres:16-alpine
+    container_name: marketplace_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marketplace_bi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Scraper Service (Python FastAPI + Playwright + curl_cffi)
+  # Roda localmente no Raspberry Pi ou em dev local
+  scraper:
+    build:
+      context: ./services/scraper
+      dockerfile: Dockerfile
+    container_name: marketplace_scraper
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      APP_NAME: "Marketplace Scraper Service"
+      APP_ENV: "development"
+      PORT: "8001"
+      HOST: "0.0.0.0"
+      DATABASE_URL: "sqlite+aiosqlite:////app/data/scraper.db"
+      BASIC_AUTH_USERNAME: "admin"
+      BASIC_AUTH_PASSWORD: "admin"
+      SCRAPE_WORKER_CONCURRENCY: "1"
+    volumes:
+      - ./services/scraper/data:/app/data
+
+  # TODO: Descomentar após iniciar a estrutura do serviço em Java
+  # bi-engine:
+  #   build:
+  #     context: ./services/bi-engine
+  #     dockerfile: Dockerfile
+  #   container_name: marketplace_bi_engine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/marketplace_bi"
+  #     SPRING_DATASOURCE_USERNAME: "postgres"
+  #     SPRING_DATASOURCE_PASSWORD: "postgrespassword"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+  # TODO: Descomentar após iniciar a estrutura da SPA Frontend
+  # web:
+  #   build:
+  #     context: ./apps/web
+  #     dockerfile: Dockerfile
+  #   container_name: marketplace_web
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+
+volumes:
+  postgres_data:
