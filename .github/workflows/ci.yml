@@ -1,0 +1,169 @@
+name: CI - Backend Quality Gate
+
+on:
+  push:
+    branches: [ main, develop, master ]
+  pull_request:
+    branches: [ main, develop, master ]
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  verify:
+    name: Verify (lint + typecheck + tests + coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Setup Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Instalar dependencias
+        run: uv sync --all-extras --dev
+
+      - name: Validar Formatacao e Lint (Ruff)
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
+
+      - name: Validar Tipagem Estatica (Pyright)
+        run: uv run pyright src/ tests/
+
+      - name: Rodar testes e gerar cobertura
+        run: |
+          mkdir -p target/surefire-reports
+          uv run pytest --cov=src --cov-report=xml:coverage.xml --cov-report=html:htmlcov --junitxml=target/surefire-reports/junit.xml
+
+      - name: Publicar relatorio de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Publicar relatorios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: target/surefire-reports/**
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Resumo do verify
+        run: |
+          {
+            echo "## Backend Verify"
+            echo "- Formatacao e Lint (Ruff): validado"
+            echo "- Tipagem (Pyright): validado"
+            echo "- Testes Unitarios e Integracao: concluidos"
+            echo "- Cobertura de Codigo: validada"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-package:
+    name: Build package test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build da imagem Docker (validacao de build)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: scraper-service:ci-test
+
+      - name: Resumo do build
+        run: |
+          {
+            echo "## Backend Build"
+            echo "- Docker Build: concluido com sucesso"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sonarcloud:
+    name: SonarCloud (informativo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: verify
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restaurar relatorio de cobertura
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: .
+
+      - name: Verificar configuracao SonarCloud
+        id: sonar-config
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [[ -n "$SONAR_TOKEN" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "## SonarCloud"
+            echo "Analise pulada: configure o secret SONAR_TOKEN."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Analise SonarCloud (informativa)
+        if: ${{ steps.sonar-config.outputs.enabled == 'true' }}
+        continue-on-error: true
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.sources=src
+            -Dsonar.tests=tests
+
+      - name: Resumo do SonarCloud
+        if: ${{ steps.sonar-config.outputs.enabled == 'true' }}
+        run: |
+          {
+            echo "## SonarCloud"
+            echo "Analise executada em modo informativo (nao bloqueante)."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -2,9 +2,15 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 *.db
 *.sqlite3
 .env
 dist/
 .idea/
 .vscode/
+.ruff_cache/
+
+
