@@ -1,11 +1,12 @@
 package br.dev.bielsolosos.biscraper.domain.users.service;
 
-import br.dev.bielsolosos.biscraper.core.config.BiScraperProperties;
 import br.dev.bielsolosos.biscraper.domain.users.model.RefreshToken;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.repository.RefreshTokenRepository;
 import br.dev.bielsolosos.biscraper.domain.users.repository.UserRepository;
+import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

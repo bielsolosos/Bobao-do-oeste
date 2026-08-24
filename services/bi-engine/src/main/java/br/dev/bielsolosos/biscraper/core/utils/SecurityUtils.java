@@ -1,7 +1,8 @@
 package br.dev.bielsolosos.biscraper.core.utils;
 
-import br.dev.bielsolosos.biscraper.core.config.BiScraperProperties;
+import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import io.jsonwebtoken.Claims;
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

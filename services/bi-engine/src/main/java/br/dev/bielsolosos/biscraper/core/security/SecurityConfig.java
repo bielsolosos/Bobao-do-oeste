@@ -1,8 +1,9 @@
 package br.dev.bielsolosos.biscraper.core.security;
 
-import br.dev.bielsolosos.biscraper.core.config.BiScraperProperties;
 import br.dev.bielsolosos.biscraper.domain.users.service.CustomUserDetailsService;
+import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;

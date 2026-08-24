@@ -1,15 +1,17 @@
-package br.dev.bielsolosos.biscraper.core.config;
+package br.dev.bielsolosos.biscraper.infrastructure;
 
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
+@Validated
 @Configuration
 @ConfigurationProperties(prefix = "biscraper")
 public class BiScraperProperties {
