@@ -1,9 +1,7 @@
 """
-Pool assíncrono de workers que consomem a fila `scrape_jobs`.
-
-Lança N tasks concorrentes no mesmo event loop do FastAPI. O `claim_next`
-no `JobQueueService` é atômico (single-writer do SQLite + `UPDATE ... RETURNING`),
-garantindo que dois workers nunca peguem o mesmo job.
+Pool assíncrono de workers que consomem a fila `scrape_jobs` e processam
+serializadamente. Projetado para rodar in-process dentro do mesmo event
+loop do FastAPI (sem dependências externas).
 """
 
 import asyncio
@@ -13,8 +11,9 @@ from typing import List, Optional
 
 from src.core.config import settings
 from src.core.database import async_session_maker
-from src.core.job_queue import JobQueueService
 from src.core.logger import logger
+from src.core.queues.scrape import ScrapeQueueService
+from src.core.queues.webhook import WebhookQueueService
 from src.domain.enums import ExecutionStatusEnum
 from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse
 from src.domain.services import ScrapingService
@@ -30,7 +29,7 @@ class ScrapeWorker:
     ):
         self.concurrency = max(1, concurrency or settings.SCRAPE_WORKER_CONCURRENCY)
         self.poll_interval = poll_interval if poll_interval is not None else settings.SCRAPE_WORKER_POLL_INTERVAL
-        self.pool_id = f"pool-{uuid.uuid4().hex[:8]}"
+        self.pool_id = f"scrapepool-{uuid.uuid4().hex[:8]}"
         self._tasks: List[asyncio.Task] = []
         self._stop_event = asyncio.Event()
 
@@ -41,7 +40,7 @@ class ScrapeWorker:
             f"(concurrency={self.concurrency}, poll_interval={self.poll_interval}s)"
         )
         async with async_session_maker() as session:
-            queue = JobQueueService(session)
+            queue = ScrapeQueueService(session)
             await queue.recover_orphaned_jobs()
 
         self._stop_event.clear()
@@ -86,7 +85,7 @@ class ScrapeWorker:
     async def _process_one(self, worker_id: str) -> bool:
         """Tenta processar um job. Retorna True se processou, False se fila vazia."""
         async with async_session_maker() as session:
-            queue = JobQueueService(session)
+            queue = ScrapeQueueService(session)
             job = await queue.claim_next(worker_id)
             if job is None:
                 return False
@@ -114,15 +113,19 @@ class ScrapeWorker:
                     items=[],
                 )
                 await queue.mark_failed(job, failed_response.model_dump(mode="json"), str(e))
+
+            # Transiciona webhook delivery PENDING → READY (se houver)
+            delivery_queue = WebhookQueueService(session)
+            await delivery_queue.mark_ready(job.id)
             return True
 
 
-_worker_instance: Optional[ScrapeWorker] = None
+_scrape_worker_instance: Optional[ScrapeWorker] = None
 
 
-def get_worker() -> ScrapeWorker:
-    """Retorna o singleton do pool (criado lazy no primeiro start)."""
-    global _worker_instance
-    if _worker_instance is None:
-        _worker_instance = ScrapeWorker()
-    return _worker_instance
+def get_scrape_worker() -> ScrapeWorker:
+    """Retorna o singleton do pool de scrape workers (criado lazy no primeiro start)."""
+    global _scrape_worker_instance
+    if _scrape_worker_instance is None:
+        _scrape_worker_instance = ScrapeWorker()
+    return _scrape_worker_instance

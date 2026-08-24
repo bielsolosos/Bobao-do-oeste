@@ -29,3 +29,11 @@ class JobStatusEnum(str, Enum):
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
+
+
+class DeliveryStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    READY = "READY"
+    SENDING = "SENDING"
+    DELIVERED = "DELIVERED"
+    FAILED = "FAILED"

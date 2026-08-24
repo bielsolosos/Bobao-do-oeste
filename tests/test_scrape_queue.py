@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import text
 
 from src.core.database import async_session_maker
-from src.core.job_queue import JobQueueService
+from src.core.queues.scrape import ScrapeQueueService
 from src.domain.enums import JobStatusEnum, VendorEnum
 from src.domain.schemas import ScrapeRequest
 
@@ -24,7 +24,7 @@ async def _cleanup_jobs() -> None:
 async def test_enqueue_creates_queued_job_with_payload():
     await _cleanup_jobs()
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         request = _make_request("thinkpad t480")
         job = await queue.enqueue(request, priority=5)
 
@@ -42,7 +42,7 @@ async def test_enqueue_creates_queued_job_with_payload():
 async def test_claim_next_returns_oldest_queued_with_priority_order():
     await _cleanup_jobs()
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         low = await queue.enqueue(_make_request("low"), priority=10)
         await asyncio.sleep(0.01)
         high = await queue.enqueue(_make_request("high"), priority=0)
@@ -74,7 +74,7 @@ async def test_claim_next_returns_oldest_queued_with_priority_order():
 async def test_mark_success_stores_response_payload():
     await _cleanup_jobs()
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         await queue.enqueue(_make_request())
         claimed = await queue.claim_next("worker-1")
         assert claimed is not None
@@ -92,7 +92,7 @@ async def test_mark_success_stores_response_payload():
 async def test_mark_failed_stores_error_and_payload():
     await _cleanup_jobs()
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         await queue.enqueue(_make_request())
         claimed = await queue.claim_next("worker-1")
         assert claimed is not None
@@ -125,7 +125,7 @@ async def test_recover_orphaned_jobs_resets_running_to_queued():
         )
         await session.commit()
 
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         recovered = await queue.recover_orphaned_jobs()
         assert recovered == 1
 
@@ -145,13 +145,14 @@ async def test_recover_orphaned_jobs_resets_running_to_queued():
 async def test_wait_for_completion_returns_when_job_finishes():
     await _cleanup_jobs()
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         job = await queue.enqueue(_make_request())
+        await session.commit()
 
         async def finish_later() -> None:
             await asyncio.sleep(0.3)
             async with async_session_maker() as s2:
-                q2 = JobQueueService(s2)
+                q2 = ScrapeQueueService(s2)
                 claimed = await q2.claim_next("background-worker")
                 if claimed is not None:
                     await q2.mark_success(claimed, {"success": True, "items": []})
@@ -169,8 +170,9 @@ async def test_wait_for_completion_returns_when_job_finishes():
 async def test_wait_for_completion_times_out():
     await _cleanup_jobs()
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         job = await queue.enqueue(_make_request())
+        await session.commit()
 
         with pytest.raises(TimeoutError):
             await queue.wait_for_completion(job.id, timeout=0.5, poll_interval=0.1)
@@ -180,6 +182,6 @@ async def test_wait_for_completion_times_out():
 @pytest.mark.asyncio
 async def test_wait_for_completion_raises_for_missing_job():
     async with async_session_maker() as session:
-        queue = JobQueueService(session)
+        queue = ScrapeQueueService(session)
         with pytest.raises(ValueError):
             await queue.wait_for_completion("does-not-exist", timeout=0.5, poll_interval=0.1)

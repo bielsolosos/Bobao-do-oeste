@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
-from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, JobStatusEnum, VendorEnum
+from src.domain.enums import DeliveryStatusEnum, DeliveryTypeEnum, ExecutionStatusEnum, JobStatusEnum, VendorEnum
 
 
 def generate_uuid() -> str:
@@ -102,3 +102,25 @@ class ScrapeJob(SQLModel, table=True):
 
     response_payload: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     error_message: Optional[str] = Field(default=None)
+
+
+class WebhookDelivery(SQLModel, table=True):
+    __tablename__: Any = "webhook_deliveries"
+
+    id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    scrape_job_id: str = Field(foreign_key="scrape_jobs.id", index=True)
+    request_id: str = Field(unique=True, index=True)
+    webhook_url: str
+
+    status: DeliveryStatusEnum = Field(default=DeliveryStatusEnum.PENDING, index=True)
+    attempts: int = Field(default=0)
+    max_attempts: int = Field(default=5)
+    worker_id: Optional[str] = Field(default=None)
+    last_attempt_at: Optional[datetime] = Field(default=None)
+    next_attempt_at: Optional[datetime] = Field(default=None, index=True)
+    delivered_at: Optional[datetime] = Field(default=None)
+    last_error: Optional[str] = Field(default=None)
+    last_response_code: Optional[int] = Field(default=None)
+
+    created_at: datetime = Field(default_factory=get_utc_now)
+    updated_at: datetime = Field(default_factory=get_utc_now)

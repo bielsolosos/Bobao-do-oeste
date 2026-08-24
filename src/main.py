@@ -7,7 +7,8 @@ from src.api.router import main_router
 from src.core.config import settings
 from src.core.database import init_db
 from src.core.logger import logger
-from src.core.worker import get_worker
+from src.core.workers.scrape import get_scrape_worker
+from src.core.workers.webhook import get_webhook_worker
 
 
 @asynccontextmanager
@@ -15,13 +16,17 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} in [{settings.APP_ENV}] mode...")
     await init_db()
 
-    worker = get_worker()
-    await worker.start()
+    scrape_worker = get_scrape_worker()
+    await scrape_worker.start()
+
+    webhook_worker = get_webhook_worker()
+    await webhook_worker.start()
 
     try:
         yield
     finally:
-        await worker.stop()
+        await webhook_worker.stop()
+        await scrape_worker.stop()
         logger.info(f"Shutting down {settings.APP_NAME}...")
 
 

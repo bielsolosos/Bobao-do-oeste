@@ -7,7 +7,10 @@ from src.domain.schemas import (
     ScrapeRequest,
     ScrapeResponse,
 )
-from src.domain.services import ExecutionService, ListingService, ScrapingService
+
+# Services NÃO são auto-importados aqui para evitar import circular com
+# src.core.queues (usado por AsyncScrapeService). Importe explicitamente:
+#   from src.domain.services import ScrapingService, AsyncScrapeService, ...
 
 __all__ = [
     "DeliveryTypeEnum",
@@ -20,9 +23,6 @@ __all__ = [
     "ScrapeRequest",
     "ScrapeResponse",
     "ScrapedListingDTO",
-    "ExecutionService",
-    "ListingService",
-    "ScrapingService",
     "BaseScraperProvider",
     "ProviderFactory",
 ]

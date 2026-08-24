@@ -5,7 +5,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core import async_session_maker, init_db
-from src.domain import ScrapeRequest, ScrapingService, VendorEnum
+from src.domain import ScrapeRequest, VendorEnum
+from src.domain.services import ScrapingService
 
 
 async def main():

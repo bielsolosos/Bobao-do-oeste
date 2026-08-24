@@ -1,9 +1,14 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
-from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
+from src.domain.enums import (
+    DeliveryStatusEnum,
+    DeliveryTypeEnum,
+    ExecutionStatusEnum,
+    VendorEnum,
+)
 
 
 class ScrapeRequest(BaseModel):
@@ -61,3 +66,60 @@ class ScrapeResponse(BaseModel):
     success: bool
     execution: ExecutionSummaryDTO
     items: List[ScrapedListingDTO]
+
+
+class AsyncScrapeRequest(BaseModel):
+    """Request para o endpoint assíncrono. Enfileira e retorna 202 imediatamente."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    request: ScrapeRequest = Field(..., description="Parâmetros do scraping (igual ao endpoint síncrono)")
+    webhook_url: HttpUrl = Field(
+        ...,
+        alias="webhookUrl",
+        description="URL que receberá o resultado via POST quando o scraping terminar",
+    )
+    request_id: Optional[str] = Field(
+        default=None,
+        alias="requestId",
+        max_length=255,
+        description="ID opcional do cliente. Se omitido, um UUID será gerado. Único no sistema (idempotência).",
+    )
+
+
+class AsyncScrapeResponse(BaseModel):
+    """Resposta 202 do endpoint assíncrono."""
+
+    request_id: str = Field(..., description="ID efetivo (fornecido ou gerado)")
+    job_id: str = Field(..., description="ID interno do ScrapeJob na fila")
+    status: str = Field(default="queued", description="Status inicial: 'queued'")
+    webhook_url: str = Field(..., description="URL que receberá o resultado")
+
+
+class WebhookStatusResponse(BaseModel):
+    """Status de uma entrega de webhook. Consultável via GET /api/v1/webhooks/{request_id}."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    request_id: str
+    job_id: str
+    webhook_url: str
+    status: DeliveryStatusEnum
+    attempts: int
+    max_attempts: int
+    last_attempt_at: Optional[datetime] = None
+    next_attempt_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
+    last_error: Optional[str] = None
+    last_response_code: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class WebhookPayload(BaseModel):
+    """Envelope enviado para a URL do cliente quando o scraping termina."""
+
+    request_id: str
+    job_id: str
+    status: str = Field(..., description="SUCCESS ou FAILED")
+    response: Dict[str, Any] = Field(..., description="ScrapeResponse completo em formato dict")

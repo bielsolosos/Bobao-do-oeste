@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.core.database import get_session
-from src.core.job_queue import JobQueueService
 from src.core.logger import logger
+from src.core.queues.scrape import ScrapeQueueService
 from src.domain.enums import ExecutionStatusEnum
 from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse
 
@@ -28,8 +28,9 @@ async def trigger_scrape(
     completo ao final. A concorrência efetiva é limitada por
     `SCRAPE_WORKER_CONCURRENCY` no pool de workers.
     """
-    queue = JobQueueService(session)
+    queue = ScrapeQueueService(session)
     job = await queue.enqueue(request)
+    await session.commit()
 
     final_job = await queue.wait_for_completion(job.id, timeout=float(settings.SCRAPE_JOB_TIMEOUT_SECONDS))
 

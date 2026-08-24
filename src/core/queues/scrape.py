@@ -25,14 +25,17 @@ from src.domain.schemas import ScrapeRequest
 TERMINAL_STATUSES = {JobStatusEnum.SUCCESS, JobStatusEnum.FAILED}
 
 
-class JobQueueService:
+class ScrapeQueueService:
     """Serviço de fila persistente de jobs de scraping."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def enqueue(self, request: ScrapeRequest, priority: int = 0) -> ScrapeJob:
-        """Enfileira uma nova requisição de scraping."""
+        """
+        Persiste um novo job em QUEUED. Não faz commit — o caller
+        (orquestrador) controla a transação para garantir atomicidade.
+        """
         job = ScrapeJob(
             vendor=request.vendor,
             request_payload=request.model_dump(mode="json"),
@@ -40,9 +43,8 @@ class JobQueueService:
             status=JobStatusEnum.QUEUED,
         )
         self.session.add(job)
-        await self.session.commit()
-        await self.session.refresh(job)
-        logger.info(f"Job enfileirado: {job.id} (vendor={job.vendor.value}, priority={priority})")
+        await self.session.flush()
+        logger.info(f"Job enfileirado (flushed): {job.id} (vendor={job.vendor.value}, priority={priority})")
         return job
 
     async def claim_next(self, worker_id: str) -> Optional[ScrapeJob]:
@@ -150,13 +152,3 @@ class JobQueueService:
         if recovered:
             logger.warning(f"Recuperados {recovered} jobs RUNNING órfãos → QUEUED (restart do worker)")
         return recovered
-
-    async def get_stats(self) -> Dict[str, int]:
-        """Retorna contadores por status (útil para diagnóstico)."""
-        stmt = select(ScrapeJob).order_by(col(ScrapeJob.created_at).desc()).limit(500)
-        result = await self.session.execute(stmt)
-        rows = result.scalars().all()
-        counts: Dict[str, int] = {s.value: 0 for s in JobStatusEnum}
-        for job in rows:
-            counts[job.status.value] += 1
-        return counts

@@ -11,8 +11,8 @@ from sqlalchemy import text
 from sqlmodel import col, select
 
 from src.core.database import async_session_maker
-from src.core.job_queue import JobQueueService
-from src.core.worker import ScrapeWorker
+from src.core.queues.scrape import ScrapeQueueService
+from src.core.workers.scrape import ScrapeWorker
 from src.domain.enums import ExecutionStatusEnum, JobStatusEnum, VendorEnum
 from src.domain.models import ScrapeJob
 from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse
@@ -84,13 +84,14 @@ async def test_pool_processes_multiple_jobs_with_concurrency(monkeypatch):
     job_ids: list[str] = []
     try:
         async with async_session_maker() as session:
-            queue = JobQueueService(session)
+            queue = ScrapeQueueService(session)
             for i in range(4):
                 job = await queue.enqueue(ScrapeRequest(vendor=VendorEnum.OLX, keyword=f"kw-{i}"))
                 job_ids.append(job.id)
+            await session.commit()
 
         async with async_session_maker() as session:
-            queue = JobQueueService(session)
+            queue = ScrapeQueueService(session)
             for job_id in job_ids:
                 final = await queue.wait_for_completion(job_id, timeout=10.0, poll_interval=0.1)
                 assert final.status == JobStatusEnum.SUCCESS
@@ -140,13 +141,14 @@ async def test_pool_processes_jobs_in_parallel_via_started_at(monkeypatch):
     started = time_now()
     try:
         async with async_session_maker() as session:
-            queue = JobQueueService(session)
+            queue = ScrapeQueueService(session)
             job_ids = [
                 (await queue.enqueue(ScrapeRequest(vendor=VendorEnum.OLX, keyword=f"kw-{i}"))).id for i in range(3)
             ]
+            await session.commit()
 
         async with async_session_maker() as session:
-            queue = JobQueueService(session)
+            queue = ScrapeQueueService(session)
             for job_id in job_ids:
                 final = await queue.wait_for_completion(job_id, timeout=10.0, poll_interval=0.1)
                 assert final.status == JobStatusEnum.SUCCESS

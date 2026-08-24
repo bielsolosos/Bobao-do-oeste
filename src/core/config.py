@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     SCRAPE_WORKER_POLL_INTERVAL: float = 1.0
     SCRAPE_JOB_TIMEOUT_SECONDS: int = 300
 
+    # Webhook Delivery Settings (async endpoint)
+    WEBHOOK_DISPATCHER_CONCURRENCY: int = 2
+    WEBHOOK_DISPATCHER_POLL_INTERVAL: float = 2.0
+    WEBHOOK_DELIVERY_TIMEOUT_SECONDS: int = 10
+    WEBHOOK_DELIVERY_MAX_ATTEMPTS: int = 5
+    WEBHOOK_DELIVERY_BASE_BACKOFF_SECONDS: float = 1.0
+    WEBHOOK_DELIVERY_MAX_BACKOFF_SECONDS: float = 60.0
+    WEBHOOK_STUCK_TIMEOUT_SECONDS: int = 60
+
     @property
     def is_sqlite(self) -> bool:
         return self.DATABASE_URL.startswith("sqlite")
