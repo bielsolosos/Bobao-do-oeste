@@ -48,5 +48,18 @@ uv run uvicorn src.main:app --reload --port 8001
 
 ---
 
+---
+
+## 🔐 Credenciais Padrão de Desenvolvimento
+
+| Serviço | Tipo de Auth | Usuário | Senha Padrão | Endpoint de Login / Doc |
+| :--- | :--- | :--- | :--- | :--- |
+| **`services/bi-engine`** (Java) | **JWT / Bearer Token** | `admin` | `admin123` | `POST /api/v1/auth/login` \| [Swagger](http://localhost:8080/swagger-ui.html) |
+| **`services/scraper`** (Python) | **HTTP Basic Auth** | `admin` | `admin` | `GET /dashboard` \| `POST /api/v1/scrape` |
+
+---
+
 ## 📄 CI / CD (GitHub Actions)
-- **`ci-scraper.yml`**: Roda validações de formatação (Ruff), tipagem (Pyright) e testes unitários exclusivamente quando há alterações em `services/scraper/**`.
+- **`ci-scraper.yml`**: Validações de formatação (Ruff), tipagem (Pyright) e testes do Scraper Python (`services/scraper/**`).
+- **`ci-bi-engine.yml`**: Compilação Maven, testes JUnit com Postgres e validação de Dockerfile do BI Engine (`services/bi-engine/**`).
+
