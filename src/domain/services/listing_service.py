@@ -4,7 +4,7 @@ Serviço de Domínio para Gestão e Consulta de Anúncios Coletados (ListingServ
 
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 from src.domain.enums import VendorEnum
 from src.domain.models import ScrapedListing
 from src.domain.schemas import ScrapedListingDTO
@@ -27,14 +27,14 @@ class ListingService:
         limit: int = 50,
         offset: int = 0,
     ) -> List[ScrapedListingDTO]:
-        stmt = select(ScrapedListing).order_by(ScrapedListing.scraped_at.desc())
+        stmt = select(ScrapedListing).order_by(col(ScrapedListing.scraped_at).desc())
 
         if vendor:
             stmt = stmt.where(ScrapedListing.vendor == vendor)
         if execution_id:
             stmt = stmt.where(ScrapedListing.execution_id == execution_id)
         if keyword:
-            stmt = stmt.where(ScrapedListing.title.ilike(f"%{keyword}%"))
+            stmt = stmt.where(col(ScrapedListing.title).ilike(f"%{keyword}%"))
         if min_price is not None:
             stmt = stmt.where(ScrapedListing.price >= min_price)
         if max_price is not None:
@@ -50,6 +50,7 @@ class ListingService:
 
     async def get_recent_listings(self, limit: int = 150) -> List[ScrapedListing]:
         """Consulta anúncios recentes como entidades ORM (usado na view do dashboard)."""
-        stmt = select(ScrapedListing).order_by(ScrapedListing.scraped_at.desc()).limit(limit)
+        stmt = select(ScrapedListing).order_by(col(ScrapedListing.scraped_at).desc()).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+

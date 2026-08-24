@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
 from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from src.core.config import settings
 from src.core.logger import logger
@@ -19,11 +18,12 @@ engine = create_async_engine(
     future=True,
 )
 
-async_session_maker = sessionmaker(
+async_session_maker = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
 
 
 async def init_db() -> None:

@@ -14,7 +14,7 @@ def get_utc_now() -> datetime:
 
 
 class SearchQuery(SQLModel, table=True):
-    __tablename__ = "search_queries"
+    __tablename__: Any = "search_queries"
 
     id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
     vendor: VendorEnum = Field(default=VendorEnum.OLX, index=True)
@@ -32,7 +32,7 @@ class SearchQuery(SQLModel, table=True):
 
 
 class ScrapingExecution(SQLModel, table=True):
-    __tablename__ = "scraping_executions"
+    __tablename__: Any = "scraping_executions"
 
     id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
     search_query_id: str = Field(foreign_key="search_queries.id", index=True)
@@ -53,7 +53,8 @@ class ScrapingExecution(SQLModel, table=True):
 
 
 class ScrapedListing(SQLModel, table=True):
-    __tablename__ = "scraped_listings"
+    __tablename__: Any = "scraped_listings"
+
 
     id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
     execution_id: str = Field(foreign_key="scraping_executions.id", index=True)

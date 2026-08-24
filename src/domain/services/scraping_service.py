@@ -7,12 +7,13 @@ from datetime import datetime, timezone
 import time
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 from src.core.logger import logger
 from src.domain.enums import ExecutionStatusEnum
 from src.domain.models import ScrapedListing, ScrapingExecution, SearchQuery
 from src.domain.providers import ProviderFactory
 from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse, ScrapedListingDTO
+
 
 
 class ScrapingService:
@@ -94,7 +95,7 @@ class ScrapingService:
 
     async def get_recent_queries(self, limit: int = 50) -> List[SearchQuery]:
         """Retorna as buscas recentes registradas."""
-        stmt = select(SearchQuery).order_by(SearchQuery.created_at.desc()).limit(limit)
+        stmt = select(SearchQuery).order_by(col(SearchQuery.created_at).desc()).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
@@ -134,8 +135,9 @@ class ScrapingService:
         # Otimização: Busca em lote os IDs de anúncios já existentes para evitar N+1 queries
         vendor_ids = [item.vendor_listing_id for item in items]
         stmt = select(ScrapedListing.vendor_listing_id).where(
-            ScrapedListing.vendor_listing_id.in_(vendor_ids)
+            col(ScrapedListing.vendor_listing_id).in_(vendor_ids)
         )
+
         result = await self.session.execute(stmt)
         existing_ids = set(result.scalars().all())
 
