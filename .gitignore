@@ -1,5 +1,6 @@
+# Ambientes virtuais e Python
 .venv/
-__pycache__/
+**/__pycache__/
 *.pyc
 .pytest_cache/
 .coverage
@@ -9,10 +10,29 @@ htmlcov/
 *.sqlite3
 test_scraper.db*
 .env
-
-dist/
-.idea/
-.vscode/
 .ruff_cache/
+dist/
 
+# Java & Maven / Gradle
+target/
+*.class
+*.jar
+*.war
+.mvn/wrapper/
+.gradle/
+build/
 
+# Node.js & Frontend
+node_modules/
+.next/
+out/
+.nuxt/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs e OS
+.idea/
+.DS_Store
+Thumbs.db

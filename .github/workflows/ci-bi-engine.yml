@@ -1,0 +1,105 @@
+name: CI - BI Engine Service (Java)
+
+on:
+  push:
+    branches: [ main, develop, master, "feature/**" ]
+    paths:
+      - 'services/bi-engine/**'
+      - '.github/workflows/ci-bi-engine.yml'
+  pull_request:
+    branches: [ main, develop, master ]
+    paths:
+      - 'services/bi-engine/**'
+      - '.github/workflows/ci-bi-engine.yml'
+
+concurrency:
+  group: bi-engine-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  verify:
+    name: Verify (build + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/bi-engine
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: marketplace_bi
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Compilar e rodar testes
+        run: ./mvnw -B clean verify
+
+      - name: Resumo do verify
+        run: |
+          {
+            echo "## BI Engine Verify"
+            echo "- Build Java (Spring Boot): concluido"
+            echo "- Testes Unitarios e Integracao: concluidos"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-package:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/bi-engine
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build da imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: services/bi-engine
+          file: services/bi-engine/Dockerfile
+          push: false
+          tags: bi-engine:ci-test
+
+      - name: Resumo do build
+        run: |
+          {
+            echo "## BI Engine Docker Build"
+            echo "- Docker Build: concluido com sucesso"
+          } >> "$GITHUB_STEP_SUMMARY"

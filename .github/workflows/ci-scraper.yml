@@ -1,13 +1,19 @@
-name: CI - Backend Quality Gate
+name: CI - Scraper Service (Python)
 
 on:
   push:
-    branches: [ main, develop, master ]
+    branches: [ main, develop, master, "feature/**" ]
+    paths:
+      - 'services/scraper/**'
+      - '.github/workflows/ci-scraper.yml'
   pull_request:
     branches: [ main, develop, master ]
+    paths:
+      - 'services/scraper/**'
+      - '.github/workflows/ci-scraper.yml'
 
 concurrency:
-  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  group: scraper-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -22,6 +28,9 @@ jobs:
     name: Verify (lint + typecheck + tests + coverage)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/scraper
 
     steps:
       - name: Checkout codigo
@@ -58,10 +67,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-coverage-report
+          name: scraper-coverage-report
           path: |
-            coverage.xml
-            htmlcov/
+            services/scraper/coverage.xml
+            services/scraper/htmlcov/
           if-no-files-found: warn
           retention-days: 7
 
@@ -69,15 +78,15 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-test-reports
-          path: target/surefire-reports/**
+          name: scraper-test-reports
+          path: services/scraper/target/surefire-reports/**
           if-no-files-found: warn
           retention-days: 7
 
       - name: Resumo do verify
         run: |
           {
-            echo "## Backend Verify"
+            echo "## Scraper Service Verify"
             echo "- Formatacao e Lint (Ruff): validado"
             echo "- Tipagem (Pyright): validado"
             echo "- Testes Unitarios e Integracao: concluidos"
@@ -85,9 +94,12 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   build-package:
-    name: Build package test
+    name: Build Docker Image
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/scraper
 
     steps:
       - name: Checkout codigo
@@ -98,72 +110,17 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build da imagem Docker (validacao de build)
+      - name: Build da imagem Docker (validacao)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: services/scraper
+          file: services/scraper/Dockerfile
           push: false
           tags: scraper-service:ci-test
 
       - name: Resumo do build
         run: |
           {
-            echo "## Backend Build"
+            echo "## Scraper Docker Build"
             echo "- Docker Build: concluido com sucesso"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  sonarcloud:
-    name: SonarCloud (informativo)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: verify
-
-    steps:
-      - name: Checkout codigo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Restaurar relatorio de cobertura
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-coverage-report
-          path: .
-
-      - name: Verificar configuracao SonarCloud
-        id: sonar-config
-        shell: bash
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          if [[ -n "$SONAR_TOKEN" ]]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "enabled=false" >> "$GITHUB_OUTPUT"
-          {
-            echo "## SonarCloud"
-            echo "Analise pulada: configure o secret SONAR_TOKEN."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Analise SonarCloud (informativa)
-        if: ${{ steps.sonar-config.outputs.enabled == 'true' }}
-        continue-on-error: true
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.sources=src
-            -Dsonar.tests=tests
-
-      - name: Resumo do SonarCloud
-        if: ${{ steps.sonar-config.outputs.enabled == 'true' }}
-        run: |
-          {
-            echo "## SonarCloud"
-            echo "Analise executada em modo informativo (nao bloqueante)."
           } >> "$GITHUB_STEP_SUMMARY"
