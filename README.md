@@ -2,7 +2,7 @@
 
 Serviço de web scraping de alta performance, desacoplado e resiliente contra bloqueios (WAF/Cloudflare), projetado para alimentar pipelines de análise inteligente de hardware usado (ThinkPads, Mini PCs, GPUs, etc.).
 
-> 📖 **Documentação Técnica Interna Detalhada:** Consulte o [Guia de Scraping & Arquitetura](docs/SCRAPING_GUIDE.md) para detalhes aprofundados sobre a evasão de anti-bot com `curl_cffi`, anatomia de rotas da OLX e estratégias de parsing.
+> 📖 **Documentação Técnica Interna Detalhada:** Consulte o [Guia de Scraping & Arquitetura](docs/SCRAPING_GUIDE.md) para detalhes aprofundados sobre a evasão de anti-bot com `curl_cffi`, anatomia de rotas da OLX e estratégias de parsing. Para entender a **fila de execução** (ciclo de vida, status, concorrência, recovery), veja o [Guia da Fila de Scraping](docs/QUEUE_GUIDE.md).
 
 ---
 
