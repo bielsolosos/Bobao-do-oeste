@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     ENABLE_PLAYWRIGHT_FALLBACK: bool = True
     HEADLESS: bool = True
 
+    # Job Queue Settings
+    SCRAPE_WORKER_CONCURRENCY: int = 1
+    SCRAPE_WORKER_POLL_INTERVAL: float = 1.0
+    SCRAPE_JOB_TIMEOUT_SECONDS: int = 300
+
     @property
     def is_sqlite(self) -> bool:
         return self.DATABASE_URL.startswith("sqlite")

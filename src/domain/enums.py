@@ -22,3 +22,10 @@ class DeliveryTypeEnum(str, Enum):
     CORREIOS = "CORREIOS"
     HAND_DELIVERY = "HAND_DELIVERY"
     UNKNOWN = "UNKNOWN"
+
+
+class JobStatusEnum(str, Enum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"

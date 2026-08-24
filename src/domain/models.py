@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
-from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
+from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, JobStatusEnum, VendorEnum
 
 
 def generate_uuid() -> str:
@@ -82,3 +82,23 @@ class ScrapedListing(SQLModel, table=True):
     raw_payload: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
 
     execution: Optional[ScrapingExecution] = Relationship(back_populates="listings")
+
+
+class ScrapeJob(SQLModel, table=True):
+    __tablename__: Any = "scrape_jobs"
+
+    id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    vendor: VendorEnum = Field(default=VendorEnum.OLX, index=True)
+    request_payload: Dict[str, Any] = Field(sa_column=Column(JSON))
+
+    status: JobStatusEnum = Field(default=JobStatusEnum.QUEUED, index=True)
+    priority: int = Field(default=0, index=True)
+    attempts: int = Field(default=0)
+    worker_id: Optional[str] = Field(default=None)
+
+    created_at: datetime = Field(default_factory=get_utc_now, index=True)
+    started_at: Optional[datetime] = Field(default=None)
+    finished_at: Optional[datetime] = Field(default=None)
+
+    response_payload: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
+    error_message: Optional[str] = Field(default=None)

@@ -7,14 +7,22 @@ from src.api.router import main_router
 from src.core.config import settings
 from src.core.database import init_db
 from src.core.logger import logger
+from src.core.worker import get_worker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} in [{settings.APP_ENV}] mode...")
     await init_db()
-    yield
-    logger.info(f"Shutting down {settings.APP_NAME}...")
+
+    worker = get_worker()
+    await worker.start()
+
+    try:
+        yield
+    finally:
+        await worker.stop()
+        logger.info(f"Shutting down {settings.APP_NAME}...")
 
 
 app = FastAPI(
