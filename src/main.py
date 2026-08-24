@@ -17,16 +17,18 @@ async def lifespan(app: FastAPI):
     await init_db()
 
     scrape_worker = get_scrape_worker()
-    await scrape_worker.start()
-
     webhook_worker = get_webhook_worker()
-    await webhook_worker.start()
+
+    if settings.APP_ENV != "testing":
+        await scrape_worker.start()
+        await webhook_worker.start()
 
     try:
         yield
     finally:
-        await webhook_worker.stop()
-        await scrape_worker.stop()
+        if settings.APP_ENV != "testing":
+            await webhook_worker.stop()
+            await scrape_worker.stop()
         logger.info(f"Shutting down {settings.APP_NAME}...")
 
 

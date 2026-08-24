@@ -194,6 +194,7 @@ from fastapi import FastAPI, Request
 
 app = FastAPI()
 
+
 @app.post("/hooks/scraper")
 async def receive_scrape_result(request: Request):
     payload = await request.json()
@@ -400,7 +401,7 @@ Pool de N tasks asyncio:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    worker = get_worker()         # ScrapeWorker pool
+    worker = get_worker()  # ScrapeWorker pool
     await worker.start()
     dispatcher = get_dispatcher()  # WebhookDispatcher pool
     await dispatcher.start()

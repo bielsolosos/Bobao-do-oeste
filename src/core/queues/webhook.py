@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import case, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -100,6 +100,7 @@ class WebhookQueueService:
         vêm antes de retries atrasados, e FIFO dentro de cada grupo.
         """
         now = datetime.now(timezone.utc)
+        status_priority = case((col(WebhookDelivery.status) == DeliveryStatusEnum.READY, 0), else_=1)
         next_id_subquery = (
             select(col(WebhookDelivery.id))
             .where(
@@ -110,12 +111,14 @@ class WebhookQueueService:
                 )
             )
             .order_by(
+                status_priority.asc(),
                 col(WebhookDelivery.next_attempt_at).asc().nulls_first(),
                 col(WebhookDelivery.created_at).asc(),
             )
             .limit(1)
             .scalar_subquery()
         )
+
         stmt = (
             update(WebhookDelivery)
             .where(col(WebhookDelivery.id) == next_id_subquery)

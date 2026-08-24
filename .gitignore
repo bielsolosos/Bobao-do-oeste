@@ -7,7 +7,9 @@ coverage.xml
 htmlcov/
 *.db
 *.sqlite3
+test_scraper.db*
 .env
+
 dist/
 .idea/
 .vscode/
