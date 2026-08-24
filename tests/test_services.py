@@ -1,0 +1,85 @@
+import pytest
+from src.core.database import async_session_maker
+from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
+from src.domain.models import ScrapedListing, ScrapingExecution, SearchQuery
+from src.domain.schemas import ScrapeRequest, ScrapedListingDTO
+from src.domain.services import ExecutionService, ListingService, ScrapingService
+
+
+@pytest.mark.asyncio
+async def test_listing_service_filtering():
+    async with async_session_maker() as session:
+        # Create dummy execution and listings
+        exec_item = ScrapingExecution(
+            search_query_id="query-test-1",
+            vendor=VendorEnum.OLX,
+            status=ExecutionStatusEnum.SUCCESS,
+        )
+        session.add(exec_item)
+        await session.commit()
+        await session.refresh(exec_item)
+
+        listing1 = ScrapedListing(
+            execution_id=exec_item.id,
+            vendor=VendorEnum.OLX,
+            vendor_listing_id="srv-1001",
+            title="Dell Inspiron i7 16GB",
+            price=2500.0,
+            url="https://olx.com.br/test-1001",
+            has_delivery=True,
+        )
+        listing2 = ScrapedListing(
+            execution_id=exec_item.id,
+            vendor=VendorEnum.OLX,
+            vendor_listing_id="srv-1002",
+            title="MacBook Air M1",
+            price=4500.0,
+            url="https://olx.com.br/test-1002",
+            has_delivery=False,
+        )
+        session.add_all([listing1, listing2])
+        await session.commit()
+
+        service = ListingService(session)
+
+        # Test filter by keyword
+        results = await service.list_listings(keyword="Dell")
+        assert len(results) >= 1
+        assert any(r.vendor_listing_id == "srv-1001" for r in results)
+
+        # Test filter by price range
+        results = await service.list_listings(min_price=3000.0)
+        assert any(r.vendor_listing_id == "srv-1002" for r in results)
+        assert not any(r.vendor_listing_id == "srv-1001" for r in results)
+
+        # Test filter by delivery
+        results = await service.list_listings(has_delivery=True)
+        assert any(r.vendor_listing_id == "srv-1001" for r in results)
+
+
+@pytest.mark.asyncio
+async def test_execution_service_crud():
+    async with async_session_maker() as session:
+        exec_item = ScrapingExecution(
+            search_query_id="query-test-2",
+            vendor=VendorEnum.OLX,
+            status=ExecutionStatusEnum.SUCCESS,
+            total_found=10,
+            new_items_count=5,
+        )
+        session.add(exec_item)
+        await session.commit()
+        await session.refresh(exec_item)
+
+        service = ExecutionService(session)
+
+        # Test get by ID
+        dto = await service.get_execution_by_id(exec_item.id)
+        assert dto is not None
+        assert dto.execution_id == exec_item.id
+        assert dto.total_found == 10
+
+        # Test listing by vendor
+        exec_list = await service.list_executions(vendor=VendorEnum.OLX)
+        assert len(exec_list) >= 1
+        assert any(e.execution_id == exec_item.id for e in exec_list)

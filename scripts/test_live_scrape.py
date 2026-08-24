@@ -1,14 +1,11 @@
 import asyncio
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.core.database import init_db, async_session_maker
-from src.domain.enums import VendorEnum
-from src.domain.schemas import ScrapeRequest
-from src.services.orchestrator import ScrapingOrchestrator
+from src.core import async_session_maker, init_db
+from src.domain import ScrapeRequest, ScrapingService, VendorEnum
 
 
 async def main():
@@ -27,8 +24,8 @@ async def main():
     )
 
     async with async_session_maker() as session:
-        orchestrator = ScrapingOrchestrator(session)
-        response = await orchestrator.execute_scrape(req)
+        service = ScrapingService(session)
+        response = await service.execute_scrape(req)
 
         print(f"\nResult: Success={response.success}")
         print(f"Execution ID: {response.execution.execution_id}")

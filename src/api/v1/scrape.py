@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_session
 from src.domain.schemas import ScrapeRequest, ScrapeResponse
-from src.services.orchestrator import ScrapingOrchestrator
+from src.domain.services import ScrapingService
 
 router = APIRouter(prefix="/scrape", tags=["Scraping"])
 
@@ -11,12 +11,11 @@ router = APIRouter(prefix="/scrape", tags=["Scraping"])
     "",
     response_model=ScrapeResponse,
     status_code=status.HTTP_200_OK,
-    summary="Trigger a marketplace scrape job",
+    summary="Dispara uma execução de scraping no marketplace",
 )
 async def trigger_scrape(
     request: ScrapeRequest,
     session: AsyncSession = Depends(get_session),
 ) -> ScrapeResponse:
-    orchestrator = ScrapingOrchestrator(session=session)
-    response = await orchestrator.execute_scrape(request)
-    return response
+    service = ScrapingService(session)
+    return await service.execute_scrape(request)

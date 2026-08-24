@@ -1,74 +1,29 @@
 """
-Serviço Orquestrador de Scraping (ScrapingOrchestrator).
-
-Este módulo é o coração operacional do scraper:
-1. Resolução Dinâmica de Provedores (ProviderFactory): Localiza a implementação
-   adequada conforme o marketplace (`VendorEnum.OLX`, `VendorEnum.MERCADO_LIVRE`).
-2. Gestão de Estado e Persistência:
-   - Garante que a intenção de busca (`SearchQuery`) exista no banco.
-   - Abre o registro `ScrapingExecution` com status `RUNNING`.
-   - Executa a coleta.
-   - Calcula métricas de telemetria (`duration_ms`, `total_found`, `new_items_count`).
-   - Salva cada `ScrapedListing` associado à execução.
-   - Em caso de falha, registra o erro no banco e devolve resposta padronizada.
+Serviço de Scraping de Marketplaces (ScrapingService).
+Orquestra o ciclo de vida completo de uma requisição de raspagem e persistência.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import time
-from typing import Dict, Type
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from src.core.logger import logger
-from src.domain.enums import ExecutionStatusEnum, VendorEnum
+from src.domain.enums import ExecutionStatusEnum
 from src.domain.models import ScrapedListing, ScrapingExecution, SearchQuery
-from src.domain.schemas import (
-    ExecutionSummaryDTO,
-    ScrapeRequest,
-    ScrapeResponse,
-    ScrapedListingDTO,
-)
-from src.providers.base import BaseScraperProvider
-from src.providers.olx.provider import OlxScraperProvider
+from src.domain.providers import ProviderFactory
+from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse, ScrapedListingDTO
 
 
-class ProviderFactory:
-    """
-    Fábrica e Registro de Provedores de Scraping.
-    Permite adicionar novos marketplaces (ex: Mercado Livre, Enjoei) sem alterar o orquestrador.
-    """
-
-    _providers: Dict[VendorEnum, Type[BaseScraperProvider]] = {
-        VendorEnum.OLX: OlxScraperProvider,
-    }
-
-    @classmethod
-    def get_provider(cls, vendor: VendorEnum) -> BaseScraperProvider:
-        """Instancia o provedor correspondente ao vendor solicitado."""
-        provider_cls = cls._providers.get(vendor)
-        if not provider_cls:
-            raise ValueError(f"Provider not implemented for vendor: {vendor}")
-        return provider_cls()
-
-
-class ScrapingOrchestrator:
-    """
-    Orquestra o ciclo de vida completo de uma requisição de raspagem.
-    """
+class ScrapingService:
+    """Serviço responsável por coordenar a coleta, telemetria e persistência dos dados de scraping."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def execute_scrape(self, request: ScrapeRequest) -> ScrapeResponse:
-        """
-        Executa uma rodada completa de scraping:
-        1. Cria/obtém a `SearchQuery`.
-        2. Registra a `ScrapingExecution` (RUNNING).
-        3. Dispara a coleta no marketplace.
-        4. Persiste os anúncios encontrados e contabiliza novos itens.
-        5. Atualiza a execução para SUCCESS (ou FAILED em caso de erro).
-        """
         start_time = time.perf_counter()
-        started_at = datetime.utcnow()
+        started_at = datetime.now(timezone.utc)
 
         # 1. Localiza ou cria o registro da SearchQuery
         search_query = await self._get_or_create_search_query(request)
@@ -89,11 +44,11 @@ class ScrapingOrchestrator:
             provider = ProviderFactory.get_provider(request.vendor)
             scraped_items, used_fallback = await provider.scrape(request)
 
-            # 4. Grava os anúncios no banco e calcula a quantidade de itens inéditos
+            # 4. Grava os anúncios no banco em lote
             new_items_count = await self._persist_listings(execution.id, scraped_items)
 
-            # 5. Finaliza a execução com status SUCCESS e métricas
-            finished_at = datetime.utcnow()
+            # 5. Finaliza a execução com status SUCCESS
+            finished_at = datetime.now(timezone.utc)
             duration_ms = int((time.perf_counter() - start_time) * 1000)
 
             execution.status = ExecutionStatusEnum.SUCCESS
@@ -114,26 +69,15 @@ class ScrapingOrchestrator:
 
             return ScrapeResponse(
                 success=True,
-                execution=ExecutionSummaryDTO(
-                    execution_id=execution.id,
-                    vendor=execution.vendor,
-                    status=execution.status,
-                    duration_ms=execution.duration_ms,
-                    total_found=execution.total_found,
-                    new_items_count=execution.new_items_count,
-                    used_fallback=execution.used_fallback,
-                    started_at=execution.started_at,
-                    finished_at=execution.finished_at,
-                ),
+                execution=ExecutionSummaryDTO.model_validate(execution),
                 items=scraped_items,
             )
 
         except Exception as e:
             logger.error(f"Scraping execution {execution.id} failed: {e}", exc_info=True)
-            finished_at = datetime.utcnow()
+            finished_at = datetime.now(timezone.utc)
             duration_ms = int((time.perf_counter() - start_time) * 1000)
 
-            # Registra a falha detalhada no banco para auditoria
             execution.status = ExecutionStatusEnum.FAILED
             execution.finished_at = finished_at
             execution.duration_ms = duration_ms
@@ -144,24 +88,17 @@ class ScrapingOrchestrator:
 
             return ScrapeResponse(
                 success=False,
-                execution=ExecutionSummaryDTO(
-                    execution_id=execution.id,
-                    vendor=execution.vendor,
-                    status=execution.status,
-                    duration_ms=execution.duration_ms,
-                    total_found=0,
-                    new_items_count=0,
-                    error_message=str(e),
-                    started_at=execution.started_at,
-                    finished_at=execution.finished_at,
-                ),
+                execution=ExecutionSummaryDTO.model_validate(execution),
                 items=[],
             )
 
+    async def get_recent_queries(self, limit: int = 50) -> List[SearchQuery]:
+        """Retorna as buscas recentes registradas."""
+        stmt = select(SearchQuery).order_by(SearchQuery.created_at.desc()).limit(limit)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def _get_or_create_search_query(self, request: ScrapeRequest) -> SearchQuery:
-        """
-        Busca uma `SearchQuery` idêntica já existente ou insere um novo registro.
-        """
         stmt = select(SearchQuery).where(
             SearchQuery.vendor == request.vendor,
             SearchQuery.keyword == request.keyword,
@@ -190,27 +127,25 @@ class ScrapingOrchestrator:
 
         return query_obj
 
-    async def _persist_listings(
-        self, execution_id: str, items: list[ScrapedListingDTO]
-    ) -> int:
-        """
-        Salva em lote os anúncios coletados e retorna a quantidade de itens que nunca haviam sido vistos.
-        """
+    async def _persist_listings(self, execution_id: str, items: List[ScrapedListingDTO]) -> int:
         if not items:
             return 0
 
-        new_count = 0
-        for item in items:
-            # Verifica se este anúncio já foi visto em alguma execução anterior
-            stmt = select(ScrapedListing).where(
-                ScrapedListing.vendor == item.vendor,
-                ScrapedListing.vendor_listing_id == item.vendor_listing_id,
-            )
-            result = await self.session.execute(stmt)
-            existing = result.scalars().first()
+        # Otimização: Busca em lote os IDs de anúncios já existentes para evitar N+1 queries
+        vendor_ids = [item.vendor_listing_id for item in items]
+        stmt = select(ScrapedListing.vendor_listing_id).where(
+            ScrapedListing.vendor_listing_id.in_(vendor_ids)
+        )
+        result = await self.session.execute(stmt)
+        existing_ids = set(result.scalars().all())
 
-            if not existing:
+        new_count = 0
+        now = datetime.now(timezone.utc)
+
+        for item in items:
+            if item.vendor_listing_id not in existing_ids:
                 new_count += 1
+                existing_ids.add(item.vendor_listing_id)
 
             listing_model = ScrapedListing(
                 execution_id=execution_id,
@@ -228,7 +163,7 @@ class ScrapingOrchestrator:
                 delivery_type=item.delivery_type,
                 images=item.images,
                 published_at=item.published_at,
-                scraped_at=item.scraped_at or datetime.utcnow(),
+                scraped_at=item.scraped_at or now,
             )
             self.session.add(listing_model)
 

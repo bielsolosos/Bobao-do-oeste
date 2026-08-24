@@ -1,11 +1,10 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 from src.core.database import get_session
 from src.domain.enums import ExecutionStatusEnum, VendorEnum
-from src.domain.models import ScrapingExecution
 from src.domain.schemas import ExecutionSummaryDTO
+from src.domain.services import ExecutionService
 
 router = APIRouter(prefix="/executions", tags=["Executions"])
 
@@ -13,7 +12,7 @@ router = APIRouter(prefix="/executions", tags=["Executions"])
 @router.get(
     "",
     response_model=List[ExecutionSummaryDTO],
-    summary="List all scraping executions with telemetry",
+    summary="Lista o histórico de execuções de scraping",
 )
 async def list_executions(
     vendor: Optional[VendorEnum] = None,
@@ -22,62 +21,29 @@ async def list_executions(
     offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_session),
 ) -> List[ExecutionSummaryDTO]:
-    stmt = select(ScrapingExecution).order_by(ScrapingExecution.started_at.desc())
-
-    if vendor:
-        stmt = stmt.where(ScrapingExecution.vendor == vendor)
-    if status_filter:
-        stmt = stmt.where(ScrapingExecution.status == status_filter)
-
-    stmt = stmt.offset(offset).limit(limit)
-    result = await session.execute(stmt)
-    executions = result.scalars().all()
-
-    return [
-        ExecutionSummaryDTO(
-            execution_id=e.id,
-            vendor=e.vendor,
-            status=e.status,
-            duration_ms=e.duration_ms,
-            total_found=e.total_found,
-            new_items_count=e.new_items_count,
-            used_fallback=e.used_fallback,
-            error_message=e.error_message,
-            started_at=e.started_at,
-            finished_at=e.finished_at,
-        )
-        for e in executions
-    ]
+    service = ExecutionService(session)
+    return await service.list_executions(
+        vendor=vendor,
+        status=status_filter,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get(
     "/{execution_id}",
     response_model=ExecutionSummaryDTO,
-    summary="Get execution telemetry by ID",
+    summary="Consulta telemetria detalhada de uma execução por ID",
 )
 async def get_execution(
     execution_id: str,
     session: AsyncSession = Depends(get_session),
 ) -> ExecutionSummaryDTO:
-    stmt = select(ScrapingExecution).where(ScrapingExecution.id == execution_id)
-    result = await session.execute(stmt)
-    execution = result.scalars().first()
-
+    service = ExecutionService(session)
+    execution = await service.get_execution_by_id(execution_id)
     if not execution:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution with ID '{execution_id}' not found",
+            detail=f"Execução com ID '{execution_id}' não encontrada",
         )
-
-    return ExecutionSummaryDTO(
-        execution_id=execution.id,
-        vendor=execution.vendor,
-        status=execution.status,
-        duration_ms=execution.duration_ms,
-        total_found=execution.total_found,
-        new_items_count=execution.new_items_count,
-        used_fallback=execution.used_fallback,
-        error_message=execution.error_message,
-        started_at=execution.started_at,
-        finished_at=execution.finished_at,
-    )
+    return execution

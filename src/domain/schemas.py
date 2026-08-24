@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
 
 
@@ -24,6 +24,8 @@ class ScrapeRequest(BaseModel):
 
 
 class ScrapedListingDTO(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: Optional[str] = None
     vendor: VendorEnum
     vendor_listing_id: str
@@ -43,12 +45,14 @@ class ScrapedListingDTO(BaseModel):
 
 
 class ExecutionSummaryDTO(BaseModel):
-    execution_id: str
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    execution_id: str = Field(..., alias="id")
     vendor: VendorEnum
     status: ExecutionStatusEnum
     duration_ms: Optional[int] = None
-    total_found: int
-    new_items_count: int
+    total_found: int = 0
+    new_items_count: int = 0
     used_fallback: bool = False
     error_message: Optional[str] = None
     started_at: datetime
@@ -59,3 +63,4 @@ class ScrapeResponse(BaseModel):
     success: bool
     execution: ExecutionSummaryDTO
     items: List[ScrapedListingDTO]
+
