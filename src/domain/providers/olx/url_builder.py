@@ -3,12 +3,37 @@ Construtor de URLs Canônicas para a OLX Brasil.
 """
 
 import urllib.parse
+
 from src.domain.schemas import ScrapeRequest
 
 VALID_UFS = {
-    "ac", "al", "ap", "am", "ba", "ce", "df", "es", "go", "ma",
-    "mt", "ms", "mg", "pa", "pb", "pr", "pe", "pi", "rj", "rn",
-    "rs", "ro", "rr", "sc", "sp", "se", "to",
+    "ac",
+    "al",
+    "ap",
+    "am",
+    "ba",
+    "ce",
+    "df",
+    "es",
+    "go",
+    "ma",
+    "mt",
+    "ms",
+    "mg",
+    "pa",
+    "pb",
+    "pr",
+    "pe",
+    "pi",
+    "rj",
+    "rn",
+    "rs",
+    "ro",
+    "rr",
+    "sc",
+    "sp",
+    "se",
+    "to",
 }
 
 
@@ -44,14 +69,10 @@ class OlxUrlBuilder:
             query_params["q"] = request.keyword.strip()
 
         if request.min_price is not None:
-            query_params["ps"] = (
-                int(request.min_price) if request.min_price.is_integer() else request.min_price
-            )
+            query_params["ps"] = int(request.min_price) if request.min_price.is_integer() else request.min_price
 
         if request.max_price is not None:
-            query_params["pe"] = (
-                int(request.max_price) if request.max_price.is_integer() else request.max_price
-            )
+            query_params["pe"] = int(request.max_price) if request.max_price.is_integer() else request.max_price
 
         if request.require_delivery:
             query_params["olxpay"] = "1"

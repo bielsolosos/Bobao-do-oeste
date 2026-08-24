@@ -1,5 +1,6 @@
 import logging
 import sys
+
 from src.core.config import settings
 
 LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"

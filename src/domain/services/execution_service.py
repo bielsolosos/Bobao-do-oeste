@@ -3,8 +3,10 @@ Serviço de Domínio para Gestão e Telemetria de Execuções (ExecutionService)
 """
 
 from typing import List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
+
 from src.domain.enums import ExecutionStatusEnum, VendorEnum
 from src.domain.models import ScrapingExecution
 from src.domain.schemas import ExecutionSummaryDTO
@@ -24,7 +26,6 @@ class ExecutionService:
         offset: int = 0,
     ) -> List[ExecutionSummaryDTO]:
         stmt = select(ScrapingExecution).order_by(col(ScrapingExecution.started_at).desc())
-
 
         if vendor:
             stmt = stmt.where(ScrapingExecution.vendor == vendor)
@@ -52,4 +53,3 @@ class ExecutionService:
         stmt = select(ScrapingExecution).order_by(col(ScrapingExecution.started_at).desc()).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
-

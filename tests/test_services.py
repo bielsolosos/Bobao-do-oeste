@@ -1,9 +1,9 @@
 import pytest
+
 from src.core.database import async_session_maker
-from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
-from src.domain.models import ScrapedListing, ScrapingExecution, SearchQuery
-from src.domain.schemas import ScrapeRequest, ScrapedListingDTO
-from src.domain.services import ExecutionService, ListingService, ScrapingService
+from src.domain.enums import ExecutionStatusEnum, VendorEnum
+from src.domain.models import ScrapedListing, ScrapingExecution
+from src.domain.services import ExecutionService, ListingService
 
 
 @pytest.mark.asyncio

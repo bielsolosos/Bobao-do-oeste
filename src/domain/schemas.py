@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
+
 from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
 
 
@@ -14,13 +16,9 @@ class ScrapeRequest(BaseModel):
     )
     min_price: Optional[float] = Field(default=None, ge=0, description="Minimum price filter")
     max_price: Optional[float] = Field(default=None, ge=0, description="Maximum price filter")
-    require_delivery: bool = Field(
-        default=False, description="Filter/prioritize listings offering delivery (OLX Pay)"
-    )
+    require_delivery: bool = Field(default=False, description="Filter/prioritize listings offering delivery (OLX Pay)")
     max_pages: int = Field(default=1, ge=1, le=10, description="Maximum pages to scrape")
-    force_browser: bool = Field(
-        default=False, description="Force headless browser instead of HTTP client"
-    )
+    force_browser: bool = Field(default=False, description="Force headless browser instead of HTTP client")
 
 
 class ScrapedListingDTO(BaseModel):
@@ -63,4 +61,3 @@ class ScrapeResponse(BaseModel):
     success: bool
     execution: ExecutionSummaryDTO
     items: List[ScrapedListingDTO]
-

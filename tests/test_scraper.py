@@ -1,8 +1,7 @@
-import pytest
 from src.domain.enums import VendorEnum
-from src.domain.schemas import ScrapeRequest
-from src.domain.providers.olx.url_builder import OlxUrlBuilder
 from src.domain.providers.olx.parser import OlxPayloadParser
+from src.domain.providers.olx.url_builder import OlxUrlBuilder
+from src.domain.schemas import ScrapeRequest
 
 
 def test_olx_url_builder_national_search_default():

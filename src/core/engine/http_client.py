@@ -6,7 +6,9 @@ o bloqueio de Web Application Firewalls (WAFs) como Cloudflare e DataDome.
 """
 
 from typing import Any, Dict, Optional
+
 from curl_cffi.requests import AsyncSession
+
 from src.core.config import settings
 from src.core.logger import logger
 
@@ -16,6 +18,7 @@ class HttpClientBlockedException(Exception):
     Exceção lançada quando o servidor de destino retorna códigos de status
     de bloqueio ou apresenta uma página de desafio interativo do Cloudflare.
     """
+
     pass
 
 
@@ -61,17 +64,13 @@ class SmartHttpClient:
                 )
 
                 if response.status_code in [403, 429, 503]:
-                    logger.warning(
-                        f"HTTP Client received status {response.status_code}. Possible bot challenge."
-                    )
+                    logger.warning(f"HTTP Client received status {response.status_code}. Possible bot challenge.")
                     raise HttpClientBlockedException(
                         f"Target returned status {response.status_code} (Cloudflare/Anti-bot challenge)"
                     )
 
                 if response.status_code != 200:
-                    logger.warning(
-                        f"Unexpected HTTP status {response.status_code} for URL: {url}"
-                    )
+                    logger.warning(f"Unexpected HTTP status {response.status_code} for URL: {url}")
                     raise Exception(f"HTTP request failed with status code {response.status_code}")
 
                 text = response.text

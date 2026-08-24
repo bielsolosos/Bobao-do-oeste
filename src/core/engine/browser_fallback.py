@@ -10,10 +10,11 @@ Técnicas de Evasão Aplicadas:
 3. Loop inteligente de espera para resolução automática do Cloudflare Turnstile Challenge (JS Proof-of-Work).
 """
 
-import asyncio
 from typing import Optional
+
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
+
 from src.core.config import settings
 from src.core.logger import logger
 
@@ -85,7 +86,7 @@ class PlaywrightBrowserFallback:
                         logger.info(f"Cloudflare challenge cleared after {i}s.")
                         break
 
-                    logger.info(f"Waiting for Cloudflare verification... ({i+1}s)")
+                    logger.info(f"Waiting for Cloudflare verification... ({i + 1}s)")
                     await page.wait_for_timeout(1000)
 
                 # Se um seletor específico foi solicitado, aguarda
@@ -93,9 +94,7 @@ class PlaywrightBrowserFallback:
                     try:
                         await page.wait_for_selector(wait_selector, timeout=5000)
                     except Exception:
-                        logger.warning(
-                            f"Selector '{wait_selector}' not found in time, continuing with raw HTML."
-                        )
+                        logger.warning(f"Selector '{wait_selector}' not found in time, continuing with raw HTML.")
 
                 # Aguarda hidratação final
                 await page.wait_for_timeout(1500)

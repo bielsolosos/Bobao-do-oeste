@@ -2,11 +2,13 @@
 Módulo de Extração e Higienização de Dados da OLX Brasil (Parser).
 """
 
-from datetime import datetime, timezone
 import json
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
 from selectolax.parser import HTMLParser
+
 from src.core.logger import logger
 from src.domain.enums import DeliveryTypeEnum, VendorEnum
 from src.domain.schemas import ScrapedListingDTO
@@ -74,10 +76,7 @@ class OlxPayloadParser:
                 neighborhood = location.get("neighbourhood") or location.get("neighborhood")
 
                 has_delivery = bool(
-                    ad.get("olxPay")
-                    or ad.get("olxDelivery")
-                    or ad.get("hasOlxPay")
-                    or ad.get("deliveryAvailable")
+                    ad.get("olxPay") or ad.get("olxDelivery") or ad.get("hasOlxPay") or ad.get("deliveryAvailable")
                 )
                 delivery_type = DeliveryTypeEnum.OLX_PAY if has_delivery else DeliveryTypeEnum.HAND_DELIVERY
 

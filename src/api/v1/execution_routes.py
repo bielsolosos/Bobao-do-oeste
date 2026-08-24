@@ -1,6 +1,8 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.core.database import get_session
 from src.domain.enums import ExecutionStatusEnum, VendorEnum
 from src.domain.schemas import ExecutionSummaryDTO
@@ -30,11 +32,7 @@ async def list_executions(
     )
 
 
-@router.get(
-    "/{execution_id}",
-    response_model=ExecutionSummaryDTO,
-    summary="Consulta telemetria detalhada de uma execução por ID",
-)
+@router.get("/{execution_id}", response_model=ExecutionSummaryDTO, summary="Consulta telemetria de uma execução por ID")
 async def get_execution(
     execution_id: str,
     session: AsyncSession = Depends(get_session),

@@ -1,7 +1,9 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-import uuid
-from sqlmodel import Field, Relationship, SQLModel, Column, JSON
+
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+
 from src.domain.enums import DeliveryTypeEnum, ExecutionStatusEnum, VendorEnum
 
 
@@ -55,7 +57,6 @@ class ScrapingExecution(SQLModel, table=True):
 class ScrapedListing(SQLModel, table=True):
     __tablename__: Any = "scraped_listings"
 
-
     id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
     execution_id: str = Field(foreign_key="scraping_executions.id", index=True)
     vendor: VendorEnum = Field(default=VendorEnum.OLX, index=True)
@@ -81,4 +82,3 @@ class ScrapedListing(SQLModel, table=True):
     raw_payload: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
 
     execution: Optional[ScrapingExecution] = Relationship(back_populates="listings")
-

@@ -1,6 +1,8 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.core.database import get_session
 from src.domain.enums import VendorEnum
 from src.domain.schemas import ScrapedListingDTO
@@ -9,11 +11,7 @@ from src.domain.services import ListingService
 router = APIRouter(prefix="/listings", tags=["Listings"])
 
 
-@router.get(
-    "",
-    response_model=List[ScrapedListingDTO],
-    summary="Consulta anúncios coletados no banco de dados",
-)
+@router.get("", response_model=List[ScrapedListingDTO], summary="Consulta anúncios coletados no banco de dados")
 async def list_listings(
     vendor: Optional[VendorEnum] = None,
     execution_id: Optional[str] = None,

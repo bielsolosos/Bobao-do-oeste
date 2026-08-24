@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, Type
+
 from src.domain.enums import VendorEnum
-from src.domain.schemas import ScrapeRequest, ScrapedListingDTO
+from src.domain.schemas import ScrapedListingDTO, ScrapeRequest
 
 
 class BaseScraperProvider(ABC):

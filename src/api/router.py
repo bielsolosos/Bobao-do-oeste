@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
-from src.api.v1.dashboard import router as dashboard_router
-from src.api.v1.executions import router as executions_router
-from src.api.v1.listings import router as listings_router
-from src.api.v1.scrape import router as scrape_router
+
+from src.api.v1.dashboard_routes import router as dashboard_router
+from src.api.v1.execution_routes import router as executions_router
+from src.api.v1.listing_routes import router as listings_router
+from src.api.v1.scrape_routes import router as scrape_router
 from src.core.security import verify_basic_auth
 
 # Rotas de API v1 (Protegidas com HTTP Basic Auth)

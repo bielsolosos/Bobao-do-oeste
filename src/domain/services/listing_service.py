@@ -3,8 +3,10 @@ Serviço de Domínio para Gestão e Consulta de Anúncios Coletados (ListingServ
 """
 
 from typing import List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
+
 from src.domain.enums import VendorEnum
 from src.domain.models import ScrapedListing
 from src.domain.schemas import ScrapedListingDTO
@@ -53,4 +55,3 @@ class ListingService:
         stmt = select(ScrapedListing).order_by(col(ScrapedListing.scraped_at).desc()).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
-

@@ -3,17 +3,18 @@ Serviço de Scraping de Marketplaces (ScrapingService).
 Orquestra o ciclo de vida completo de uma requisição de raspagem e persistência.
 """
 
-from datetime import datetime, timezone
 import time
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
+
 from src.core.logger import logger
 from src.domain.enums import ExecutionStatusEnum
 from src.domain.models import ScrapedListing, ScrapingExecution, SearchQuery
 from src.domain.providers import ProviderFactory
-from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse, ScrapedListingDTO
-
+from src.domain.schemas import ExecutionSummaryDTO, ScrapedListingDTO, ScrapeRequest, ScrapeResponse
 
 
 class ScrapingService:
@@ -134,9 +135,7 @@ class ScrapingService:
 
         # Otimização: Busca em lote os IDs de anúncios já existentes para evitar N+1 queries
         vendor_ids = [item.vendor_listing_id for item in items]
-        stmt = select(ScrapedListing.vendor_listing_id).where(
-            col(ScrapedListing.vendor_listing_id).in_(vendor_ids)
-        )
+        stmt = select(ScrapedListing.vendor_listing_id).where(col(ScrapedListing.vendor_listing_id).in_(vendor_ids))
 
         result = await self.session.execute(stmt)
         existing_ids = set(result.scalars().all())

@@ -3,18 +3,19 @@ Provedor de Scraping da OLX Brasil (OlxScraperProvider).
 """
 
 from typing import List, Tuple
+
 from src.core.config import settings
-from src.core.logger import logger
-from src.domain.enums import VendorEnum
-from src.domain.schemas import ScrapeRequest, ScrapedListingDTO
-from src.domain.providers.base import BaseScraperProvider, ProviderFactory
-from src.domain.providers.olx.parser import OlxPayloadParser
-from src.domain.providers.olx.url_builder import OlxUrlBuilder
 from src.core.engine import (
     HttpClientBlockedException,
     PlaywrightBrowserFallback,
     SmartHttpClient,
 )
+from src.core.logger import logger
+from src.domain.enums import VendorEnum
+from src.domain.providers.base import BaseScraperProvider, ProviderFactory
+from src.domain.providers.olx.parser import OlxPayloadParser
+from src.domain.providers.olx.url_builder import OlxUrlBuilder
+from src.domain.schemas import ScrapedListingDTO, ScrapeRequest
 
 
 class OlxScraperProvider(BaseScraperProvider):
