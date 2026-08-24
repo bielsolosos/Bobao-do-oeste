@@ -1,6 +1,6 @@
 # Multi-stage build para o serviço Java (Spring Boot)
 # Estágio 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM docker.io/library/eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 
 # Copia arquivos do Maven Wrapper e POM para cache de dependências
@@ -13,7 +13,8 @@ COPY src/ ./src/
 RUN ./mvnw clean package -DskipTests
 
 # Estágio 2: Runtime leve
-FROM eclipse-temurin:21-jre-alpine
+FROM docker.io/library/eclipse-temurin:21-jre-alpine
+
 WORKDIR /app
 
 # Usuário não-root por segurança
