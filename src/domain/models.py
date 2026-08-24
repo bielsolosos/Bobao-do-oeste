@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel, UniqueConstraint
 
 from src.domain.enums import DeliveryStatusEnum, DeliveryTypeEnum, ExecutionStatusEnum, JobStatusEnum, VendorEnum
 
@@ -44,7 +44,7 @@ class ScrapingExecution(SQLModel, table=True):
     finished_at: Optional[datetime] = Field(default=None)
     duration_ms: Optional[int] = Field(default=None)
 
-    status: ExecutionStatusEnum = Field(default=ExecutionStatusEnum.PENDING, index=True)
+    status: ExecutionStatusEnum = Field(default=ExecutionStatusEnum.RUNNING, index=True)
     total_found: int = Field(default=0)
     new_items_count: int = Field(default=0)
     used_fallback: bool = False
@@ -56,6 +56,7 @@ class ScrapingExecution(SQLModel, table=True):
 
 class ScrapedListing(SQLModel, table=True):
     __tablename__: Any = "scraped_listings"
+    __table_args__ = (UniqueConstraint("vendor", "vendor_listing_id", name="uq_scraped_listing_vendor_id"),)
 
     id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
     execution_id: str = Field(foreign_key="scraping_executions.id", index=True)

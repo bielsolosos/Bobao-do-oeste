@@ -4,6 +4,8 @@ Este documento detalha o **endpoint assíncrono** do scraper service: como enfil
 
 > 📖 **Contexto:** Este é o complemento assíncrono do [`SCRAPING_GUIDE.md`](SCRAPING_GUIDE.md) e opera **sobre** a fila documentada no [`QUEUE_GUIDE.md`](QUEUE_GUIDE.md). Leia a documentação da fila primeiro para entender o ciclo de vida do `ScrapeJob`.
 
+> 🏗️ **Boundary arquitetural:** Este serviço é o **dumb producer**. O envelope descrito aqui é o **contrato HTTP** entre este Python e o serviço externo (Java) que faz o trabalho de smart consumer — deduplicação temporal, histórico de preço, regras de negócio. Não tente fazer inteligência de domínio aqui: o producer só coleta + entrega; o consumer trata.
+
 ---
 
 ## 1. O Problema

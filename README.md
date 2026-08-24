@@ -4,6 +4,18 @@ Serviço de web scraping de alta performance, desacoplado e resiliente contra bl
 
 > 📖 **Documentação Técnica Interna Detalhada:** Consulte o [Guia de Scraping & Arquitetura](docs/SCRAPING_GUIDE.md) para detalhes aprofundados sobre a evasão de anti-bot com `curl_cffi`, anatomia de rotas da OLX e estratégias de parsing. Para entender a **fila de execução** (ciclo de vida, status, concorrência, recovery), veja o [Guia da Fila de Scraping](docs/QUEUE_GUIDE.md). Para a **comunicação assíncrona via webhook**, veja o [Guia de Webhooks](docs/WEBHOOK_GUIDE.md).
 
+## 🏗️ Arquitetura — Dumb Producer / Smart Consumer
+
+Este serviço é o **dumb producer**:
+- Coleta anúncios brutos dos marketplaces (OLX)
+- Mantém filas internas (`scrape_jobs`, `webhook_deliveries`) para serializar o trabalho
+- Persiste uma pequena janela de auditoria local (`scraped_listings`, `scraping_executions`) — apenas "o que pegamos hoje"
+- Faz **POST** com o resultado em uma `webhookUrl` configurada pelo consumidor
+
+**Quem trata os dados, deduplica ao longo do tempo, rastreia preço histórico e aplica regras de negócio é outro projeto** (no nosso caso, um serviço **Java**) que consome via webhook. Este serviço Python **não** tenta ser inteligente — toda inteligência de domínio mora no consumer.
+
+O envelope do POST do webhook é o contrato entre os dois projetos. Veja o [Guia de Webhooks](docs/WEBHOOK_GUIDE.md) para o schema.
+
 ---
 
 ## 🖥️ Dashboard Web Interativo

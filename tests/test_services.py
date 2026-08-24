@@ -2,14 +2,20 @@ import pytest
 
 from src.core.database import async_session_maker
 from src.domain.enums import ExecutionStatusEnum, VendorEnum
-from src.domain.models import ScrapedListing, ScrapingExecution
+from src.domain.models import ScrapedListing, ScrapingExecution, SearchQuery
 from src.domain.services import ExecutionService, ListingService
+
+
+async def _create_search_query(session, query_id: str) -> None:
+    """Cria a SearchQuery pai antes de criar a ScrapingExecution (FK)."""
+    session.add(SearchQuery(id=query_id, vendor=VendorEnum.OLX, keyword="test"))
+    await session.commit()
 
 
 @pytest.mark.asyncio
 async def test_listing_service_filtering():
     async with async_session_maker() as session:
-        # Create dummy execution and listings
+        await _create_search_query(session, "query-test-1")
         exec_item = ScrapingExecution(
             search_query_id="query-test-1",
             vendor=VendorEnum.OLX,
@@ -60,6 +66,7 @@ async def test_listing_service_filtering():
 @pytest.mark.asyncio
 async def test_execution_service_crud():
     async with async_session_maker() as session:
+        await _create_search_query(session, "query-test-2")
         exec_item = ScrapingExecution(
             search_query_id="query-test-2",
             vendor=VendorEnum.OLX,

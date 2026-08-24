@@ -8,12 +8,11 @@ class VendorEnum(str, Enum):
 
 
 class ExecutionStatusEnum(str, Enum):
-    PENDING = "PENDING"
+    """Status do resultado do scrape (vs JobStatusEnum que é o estado na fila)."""
+
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
-    BLOCKED_CAPTCHA = "BLOCKED_CAPTCHA"
-    PARTIAL = "PARTIAL"
 
 
 class DeliveryTypeEnum(str, Enum):
