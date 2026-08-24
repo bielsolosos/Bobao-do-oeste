@@ -38,4 +38,23 @@ CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 
 -- Inserção de Roles Padrão
-INSERT INTO roles (name) VALUES ('ROLE_ADMIN'), ('ROLE_USER');
+INSERT INTO roles (id, name) VALUES (1, 'ROLE_ADMIN'), (2, 'ROLE_USER');
+SELECT setval('roles_id_seq', (SELECT MAX(id) FROM roles));
+
+-- Inserção do Usuário Admin Inicial (Senha: admin123)
+INSERT INTO users (id, username, email, password, is_active, created_at, updated_at)
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'admin',
+    'admin@bielsolosos.dev.br',
+    '$2a$10$WiC66CeXUJUaFmZNB5/sIudWR7bojAGrYx0n4045VsBb8N6Pbi16S',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- Associação do Admin com ROLE_ADMIN e ROLE_USER
+INSERT INTO user_roles (user_id, role_id) VALUES
+('00000000-0000-0000-0000-000000000001', 1),
+('00000000-0000-0000-0000-000000000001', 2);
+
