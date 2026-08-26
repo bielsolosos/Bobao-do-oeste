@@ -1,7 +1,6 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.repository;
 
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapedListing;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.ListingStatus;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.Vendor;
 import org.springframework.data.domain.Page;
@@ -27,12 +26,6 @@ public interface ScrapedListingRepository extends JpaRepository<ScrapedListing, 
     Page<ScrapedListing> findByProductMonitorIdAndMatchTier(
         UUID productMonitorId,
         MatchTier matchTier,
-        Pageable pageable
-    );
-
-    Page<ScrapedListing> findByProductMonitorIdAndStatus(
-        UUID productMonitorId,
-        ListingStatus status,
         Pageable pageable
     );
 

@@ -119,7 +119,6 @@ CREATE TABLE scraped_listings (
     extracted_specs JSONB DEFAULT '{}'::jsonb,
     
     -- Ciclo de vida
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     published_at TIMESTAMP WITH TIME ZONE,
     first_seen_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_seen_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -130,20 +129,6 @@ CREATE TABLE scraped_listings (
 CREATE INDEX idx_scraped_listings_monitor_id ON scraped_listings(product_monitor_id);
 CREATE INDEX idx_scraped_listings_vendor_id ON scraped_listings(vendor, vendor_listing_id);
 CREATE INDEX idx_scraped_listings_match_tier ON scraped_listings(match_tier);
-CREATE INDEX idx_scraped_listings_status ON scraped_listings(status);
 CREATE INDEX idx_scraped_listings_price ON scraped_listings(current_price);
 CREATE INDEX idx_scraped_listings_extracted_specs ON scraped_listings USING GIN (extracted_specs);
 
-
--- ==============================================================================
--- 6. HISTÓRICO DE PREÇOS: LISTING_PRICE_HISTORY
--- ==============================================================================
-CREATE TABLE listing_price_history (
-    id BIGSERIAL PRIMARY KEY,
-    listing_id UUID NOT NULL REFERENCES scraped_listings(id) ON DELETE CASCADE,
-    price NUMERIC(12, 2) NOT NULL,
-    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_price_history_listing_id ON listing_price_history(listing_id);
-CREATE INDEX idx_price_history_recorded_at ON listing_price_history(recorded_at);

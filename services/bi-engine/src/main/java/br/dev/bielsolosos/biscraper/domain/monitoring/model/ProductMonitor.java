@@ -83,6 +83,7 @@ public class ProductMonitor {
     @OneToMany(mappedBy = "productMonitor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScrapedListing> listings = new ArrayList<>();
 
+
     public void addSearchQuery(MonitorSearchQuery query) {
         searchQueries.add(query);
         query.setProductMonitor(this);

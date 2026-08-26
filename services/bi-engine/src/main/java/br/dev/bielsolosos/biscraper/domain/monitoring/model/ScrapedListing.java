@@ -1,6 +1,5 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.model;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.ListingStatus;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.Vendor;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -108,11 +107,6 @@ public class ScrapedListing {
     @Column(name = "extracted_specs", columnDefinition = "jsonb")
     private JsonNode extractedSpecs;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private ListingStatus status = ListingStatus.ACTIVE;
-
     @Column(name = "published_at")
     private OffsetDateTime publishedAt;
 
@@ -123,13 +117,4 @@ public class ScrapedListing {
     @UpdateTimestamp
     @Column(name = "last_seen_at")
     private OffsetDateTime lastSeenAt;
-
-    @Builder.Default
-    @OneToMany(mappedBy = "scrapedListing", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ListingPriceHistory> priceHistory = new ArrayList<>();
-
-    public void addPriceHistory(ListingPriceHistory history) {
-        priceHistory.add(history);
-        history.setScrapedListing(this);
-    }
 }
