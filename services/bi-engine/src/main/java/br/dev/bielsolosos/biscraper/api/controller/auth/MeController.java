@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.api.controller;
+package br.dev.bielsolosos.biscraper.api.controller.auth;
 
 import br.dev.bielsolosos.biscraper.api.mapper.user.UserMapper;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
