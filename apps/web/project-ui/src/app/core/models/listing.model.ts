@@ -1,4 +1,4 @@
-export type MatchTier = 'TIER_1' | 'TIER_2' | 'TIER_3' | 'NONE';
+export type MatchTier = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
 
 export interface ScrapedListingResponse {
   id: string;

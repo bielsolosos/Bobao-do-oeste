@@ -21,6 +21,13 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY:}
+        chat:
+          options:
+            model: ${GEMINI_MODEL:gemini-2.5-flash}
 
 biscraper:
   jwt:
