@@ -47,6 +47,9 @@ class ProductMonitorServiceTest {
     @Mock
     private MeService meService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublishers;
+
     @InjectMocks
     private ProductMonitorService service;
 

@@ -27,7 +27,15 @@ biscraper:
     secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3VyZS1kZWZhdWx0LXNlY3JldC1rZXktZm9yLWp3dC1hdXRoZW50aWNhdGlvbi0yNTYtYml0cw==}
     expiration: ${JWT_EXPIRATION:3600000}
     refresh-expiration: ${JWT_REFRESH_EXPIRATION:86400000}
+  scraper:
+    base-url: ${SCRAPER_BASE_URL:http://localhost:8001}
+    username: ${SCRAPER_USERNAME:admin}
+    password: ${SCRAPER_PASSWORD:admin}
+    webhook-url: ${SCRAPER_WEBHOOK_URL:http://localhost:8080/api/v1/webhooks/scraper}
 
+logging:
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) [reqId=%X{requestId:-none} jobId=%X{jobId:-none}] %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
 
 server:
   port: ${PORT:8080}
