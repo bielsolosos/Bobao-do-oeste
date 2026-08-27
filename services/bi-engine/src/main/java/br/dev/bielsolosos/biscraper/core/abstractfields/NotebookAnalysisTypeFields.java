@@ -1,6 +1,5 @@
-package br.dev.bielsolosos.biscraper.api.model.productmonitor.monitorfields;
+package br.dev.bielsolosos.biscraper.core.abstractfields;
 
-import br.dev.bielsolosos.biscraper.core.abstractfields.AnalysisTypeFields;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import jakarta.validation.constraints.Min;
 import lombok.*;

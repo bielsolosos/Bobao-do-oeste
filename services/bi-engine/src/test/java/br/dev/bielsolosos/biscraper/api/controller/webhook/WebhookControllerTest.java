@@ -1,6 +1,6 @@
 package br.dev.bielsolosos.biscraper.api.controller.webhook;
 
-import br.dev.bielsolosos.biscraper.api.model.webhook.WebhookIncomingPayload;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookIncomingPayload;
 import br.dev.bielsolosos.biscraper.core.enums.WebhookStatus;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;

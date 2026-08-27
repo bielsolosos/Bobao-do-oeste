@@ -1,13 +1,13 @@
-package br.dev.bielsolosos.biscraper.api.mapper.productmonitor;
+package br.dev.bielsolosos.biscraper.domain.monitoring.mapper;
 
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorRequest;
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorResponse;
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.monitorfields.NotebookAnalysisTypeFields;
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.monitorfields.SimpleAnalisisTypeFields;
+import br.dev.bielsolosos.biscraper.core.abstractfields.NotebookAnalysisTypeFields;
+import br.dev.bielsolosos.biscraper.core.abstractfields.SimpleAnalisisTypeFields;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.ScrapingFrequency;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorRequest;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;

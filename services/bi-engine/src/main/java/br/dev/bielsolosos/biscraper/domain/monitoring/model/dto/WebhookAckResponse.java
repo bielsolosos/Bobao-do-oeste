@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.api.model.webhook;
+package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.api.mapper.user;
+package br.dev.bielsolosos.biscraper.domain.users.mapper;
 
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.UserResponse;

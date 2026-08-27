@@ -1,6 +1,7 @@
-package br.dev.bielsolosos.biscraper.api.model.webhook;
+package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto;
 
 import br.dev.bielsolosos.biscraper.core.enums.WebhookStatus;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

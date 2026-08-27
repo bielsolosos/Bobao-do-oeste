@@ -1,7 +1,7 @@
 package br.dev.bielsolosos.biscraper.api.controller.productmonitor;
 
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorRequest;
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorRequest;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.service.ProductMonitorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

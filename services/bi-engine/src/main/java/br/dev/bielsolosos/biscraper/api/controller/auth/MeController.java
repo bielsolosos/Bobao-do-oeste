@@ -1,6 +1,6 @@
 package br.dev.bielsolosos.biscraper.api.controller.auth;
 
-import br.dev.bielsolosos.biscraper.api.mapper.user.UserMapper;
+import br.dev.bielsolosos.biscraper.domain.users.mapper.UserMapper;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.UserResponse;
