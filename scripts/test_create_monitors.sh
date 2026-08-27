@@ -6,7 +6,7 @@
 
 set -e
 
-BASE_URL="${API_URL:-http://localhost:8080}"
+BASE_URL="${API_URL:-https://dsdhidk2zh3q113xogtsr0k1.devops.bielsolosos.dev.br}"
 USERNAME="${API_USER:-admin}"
 PASSWORD="${API_PASS:-admin123}"
 
