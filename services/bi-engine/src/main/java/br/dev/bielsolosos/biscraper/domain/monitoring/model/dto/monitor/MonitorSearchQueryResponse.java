@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto;
+package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor;
 
 import java.math.BigDecimal;
 import java.util.UUID;

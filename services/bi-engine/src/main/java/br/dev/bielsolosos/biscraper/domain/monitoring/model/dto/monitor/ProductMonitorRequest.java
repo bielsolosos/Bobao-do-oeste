@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto;
+package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor;
 
 import br.dev.bielsolosos.biscraper.core.abstractfields.AnalysisTypeFields;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;

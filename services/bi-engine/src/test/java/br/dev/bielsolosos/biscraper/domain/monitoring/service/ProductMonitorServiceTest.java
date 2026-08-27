@@ -2,8 +2,8 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.service;
 
 import br.dev.bielsolosos.biscraper.core.abstractfields.SimpleAnalisisTypeFields;
 import br.dev.bielsolosos.biscraper.domain.monitoring.mapper.ProductMonitorMapper;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorRequest;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.ScrapingFrequency;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;

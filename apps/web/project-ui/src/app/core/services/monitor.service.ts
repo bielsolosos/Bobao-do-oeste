@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 import { ProductMonitorRequest, ProductMonitorResponse, PageResponse } from '../models/monitor.model';
+import { ScrapedListingResponse } from '../models/listing.model';
 
 @Injectable({
   providedIn: 'root'
@@ -29,5 +30,13 @@ export class MonitorService {
 
   deleteMonitor(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getAllListings(page = 0, size = 20): Observable<PageResponse<ScrapedListingResponse>> {
+    return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/listings?page=${page}&size=${size}`);
+  }
+
+  getMonitorListings(monitorId: string, page = 0, size = 20): Observable<PageResponse<ScrapedListingResponse>> {
+    return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}`);
   }
 }

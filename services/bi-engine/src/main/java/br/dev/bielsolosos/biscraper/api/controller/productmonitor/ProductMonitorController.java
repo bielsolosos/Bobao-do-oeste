@@ -1,7 +1,8 @@
 package br.dev.bielsolosos.biscraper.api.controller.productmonitor;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorRequest;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.service.ProductMonitorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +46,21 @@ public class ProductMonitorController {
     public ResponseEntity<Page<ProductMonitorResponse>> list(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(service.listPaged(pageable));
+    }
+
+    @Operation(summary = "Listar todos os anúncios extraídos de todos os monitores do usuário")
+    @GetMapping("/listings")
+    public ResponseEntity<Page<ScrapedListingResponse>> listAllListings(
+            @PageableDefault(size = 20, sort = "lastSeenAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.listAllListings(pageable));
+    }
+
+    @Operation(summary = "Listar todos os anúncios extraídos de um monitor específico")
+    @GetMapping("/{id}/listings")
+    public ResponseEntity<Page<ScrapedListingResponse>> listMonitorListings(
+            @PathVariable UUID id,
+            @PageableDefault(size = 20, sort = "lastSeenAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.listMonitorListings(id, pageable));
     }
 
     @Operation(summary = "Buscar detalhes de um monitor específico pelo ID")
