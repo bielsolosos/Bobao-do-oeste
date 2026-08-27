@@ -1,7 +1,7 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.repository;
 
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.WebhookStatus;
+import br.dev.bielsolosos.biscraper.core.enums.WebhookStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

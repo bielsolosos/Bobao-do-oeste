@@ -1,7 +1,7 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.model;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.AnalysisType;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.Vendor;
+import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
+import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;

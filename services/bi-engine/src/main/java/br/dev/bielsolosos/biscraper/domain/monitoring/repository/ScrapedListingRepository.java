@@ -1,8 +1,8 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.repository;
 
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapedListing;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.MatchTier;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.Vendor;
+import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
+import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

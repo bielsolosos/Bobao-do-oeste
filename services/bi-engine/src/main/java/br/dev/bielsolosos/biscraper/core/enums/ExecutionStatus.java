@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.domain.monitoring.model.enums;
+package br.dev.bielsolosos.biscraper.core.enums;
 
 public enum ExecutionStatus {
     PENDING,
