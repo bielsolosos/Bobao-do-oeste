@@ -66,6 +66,45 @@ public class ProductMonitorMapper {
         return monitor;
     }
 
+    public void updateEntity(ProductMonitor monitor, ProductMonitorRequest request) {
+        if (monitor == null || request == null) {
+            return;
+        }
+
+        monitor.setName(request.name());
+        monitor.setDescription(request.description());
+        if (request.vendor() != null) {
+            monitor.setTargetVendor(request.vendor());
+        }
+        if (request.analysisType() != null) {
+            monitor.setAnalysisType(request.analysisType());
+        }
+        if (request.frequency() != null) {
+            monitor.setCronExpression(request.frequency().getCronExpression());
+        }
+
+        if (request.analysisTypeFields() != null) {
+            monitor.setExpectedSpecs(objectMapper.valueToTree(request.analysisTypeFields()));
+        }
+
+        if (request.searchKeywords() != null && !request.searchKeywords().isEmpty()) {
+            monitor.clearSearchQueries();
+            for (String keyword : request.searchKeywords()) {
+                MonitorSearchQuery query = MonitorSearchQuery.builder()
+                        .queryTerm(keyword)
+                        .minPrice(request.minPrice())
+                        .maxPrice(request.maxPrice())
+                        .stateFilter(request.stateFilter())
+                        .regionFilter(request.regionFilter())
+                        .requireDelivery(Boolean.TRUE.equals(request.requireDelivery()))
+                        .maxPages(1)
+                        .active(true)
+                        .build();
+                monitor.addSearchQuery(query);
+            }
+        }
+    }
+
     public ProductMonitorResponse toResponse(ProductMonitor entity) {
         if (entity == null) {
             return null;

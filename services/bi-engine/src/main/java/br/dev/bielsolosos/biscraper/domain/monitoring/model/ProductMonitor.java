@@ -83,7 +83,6 @@ public class ProductMonitor {
     @OneToMany(mappedBy = "productMonitor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScrapedListing> listings = new ArrayList<>();
 
-
     public void addSearchQuery(MonitorSearchQuery query) {
         searchQueries.add(query);
         query.setProductMonitor(this);
@@ -92,5 +91,11 @@ public class ProductMonitor {
     public void removeSearchQuery(MonitorSearchQuery query) {
         searchQueries.remove(query);
         query.setProductMonitor(null);
+    }
+
+    public void clearSearchQueries() {
+        for (MonitorSearchQuery query : new ArrayList<>(searchQueries)) {
+            removeSearchQuery(query);
+        }
     }
 }
