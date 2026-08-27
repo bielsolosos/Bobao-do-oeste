@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 import { ProductMonitorRequest, ProductMonitorResponse, PageResponse } from '../models/monitor.model';
 import { ScrapedListingResponse } from '../models/listing.model';
+import { AiAnalysisLogResponse } from '../models/ai-log.model';
 
 @Injectable({
   providedIn: 'root'
@@ -38,5 +39,13 @@ export class MonitorService {
 
   getMonitorListings(monitorId: string, page = 0, size = 20): Observable<PageResponse<ScrapedListingResponse>> {
     return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}`);
+  }
+
+  getAllAiLogs(page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
+    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${this.apiUrl}/ai-logs?page=${page}&size=${size}`);
+  }
+
+  getMonitorAiLogs(monitorId: string, page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
+    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${this.apiUrl}/${monitorId}/ai-logs?page=${page}&size=${size}`);
   }
 }

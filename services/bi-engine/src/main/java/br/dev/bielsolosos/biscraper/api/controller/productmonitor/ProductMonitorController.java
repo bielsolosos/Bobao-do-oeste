@@ -1,5 +1,6 @@
 package br.dev.bielsolosos.biscraper.api.controller.productmonitor;
 
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.AiAnalysisLogResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
@@ -61,6 +62,21 @@ public class ProductMonitorController {
             @PathVariable UUID id,
             @PageableDefault(size = 20, sort = "lastSeenAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(service.listMonitorListings(id, pageable));
+    }
+
+    @Operation(summary = "Listar histórico e logs de chamadas de IA do usuário")
+    @GetMapping("/ai-logs")
+    public ResponseEntity<Page<AiAnalysisLogResponse>> listAllAiLogs(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.listAllAiLogs(pageable));
+    }
+
+    @Operation(summary = "Listar logs de chamadas de IA de um monitor específico")
+    @GetMapping("/{id}/ai-logs")
+    public ResponseEntity<Page<AiAnalysisLogResponse>> listMonitorAiLogs(
+            @PathVariable UUID id,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.listMonitorAiLogs(id, pageable));
     }
 
     @Operation(summary = "Buscar detalhes de um monitor específico pelo ID")

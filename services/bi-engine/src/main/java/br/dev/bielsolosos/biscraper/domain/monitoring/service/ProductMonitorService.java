@@ -3,11 +3,14 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.service;
 import br.dev.bielsolosos.biscraper.core.exception.BusinessException;
 import br.dev.bielsolosos.biscraper.domain.monitoring.event.MonitorCreatedEvent;
 import br.dev.bielsolosos.biscraper.domain.monitoring.mapper.ProductMonitorMapper;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.AiAnalysisLog;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapedListing;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.AiAnalysisLogResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.repository.AiAnalysisLogRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ProductMonitorRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapedListingRepository;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
@@ -29,6 +32,7 @@ public class ProductMonitorService {
 
     private final ProductMonitorRepository repository;
     private final ScrapedListingRepository scrapedListingRepository;
+    private final AiAnalysisLogRepository aiAnalysisLogRepository;
     private final ProductMonitorMapper mapper;
     private final MeService meService;
     private final ApplicationEventPublisher eventPublisher;
@@ -124,6 +128,23 @@ public class ProductMonitorService {
                 .map(this::toListingResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<AiAnalysisLogResponse> listAllAiLogs(Pageable pageable) {
+        User me = meService.getMe();
+        log.debug("Listando logs de IA para o usuário '{}'", me.getUsername());
+        return aiAnalysisLogRepository.findByProductMonitorUserId(me.getId(), pageable)
+                .map(this::toAiLogResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AiAnalysisLogResponse> listMonitorAiLogs(UUID monitorId, Pageable pageable) {
+        ProductMonitor monitor = findById(monitorId);
+        validatePermission(monitor);
+        log.debug("Listando logs de IA do monitor '{}'", monitorId);
+        return aiAnalysisLogRepository.findByProductMonitorId(monitorId, pageable)
+                .map(this::toAiLogResponse);
+    }
+
     private ScrapedListingResponse toListingResponse(ScrapedListing l) {
         return new ScrapedListingResponse(
                 l.getId(),
@@ -148,6 +169,25 @@ public class ProductMonitorService {
                 l.getPublishedAt(),
                 l.getFirstSeenAt(),
                 l.getLastSeenAt()
+        );
+    }
+
+    private AiAnalysisLogResponse toAiLogResponse(AiAnalysisLog log) {
+        return new AiAnalysisLogResponse(
+                log.getId(),
+                log.getProductMonitor() != null ? log.getProductMonitor().getId() : null,
+                log.getProductMonitor() != null ? log.getProductMonitor().getName() : null,
+                log.getScrapingExecution() != null ? log.getScrapingExecution().getId() : null,
+                log.getModelName(),
+                log.getVendor(),
+                log.getItemsCount(),
+                log.getSystemPrompt(),
+                log.getUserPrompt(),
+                log.getRawResponse(),
+                log.getStatus(),
+                log.getDurationMs(),
+                log.getErrorMessage(),
+                log.getCreatedAt()
         );
     }
 

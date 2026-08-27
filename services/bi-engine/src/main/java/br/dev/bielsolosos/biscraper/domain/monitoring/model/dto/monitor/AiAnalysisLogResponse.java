@@ -1,0 +1,21 @@
+package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+public record AiAnalysisLogResponse(
+    UUID id,
+    UUID productMonitorId,
+    String productMonitorName,
+    UUID scrapingExecutionId,
+    String modelName,
+    String vendor,
+    int itemsCount,
+    String systemPrompt,
+    String userPrompt,
+    String rawResponse,
+    String status,
+    Integer durationMs,
+    String errorMessage,
+    OffsetDateTime createdAt
+) {}

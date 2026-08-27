@@ -30,6 +30,10 @@ export const routes: Routes = [
         path: 'events',
         loadComponent: () => import('./features/events/events-list.component').then(m => m.EventsListComponent)
       },
+      {
+        path: 'ai-logs',
+        loadComponent: () => import('./features/ai-logs/ai-logs-list.component').then(m => m.AiLogsListComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

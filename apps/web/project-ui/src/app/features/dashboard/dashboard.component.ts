@@ -27,6 +27,9 @@ import { AuthService } from '../../core/services/auth.service';
           <a routerLink="/events" routerLinkActive="bg-blue-600 text-white" class="block px-4 py-2 rounded text-slate-300 hover:bg-slate-800 transition-colors">
             📊 Eventos
           </a>
+          <a routerLink="/ai-logs" routerLinkActive="bg-blue-600 text-white" class="block px-4 py-2 rounded text-slate-300 hover:bg-slate-800 transition-colors">
+            🧠 Logs de IA
+          </a>
         </nav>
         <div class="p-4 border-t border-slate-800">
           <button (click)="logout()" class="w-full px-4 py-2 text-sm bg-slate-800 hover:bg-red-600 rounded text-slate-300 hover:text-white transition-colors">
