@@ -57,17 +57,17 @@ class WebhookPayloadDeserializationTest {
 
         ExecutionSummaryDTO execution = payload.response().execution();
         assertNotNull(execution);
-        assertNotNull(execution.startedAt());
-        assertEquals(2026, execution.startedAt().getYear());
-        assertEquals(8, execution.startedAt().getMonthValue());
-        assertEquals(27, execution.startedAt().getDayOfMonth());
-        assertEquals(18, execution.startedAt().getHour());
-        assertEquals(45, execution.startedAt().getMinute());
-        assertEquals(31, execution.startedAt().getSecond());
+        assertNotNull(execution.getParsedStartedAt());
+        assertEquals(2026, execution.getParsedStartedAt().getYear());
+        assertEquals(8, execution.getParsedStartedAt().getMonthValue());
+        assertEquals(27, execution.getParsedStartedAt().getDayOfMonth());
+        assertEquals(18, execution.getParsedStartedAt().getHour());
+        assertEquals(45, execution.getParsedStartedAt().getMinute());
+        assertEquals(31, execution.getParsedStartedAt().getSecond());
 
         ScrapedListingDTO item = payload.response().items().get(0);
         assertNotNull(item);
-        assertNotNull(item.publishedAt());
-        assertNotNull(item.scrapedAt());
+        assertNotNull(item.getParsedPublishedAt());
+        assertNotNull(item.getParsedScrapedAt());
     }
 }

@@ -141,7 +141,7 @@ public class WebhookScrapperService {
                     existing.setOriginalPrice(item.originalPrice());
                 }
                 existing.setLastExecution(execution);
-                existing.setLastSeenAt(item.scrapedAt() != null ? item.scrapedAt() : now);
+                existing.setLastSeenAt(item.getParsedScrapedAt() != null ? item.getParsedScrapedAt() : now);
 
                 listingsToSave.add(existing);
             } else {
@@ -179,9 +179,9 @@ public class WebhookScrapperService {
                         .extractedSpecs(analyzed.params() != null && !analyzed.params().isEmpty()
                                 ? objectMapper.valueToTree(analyzed.params())
                                 : null)
-                        .publishedAt(dto.publishedAt())
-                        .firstSeenAt(dto.scrapedAt() != null ? dto.scrapedAt() : now)
-                        .lastSeenAt(dto.scrapedAt() != null ? dto.scrapedAt() : now)
+                        .publishedAt(dto.getParsedPublishedAt())
+                        .firstSeenAt(dto.getParsedScrapedAt() != null ? dto.getParsedScrapedAt() : now)
+                        .lastSeenAt(dto.getParsedScrapedAt() != null ? dto.getParsedScrapedAt() : now)
                         .build();
 
                 listingsToSave.add(newListing);

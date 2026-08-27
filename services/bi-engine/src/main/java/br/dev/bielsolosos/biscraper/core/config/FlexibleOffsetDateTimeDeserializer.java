@@ -13,9 +13,7 @@ import java.time.format.DateTimeParseException;
 
 public class FlexibleOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
-    @Override
-    public OffsetDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        String text = p.getText();
+    public static OffsetDateTime parse(String text) {
         if (text == null || text.isBlank()) {
             return null;
         }
@@ -29,9 +27,15 @@ public class FlexibleOffsetDateTimeDeserializer extends JsonDeserializer<OffsetD
                 try {
                     return Instant.parse(text).atOffset(ZoneOffset.UTC);
                 } catch (DateTimeParseException ex2) {
-                    throw new IOException("Falha ao desserializar data: " + text, ex2);
+                    return null;
                 }
             }
         }
+    }
+
+    @Override
+    public OffsetDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        String text = p.getText();
+        return parse(text);
     }
 }

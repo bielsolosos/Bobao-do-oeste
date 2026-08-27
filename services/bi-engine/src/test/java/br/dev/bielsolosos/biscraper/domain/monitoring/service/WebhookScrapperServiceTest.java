@@ -108,8 +108,8 @@ class WebhookScrapperServiceTest {
                 true,
                 "MERCADO_ENVIOS",
                 List.of("https://img.com/1.jpg"),
-                OffsetDateTime.now(),
-                OffsetDateTime.now()
+                "2026-08-27T18:45:31.807374",
+                "2026-08-27T18:45:31.807374"
         );
 
         ScrapeResponseDTO scrapeResponse = new ScrapeResponseDTO(true, null, List.of(item1));
@@ -171,8 +171,8 @@ class WebhookScrapperServiceTest {
                 true,
                 "MERCADO_ENVIOS",
                 List.of("https://img.com/1.jpg"),
-                OffsetDateTime.now(),
-                OffsetDateTime.now()
+                "2026-08-27T18:45:31.807374",
+                "2026-08-27T18:45:31.807374"
         );
 
         ScrapeResponseDTO scrapeResponse = new ScrapeResponseDTO(true, null, List.of(item1));
