@@ -1,12 +1,15 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.service;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.mapper.ProductMonitorMapper;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.core.exception.BusinessException;
 import br.dev.bielsolosos.biscraper.domain.monitoring.event.MonitorCreatedEvent;
+import br.dev.bielsolosos.biscraper.domain.monitoring.mapper.ProductMonitorMapper;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapedListing;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ProductMonitorRepository;
+import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapedListingRepository;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.service.MeService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ import java.util.UUID;
 public class ProductMonitorService {
 
     private final ProductMonitorRepository repository;
+    private final ScrapedListingRepository scrapedListingRepository;
     private final ProductMonitorMapper mapper;
     private final MeService meService;
     private final ApplicationEventPublisher eventPublisher;
@@ -101,6 +105,50 @@ public class ProductMonitorService {
 
         log.info("Deletando ProductMonitor com id '{}'", id);
         repository.delete(monitor);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ScrapedListingResponse> listAllListings(Pageable pageable) {
+        User me = meService.getMe();
+        log.debug("Listando todos os anúncios raspados do usuário '{}'", me.getUsername());
+        return scrapedListingRepository.findByProductMonitorUserId(me.getId(), pageable)
+                .map(this::toListingResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ScrapedListingResponse> listMonitorListings(UUID monitorId, Pageable pageable) {
+        ProductMonitor monitor = findById(monitorId);
+        validatePermission(monitor);
+        log.debug("Listando anúncios do monitor '{}'", monitorId);
+        return scrapedListingRepository.findByProductMonitorId(monitorId, pageable)
+                .map(this::toListingResponse);
+    }
+
+    private ScrapedListingResponse toListingResponse(ScrapedListing l) {
+        return new ScrapedListingResponse(
+                l.getId(),
+                l.getProductMonitor() != null ? l.getProductMonitor().getId() : null,
+                l.getProductMonitor() != null ? l.getProductMonitor().getName() : null,
+                l.getVendor(),
+                l.getVendorListingId(),
+                l.getTitle(),
+                l.getUrl(),
+                l.getDescription(),
+                l.getCurrentPrice(),
+                l.getOriginalPrice(),
+                l.getState(),
+                l.getCity(),
+                l.getNeighborhood(),
+                l.isHasDelivery(),
+                l.getDeliveryType(),
+                l.getImages(),
+                l.getMatchTier(),
+                l.getMatchScore(),
+                l.getExtractedSpecs(),
+                l.getPublishedAt(),
+                l.getFirstSeenAt(),
+                l.getLastSeenAt()
+        );
     }
 
     private ProductMonitor findById(UUID id) {

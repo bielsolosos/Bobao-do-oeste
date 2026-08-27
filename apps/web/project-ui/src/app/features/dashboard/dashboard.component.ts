@@ -21,8 +21,11 @@ import { AuthService } from '../../core/services/auth.service';
           <a routerLink="/monitors" routerLinkActive="bg-blue-600 text-white" class="block px-4 py-2 rounded text-slate-300 hover:bg-slate-800 transition-colors">
             🎯 Monitores
           </a>
-          <a routerLink="/events" routerLinkActive="bg-blue-600 text-white" class="block px-4 py-2 rounded text-slate-300 hover:bg-slate-800 transition-colors ">
-            📊 Eventos 
+          <a routerLink="/listings" routerLinkActive="bg-blue-600 text-white" class="block px-4 py-2 rounded text-slate-300 hover:bg-slate-800 transition-colors">
+            🏷️ Anúncios Extraídos
+          </a>
+          <a routerLink="/events" routerLinkActive="bg-blue-600 text-white" class="block px-4 py-2 rounded text-slate-300 hover:bg-slate-800 transition-colors">
+            📊 Eventos
           </a>
         </nav>
         <div class="p-4 border-t border-slate-800">

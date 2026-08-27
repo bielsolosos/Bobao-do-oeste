@@ -19,6 +19,7 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapedListingR
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapingExecutionRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +58,7 @@ class WebhookScrapperServiceTest {
     private AnalisyFactorySelector analisysSelector = new AnalisyFactorySelector(List.of(new AnalisysFactoryNoneImpl()));
 
     @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @InjectMocks
     private WebhookScrapperService webhookScrapperService;

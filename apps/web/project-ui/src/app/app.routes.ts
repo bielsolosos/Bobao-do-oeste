@@ -23,6 +23,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/monitors/monitor-form/monitor-form.component').then(m => m.MonitorFormComponent)
       },
       {
+        path: 'listings',
+        loadComponent: () => import('./features/listings/listings-list.component').then(m => m.ListingsListComponent)
+      },
+      {
         path: 'events',
         loadComponent: () => import('./features/events/events-list.component').then(m => m.EventsListComponent)
       },
