@@ -1,8 +1,8 @@
 package br.dev.bielsolosos.biscraper.api.controller.webhook;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookAckResponse;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookEventSummaryResponse;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookIncomingPayload;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookAckResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookEventSummaryResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookIncomingPayload;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.service.WebhookScrapperService;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,9 +1,9 @@
 package br.dev.bielsolosos.biscraper.api.controller.webhook;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookIncomingPayload;
-import br.dev.bielsolosos.biscraper.core.enums.WebhookStatus;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapeResponseDTO;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookIncomingPayload;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;
+import br.dev.bielsolosos.biscraper.domain.monitoring.service.WebhookScrapperService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,13 +17,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Collections;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,6 +32,9 @@ class WebhookControllerTest {
 
     @Mock
     private WebhookEventRepository webhookEventRepository;
+
+    @Mock
+    private WebhookScrapperService webhookScrapperService;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -55,18 +57,10 @@ class WebhookControllerTest {
                 requestId,
                 "job-123",
                 "SUCCESS",
-                Map.of("items", List.of(Map.of("title", "Thinkpad T480", "price", 1800.0)))
+                new ScrapeResponseDTO(true, null, Collections.emptyList())
         );
 
-        WebhookEvent event = WebhookEvent.builder()
-                .id(UUID.randomUUID())
-                .requestId(requestId)
-                .status(WebhookStatus.RECEIVED)
-                .rawPayload(objectMapper.readTree("{}"))
-                .build();
-
-        when(webhookEventRepository.findByRequestId(requestId)).thenReturn(Optional.of(event));
-        when(webhookEventRepository.save(any(WebhookEvent.class))).thenReturn(event);
+        doNothing().when(webhookScrapperService).processScrappingEvent(any(WebhookIncomingPayload.class));
 
         mockMvc.perform(post("/api/v1/webhooks/scraper")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -76,6 +70,6 @@ class WebhookControllerTest {
                 .andExpect(jsonPath("$.requestId").value(requestId))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(webhookEventRepository, times(1)).save(event);
+        verify(webhookScrapperService).processScrappingEvent(any(WebhookIncomingPayload.class));
     }
 }

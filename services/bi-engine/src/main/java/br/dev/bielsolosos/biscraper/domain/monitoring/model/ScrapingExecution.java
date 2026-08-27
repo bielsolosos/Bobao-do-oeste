@@ -2,6 +2,7 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.model;
 
 import br.dev.bielsolosos.biscraper.core.enums.ExecutionStatus;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

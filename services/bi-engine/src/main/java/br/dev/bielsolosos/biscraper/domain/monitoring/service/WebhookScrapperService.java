@@ -4,8 +4,9 @@ import br.dev.bielsolosos.biscraper.core.enums.WebhookStatus;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookIncomingPayload;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.WebhookIncomingPayload.ScrapedListingItem;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapeResponseDTO;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookIncomingPayload;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapingExecutionRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,8 +42,9 @@ public class WebhookScrapperService {
             log.info(">>> WEBHOOK RECEBIDO DO SCRAPER PYTHON <<<");
             log.info("Status: '{}'", payload.status());
 
-            List<ScrapedListingItem> items = (payload.response() != null && payload.response().items() != null)
-                    ? payload.response().items()
+            ScrapeResponseDTO scrapeResponse = payload.response();
+            List<ScrapedListingDTO> items = (scrapeResponse != null && scrapeResponse.items() != null)
+                    ? scrapeResponse.items()
                     : Collections.emptyList();
 
             log.info("Total de anúncios raspados recebidos no payload: {}", items.size());
@@ -67,16 +69,17 @@ public class WebhookScrapperService {
             Optional<ScrapingExecution> executionOpt = scrapingExecutionRepository.findByWebhookEventRequestId(payload.requestId());
             if (executionOpt.isEmpty()) {
                 log.warn("Nenhuma ScrapingExecution encontrada para o requestId '{}'.", payload.requestId());
-                //TODO pensar se estoura uma exception.
                 return;
             }
 
             ScrapingExecution execution = executionOpt.get();
+            ProductMonitor monitor = execution.getProductMonitor();
 
-            log.info("Iniciando análise do payload para Monitor '{}' (ID: {}). Itens: {}", execution.getProductMonitor().getName(), execution.getProductMonitor().getId(), items.size());
+            log.info("Iniciando análise do payload para Monitor '{}' (ID: {}). Itens: {}",
+                    monitor.getName(), monitor.getId(), items.size());
 
             // 3. Invoca a análise do payload passando monitor, execução e anúncios
-            analyzePayload(execution, items);
+            analyzePayload(monitor, execution, items);
 
         } catch (Exception e) {
             log.error("Erro inesperado ao processar evento de scraping: {}", e.getMessage(), e);
@@ -87,13 +90,13 @@ public class WebhookScrapperService {
     }
 
     /**
-     * Realiza a análise do payload e ingestão dos anúncios para o monitor
-     * correspondente.
+     * Realiza a análise do payload e ingestão dos anúncios para o monitor correspondente.
      */
-    public void analyzePayload(ScrapingExecution execution, List<ScrapedListingItem> listings) {
-      ProductMonitor monitor = execution.getProductMonitor();
+    public void analyzePayload(ProductMonitor monitor, ScrapingExecution execution, List<ScrapedListingDTO> listings) {
+        log.info("Executando analyzePayload para Monitor '{}' com {} anúncios.",
+                monitor != null ? monitor.getName() : "N/A",
+                listings != null ? listings.size() : 0);
 
-      log.info("Executando analyzePayload para Monitor '{}' com {} anúncios.", monitor != null ? monitor.getName() : "N/A", listings != null ? listings.size() : 0);
-      
+        // TODO: Inserção/atualização dos listings no banco (ScrapedListing) e avaliação de MatchTier com IA
     }
 }
