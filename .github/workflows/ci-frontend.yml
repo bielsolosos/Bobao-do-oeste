@@ -1,0 +1,47 @@
+name: Frontend UI CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'apps/web/project-ui/**'
+      - '.github/workflows/ci-frontend.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'apps/web/project-ui/**'
+      - '.github/workflows/ci-frontend.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web/project-ui
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 24
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+        cache-dependency-path: apps/web/project-ui/package-lock.json
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build Application
+      run: npm run build --configuration=production
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Test Docker Build
+      uses: docker/build-push-action@v6
+      with:
+        context: ./apps/web/project-ui
+        file: ./apps/web/project-ui/Dockerfile
+        push: false
+        tags: frontend-ui:ci-test

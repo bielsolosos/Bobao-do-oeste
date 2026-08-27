@@ -23,8 +23,12 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy the built Angular app from the build stage
 COPY --from=build /app/dist/project-ui/browser /usr/share/nginx/html
 
+# Copia o script de entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start via entrypoint to inject env vars
+ENTRYPOINT ["/entrypoint.sh"]
