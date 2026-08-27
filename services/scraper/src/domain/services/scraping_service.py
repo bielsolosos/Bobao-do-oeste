@@ -46,7 +46,7 @@ class ScrapingService:
             provider = ProviderFactory.get_provider(request.vendor)
             scraped_items, used_fallback = await provider.scrape(request)
 
-            # 4. Grava os anúncios no banco em lote
+            # 4. Grava/atualiza os anúncios no banco em lote
             new_items_count = await self._persist_listings(execution.id, scraped_items)
 
             # 5. Finaliza a execução com status SUCCESS
@@ -76,6 +76,7 @@ class ScrapingService:
             )
 
         except Exception as e:
+            await self.session.rollback()
             logger.error(f"Scraping execution {execution.id} failed: {e}", exc_info=True)
             finished_at = datetime.now(timezone.utc)
             duration_ms = int((time.perf_counter() - start_time) * 1000)
@@ -133,40 +134,68 @@ class ScrapingService:
         if not items:
             return 0
 
-        # Otimização: Busca em lote os IDs de anúncios já existentes para evitar N+1 queries
+        # Otimização: Busca em lote os registros de anúncios já existentes para este vendor
         vendor_ids = [item.vendor_listing_id for item in items]
-        stmt = select(ScrapedListing.vendor_listing_id).where(col(ScrapedListing.vendor_listing_id).in_(vendor_ids))
+        stmt = select(ScrapedListing).where(col(ScrapedListing.vendor_listing_id).in_(vendor_ids))
 
         result = await self.session.execute(stmt)
-        existing_ids = set(result.scalars().all())
+        existing_map = {listing.vendor_listing_id: listing for listing in result.scalars().all()}
 
         new_count = 0
         now = datetime.now(timezone.utc)
+        seen_in_batch = set()
 
         for item in items:
-            if item.vendor_listing_id not in existing_ids:
-                new_count += 1
-                existing_ids.add(item.vendor_listing_id)
+            # Deduplica caso a mesma página da OLX contenha o mesmo card duplicado
+            if item.vendor_listing_id in seen_in_batch:
+                continue
+            seen_in_batch.add(item.vendor_listing_id)
 
-            listing_model = ScrapedListing(
-                execution_id=execution_id,
-                vendor=item.vendor,
-                vendor_listing_id=item.vendor_listing_id,
-                title=item.title,
-                price=item.price,
-                original_price=item.original_price,
-                url=item.url,
-                description=item.description,
-                state=item.state,
-                city=item.city,
-                neighborhood=item.neighborhood,
-                has_delivery=item.has_delivery,
-                delivery_type=item.delivery_type,
-                images=item.images,
-                published_at=item.published_at,
-                scraped_at=item.scraped_at or now,
-            )
-            self.session.add(listing_model)
+            if item.vendor_listing_id in existing_map:
+                # Anúncio já existente no banco: atualiza preço, última execução e metadados
+                existing = existing_map[item.vendor_listing_id]
+                existing.execution_id = execution_id
+                existing.title = item.title
+                existing.price = item.price
+                existing.original_price = item.original_price
+                existing.url = item.url
+                if item.description:
+                    existing.description = item.description
+                if item.state:
+                    existing.state = item.state
+                if item.city:
+                    existing.city = item.city
+                if item.neighborhood:
+                    existing.neighborhood = item.neighborhood
+                existing.has_delivery = item.has_delivery
+                existing.delivery_type = item.delivery_type
+                if item.images:
+                    existing.images = item.images
+                existing.scraped_at = item.scraped_at or now
+
+                self.session.add(existing)
+            else:
+                # Anúncio novo: insere
+                new_count += 1
+                listing_model = ScrapedListing(
+                    execution_id=execution_id,
+                    vendor=item.vendor,
+                    vendor_listing_id=item.vendor_listing_id,
+                    title=item.title,
+                    price=item.price,
+                    original_price=item.original_price,
+                    url=item.url,
+                    description=item.description,
+                    state=item.state,
+                    city=item.city,
+                    neighborhood=item.neighborhood,
+                    has_delivery=item.has_delivery,
+                    delivery_type=item.delivery_type,
+                    images=item.images,
+                    published_at=item.published_at,
+                    scraped_at=item.scraped_at or now,
+                )
+                self.session.add(listing_model)
 
         await self.session.commit()
         return new_count

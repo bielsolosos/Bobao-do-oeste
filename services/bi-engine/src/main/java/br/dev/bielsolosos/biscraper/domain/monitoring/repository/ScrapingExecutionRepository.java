@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -15,4 +16,6 @@ public interface ScrapingExecutionRepository extends JpaRepository<ScrapingExecu
     List<ScrapingExecution> findByProductMonitorId(UUID productMonitorId);
 
     Page<ScrapingExecution> findByProductMonitorId(UUID productMonitorId, Pageable pageable);
+
+    Optional<ScrapingExecution> findByWebhookEventRequestId(String requestId);
 }

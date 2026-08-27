@@ -1,9 +1,3 @@
-"""
-Pool assíncrono de workers que consomem a fila `scrape_jobs` e processam
-serializadamente. Projetado para rodar in-process dentro do mesmo event
-loop do FastAPI (sem dependências externas).
-"""
-
 import asyncio
 import uuid
 from datetime import datetime, timezone
@@ -16,7 +10,7 @@ from src.core.queues.scrape import ScrapeQueueService
 from src.core.queues.webhook import WebhookQueueService
 from src.domain.enums import ExecutionStatusEnum
 from src.domain.schemas import ExecutionSummaryDTO, ScrapeRequest, ScrapeResponse
-from src.domain.services import ScrapingService
+from src.domain.services.scraping_service import ScrapingService
 
 
 class ScrapeWorker:
@@ -90,8 +84,12 @@ class ScrapeWorker:
             if job is None:
                 return False
 
+            job_id = job.id
+            job_vendor = job.vendor
+            job_created_at = job.created_at
+
             logger.info(
-                f"Processando job {job.id} (worker={worker_id}, vendor={job.vendor.value}, attempt={job.attempts})"
+                f"Processando job {job_id} (worker={worker_id}, vendor={job_vendor.value}, attempt={job.attempts})"
             )
             try:
                 request = ScrapeRequest.model_validate(job.request_payload)
@@ -99,15 +97,16 @@ class ScrapeWorker:
                 response: ScrapeResponse = await scraping.execute_scrape(request)
                 await queue.mark_success(job, response.model_dump(mode="json"))
             except Exception as e:
-                logger.error(f"Job {job.id} falhou durante execução: {e}", exc_info=True)
+                await session.rollback()
+                logger.error(f"Job {job_id} falhou durante execução: {e}", exc_info=True)
                 failed_response = ScrapeResponse(
                     success=False,
                     execution=ExecutionSummaryDTO(
-                        id=job.id,
-                        vendor=job.vendor,
+                        id=job_id,
+                        vendor=job_vendor,
                         status=ExecutionStatusEnum.FAILED,
                         error_message=str(e)[:500],
-                        started_at=job.created_at,
+                        started_at=job_created_at,
                         finished_at=datetime.now(timezone.utc),
                     ),
                     items=[],
@@ -116,10 +115,11 @@ class ScrapeWorker:
 
             # Transiciona webhook delivery PENDING → READY (se houver)
             delivery_queue = WebhookQueueService(session)
-            await delivery_queue.mark_ready(job.id)
+            await delivery_queue.mark_ready(job_id)
             return True
 
 
+ScrapeWorkerPool = ScrapeWorker
 _scrape_worker_instance: Optional[ScrapeWorker] = None
 
 

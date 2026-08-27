@@ -4,12 +4,14 @@ import br.dev.bielsolosos.biscraper.api.mapper.productmonitor.ProductMonitorMapp
 import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.core.exception.BusinessException;
+import br.dev.bielsolosos.biscraper.domain.monitoring.event.MonitorCreatedEvent;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ProductMonitorRepository;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.service.MeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class ProductMonitorService {
     private final ProductMonitorRepository repository;
     private final ProductMonitorMapper mapper;
     private final MeService meService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ProductMonitorResponse create(ProductMonitorRequest request) {
@@ -34,10 +37,9 @@ public class ProductMonitorService {
         ProductMonitor monitor = mapper.toEntity(request, me);
         ProductMonitor saved = repository.save(monitor);
 
-        // TODO: Iniciar a lógica de agendamento e disparo assíncrono dos scrapings.
-        // Esse evento assíncrono notificará o serviço de mensageria/agendador para despachar
-        // o payload inicial para o Scraper Python ou enfileirar no SQLite/RabbitMQ.
-        log.debug("ProductMonitor criado com id '{}'. Disparo de scraping assíncrono pendente.", saved.getId());
+        // Dispara evento assíncrono que será processado concorrentemente pelo ScrapingJobDispatcher
+        eventPublisher.publishEvent(new MonitorCreatedEvent(saved));
+        log.debug("Evento MonitorCreatedEvent publicado para o monitor id '{}'", saved.getId());
 
         return mapper.toResponse(saved);
     }
@@ -50,8 +52,6 @@ public class ProductMonitorService {
         log.info("Atualizando ProductMonitor com id '{}'", id);
         mapper.updateEntity(monitor, request);
         ProductMonitor updated = repository.save(monitor);
-
-        // TODO: Publicar evento assíncrono para atualizar os parâmetros de busca e agendamentos no Scraper Python.
 
         return mapper.toResponse(updated);
     }
@@ -79,8 +79,6 @@ public class ProductMonitorService {
         monitor.setActive(false);
         ProductMonitor updated = repository.save(monitor);
 
-        // TODO: Publicar evento assíncrono para cancelar/pausar os agendamentos ativos no Scraper Python.
-
         return mapper.toResponse(updated);
     }
 
@@ -93,8 +91,6 @@ public class ProductMonitorService {
         monitor.setActive(true);
         ProductMonitor updated = repository.save(monitor);
 
-        // TODO: Publicar evento assíncrono para reativar o agendamento de scraping no Scraper Python.
-
         return mapper.toResponse(updated);
     }
 
@@ -104,7 +100,6 @@ public class ProductMonitorService {
         validatePermission(monitor);
 
         log.info("Deletando ProductMonitor com id '{}'", id);
-        // TODO: Publicar evento assíncrono para remover jobs agendados e limpar referências no scraper se necessário.
         repository.delete(monitor);
     }
 

@@ -18,6 +18,7 @@ public class BiScraperProperties {
 
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
+    private Scraper scraper = new Scraper();
 
     @Getter
     @Setter
@@ -35,5 +36,14 @@ public class BiScraperProperties {
                 "http://localhost:5173",
                 "https://bi.bielsolosos.dev.br"
         ));
+    }
+
+    @Getter
+    @Setter
+    public static class Scraper {
+        private String baseUrl = "http://localhost:8001";
+        private String username = "admin";
+        private String password = "admin";
+        private String webhookUrl = "http://localhost:8080/api/v1/webhooks/scraper";
     }
 }

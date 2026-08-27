@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ScrapingFrequency {
+    EVERY_MINUTE("0 * * * * *", "A cada minuto"),
+    EVERY_5_MINUTES("0 */5 * * * *", "A cada 5 minutos"),
     EVERY_30_MINUTES("0 */30 * * * *", "A cada 30 minutos"),
     HOURLY("0 0 * * * *", "A cada hora"),
     EVERY_6_HOURS("0 0 */6 * * *", "A cada 6 horas"),
