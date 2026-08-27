@@ -1,7 +1,7 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.model;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.MatchTier;
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.enums.Vendor;
+import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
+import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

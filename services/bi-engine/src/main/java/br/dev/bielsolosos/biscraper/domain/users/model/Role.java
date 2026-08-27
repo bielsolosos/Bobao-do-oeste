@@ -1,5 +1,6 @@
 package br.dev.bielsolosos.biscraper.domain.users.model;
 
+import br.dev.bielsolosos.biscraper.core.enums.RoleEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
