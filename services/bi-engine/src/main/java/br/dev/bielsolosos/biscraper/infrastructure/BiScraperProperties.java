@@ -34,6 +34,8 @@ public class BiScraperProperties {
         private List<String> allowedOrigins = new ArrayList<>(List.of(
                 "http://localhost:3000",
                 "http://localhost:5173",
+                "http://localhost:4200",
+                "http://localhost:8081",
                 "https://bi.bielsolosos.dev.br"
         ));
     }
