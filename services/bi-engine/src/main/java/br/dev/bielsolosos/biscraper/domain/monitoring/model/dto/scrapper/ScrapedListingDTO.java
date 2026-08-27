@@ -1,8 +1,10 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper;
 
+import br.dev.bielsolosos.biscraper.core.config.FlexibleOffsetDateTimeDeserializer;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -24,6 +26,6 @@ public record ScrapedListingDTO(
     @JsonProperty("has_delivery") boolean hasDelivery,
     @JsonProperty("delivery_type") String deliveryType,
     List<String> images,
-    @JsonProperty("published_at") OffsetDateTime publishedAt,
-    @JsonProperty("scraped_at") OffsetDateTime scrapedAt
+    @JsonProperty("published_at") @JsonDeserialize(using = FlexibleOffsetDateTimeDeserializer.class) OffsetDateTime publishedAt,
+    @JsonProperty("scraped_at") @JsonDeserialize(using = FlexibleOffsetDateTimeDeserializer.class) OffsetDateTime scrapedAt
 ) {}
