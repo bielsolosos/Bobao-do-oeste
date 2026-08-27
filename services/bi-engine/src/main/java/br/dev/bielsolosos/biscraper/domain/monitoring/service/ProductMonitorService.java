@@ -1,8 +1,8 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.service;
 
-import br.dev.bielsolosos.biscraper.api.mapper.productmonitor.ProductMonitorMapper;
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorRequest;
-import br.dev.bielsolosos.biscraper.api.model.productmonitor.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.mapper.ProductMonitorMapper;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorRequest;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.core.exception.BusinessException;
 import br.dev.bielsolosos.biscraper.domain.monitoring.event.MonitorCreatedEvent;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
