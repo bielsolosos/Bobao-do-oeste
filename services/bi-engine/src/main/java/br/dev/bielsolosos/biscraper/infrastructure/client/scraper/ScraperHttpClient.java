@@ -6,10 +6,13 @@ import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrap
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 
 @Slf4j
@@ -21,8 +24,16 @@ public class ScraperHttpClient {
 
     public ScraperHttpClient(BiScraperProperties properties) {
         this.properties = properties;
+
+        // Força explicitamente o protocolo HTTP/1.1 para evitar headers de upgrade h2c rejeitados pelo Uvicorn/FastAPI
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+
         this.restClient = RestClient.builder()
                 .baseUrl(properties.getScraper().getBaseUrl())
+                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }

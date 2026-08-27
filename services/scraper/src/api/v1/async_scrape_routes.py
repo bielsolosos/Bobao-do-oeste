@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_session
+from src.core.logger import logger
 from src.domain.schemas import (
     AsyncScrapeRequest,
     AsyncScrapeResponse,
@@ -36,7 +37,13 @@ async def trigger_async_scrape(
             webhook_url=str(body.webhook_url),
             request_id=body.request_id,
         )
+        logger.info(
+            f"Job de scraping enfileirado com sucesso: "
+            f"requestId='{delivery.request_id}', jobId='{job.id}', keyword='{body.request.keyword}', "
+            f"vendor='{body.request.vendor}', webhookUrl='{delivery.webhook_url}'"
+        )
     except ValueError as e:
+        logger.warning(f"Conflito ao enfileirar job assíncrono: {e}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),

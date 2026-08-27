@@ -3,7 +3,9 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.service;
 import br.dev.bielsolosos.biscraper.domain.monitoring.event.MonitorCreatedEvent;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.MonitorSearchQuery;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent;
+import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapingExecutionRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;
 import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.ScraperHttpClient;
@@ -33,6 +35,9 @@ class ScrapingJobDispatcherTest {
 
     @Mock
     private WebhookEventRepository webhookEventRepository;
+
+    @Mock
+    private ScrapingExecutionRepository scrapingExecutionRepository;
 
     @Spy
     private BiScraperProperties properties = new BiScraperProperties();
@@ -66,7 +71,7 @@ class ScrapingJobDispatcherTest {
     }
 
     @Test
-    @DisplayName("Deve despachar job de scraping com sucesso e salvar WebhookEvent inicial")
+    @DisplayName("Deve despachar job de scraping com sucesso e salvar WebhookEvent e ScrapingExecution")
     void onMonitorCreatedSuccess() {
         AsyncScrapeClientResponse clientResponse = new AsyncScrapeClientResponse(
                 "req-uuid-123",
@@ -77,10 +82,12 @@ class ScrapingJobDispatcherTest {
 
         when(scraperHttpClient.dispatchAsyncScrape(any(AsyncScrapeClientRequest.class))).thenReturn(clientResponse);
         when(webhookEventRepository.save(any(WebhookEvent.class))).thenAnswer(i -> i.getArgument(0));
+        when(scrapingExecutionRepository.save(any(ScrapingExecution.class))).thenAnswer(i -> i.getArgument(0));
 
         dispatcher.onMonitorCreated(new MonitorCreatedEvent(monitor));
 
+        verify(webhookEventRepository, atLeastOnce()).save(any(WebhookEvent.class));
+        verify(scrapingExecutionRepository, times(1)).save(any(ScrapingExecution.class));
         verify(scraperHttpClient, times(1)).dispatchAsyncScrape(any(AsyncScrapeClientRequest.class));
-        verify(webhookEventRepository, times(1)).save(any(WebhookEvent.class));
     }
 }
