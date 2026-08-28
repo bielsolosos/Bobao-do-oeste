@@ -1,13 +1,13 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { LoginComponent } from './features/auth/login/login.component';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { AppLayoutComponent } from './layout/app-layout.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { 
     path: '', 
-    component: DashboardComponent,
+    component: AppLayoutComponent,
     canActivate: [authGuard],
     children: [
       {
@@ -23,8 +23,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/monitors/monitor-form/monitor-form.component').then(m => m.MonitorFormComponent)
       },
       {
-        path: 'listings',
-        loadComponent: () => import('./features/listings/listings-list.component').then(m => m.ListingsListComponent)
+        path: 'monitors/edit/:id',
+        loadComponent: () => import('./features/monitors/monitor-form/monitor-form.component').then(m => m.MonitorFormComponent)
+      },
+      {
+        path: 'monitors/:id',
+        loadComponent: () => import('./features/monitors/monitor-detail/monitor-detail.component').then(m => m.MonitorDetailComponent)
       },
       {
         path: 'events',

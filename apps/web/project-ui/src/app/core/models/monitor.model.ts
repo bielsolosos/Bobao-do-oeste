@@ -1,10 +1,28 @@
 export type Vendor = 'OLX' | 'MERCADO_LIVRE';
 export type AnalysisType = 'NONE' | 'SIMPLE' | 'NOTEBOOK';
-export type ScrapingFrequency = 'EVERY_MINUTE' | 'EVERY_5_MINUTES' | 'EVERY_30_MINUTES' | 'HOURLY' | 'EVERY_6_HOURS' | 'DAILY' | 'TWICE_DAILY' | 'WEEKLY' | 'MANUAL';
+export type ScrapingFrequency = 
+  | 'EVERY_MINUTE' 
+  | 'EVERY_5_MINUTES' 
+  | 'EVERY_30_MINUTES' 
+  | 'HOURLY' 
+  | 'EVERY_6_HOURS' 
+  | 'DAILY' 
+  | 'TWICE_DAILY' 
+  | 'WEEKLY' 
+  | 'MANUAL';
 
 export interface MonitorSearchQueryResponse {
   id: string;
   keyword: string;
+}
+
+export interface SimpleAnalysisFields {
+  prompt?: string;
+}
+
+export interface NotebookAnalysisFields {
+  minimumRamGb?: number;
+  needsDedicatedGpu?: boolean | null;
 }
 
 export interface ProductMonitorResponse {
@@ -28,7 +46,7 @@ export interface ProductMonitorRequest {
   description?: string;
   vendor: Vendor;
   analysisType: AnalysisType;
-  analysisTypeFields: any; // Pode ser { prompt: string } ou { minimumRamGb: number, ... }
+  analysisTypeFields?: any;
   searchKeywords: string[];
   minPrice?: number;
   maxPrice?: number;
@@ -40,7 +58,13 @@ export interface ProductMonitorRequest {
 
 export interface PageResponse<T> {
   content: T[];
-  pageable: any;
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
   last: boolean;
   totalPages: number;
   totalElements: number;

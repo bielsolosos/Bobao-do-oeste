@@ -2,120 +2,141 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MonitorService } from '../../core/services/monitor.service';
 import { AiAnalysisLogResponse } from '../../core/models/ai-log.model';
+import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
+import { UiBadgeComponent } from '../../shared/components/ui-badge/ui-badge.component';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-ai-logs-list',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, UiCardComponent, UiBadgeComponent, RouterModule],
   template: `
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h2 class="text-xl font-semibold text-gray-800">🧠 Auditoria & Logs de Chamadas da IA</h2>
-          <p class="text-sm text-gray-500">Histórico detalhado de prompts, respostas do Gemini, latência e consumo de itens analisados.</p>
-        </div>
-        <button (click)="loadLogs()" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-          🔄 Atualizar
-        </button>
+    <div class="mb-6 flex justify-between items-end">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Auditoria & Logs de Chamadas da IA</h1>
+        <p class="text-sm text-gray-500 mt-1">Histórico detalhado de prompts, respostas do Gemini, latência e consumo.</p>
       </div>
+      <button (click)="loadLogs()" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Atualizar
+      </button>
+    </div>
 
-      <div *ngIf="isLoading()" class="text-center py-12 text-gray-500">
+    <app-ui-card [noPadding]="true">
+      <div *ngIf="isLoading()" class="p-12 text-center text-gray-500">
         Carregando histórico de IA...
       </div>
 
-      <div *ngIf="!isLoading() && logs().length === 0" class="text-center py-12 text-gray-500">
+      <div *ngIf="!isLoading() && logs().length === 0" class="p-12 text-center text-gray-500">
         Nenhum registro de chamada de IA encontrado até o momento.
       </div>
 
       <div class="overflow-x-auto" *ngIf="!isLoading() && logs().length > 0">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-gray-50 text-gray-700 border-b text-sm">
-              <th class="p-4 font-medium">Status</th>
-              <th class="p-4 font-medium">Monitor</th>
-              <th class="p-4 font-medium">Modelo / Vendor</th>
-              <th class="p-4 font-medium">Itens Analisados</th>
-              <th class="p-4 font-medium">Latência</th>
-              <th class="p-4 font-medium">Data / Hora</th>
-              <th class="p-4 font-medium text-right">Detalhes</th>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monitor</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modelo</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lote / Desempenho</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
             </tr>
           </thead>
-          <tbody class="text-sm">
-            <tr *ngFor="let log of logs()" class="border-b hover:bg-gray-50 transition-colors">
-              <td class="p-4">
-                <span [ngClass]="log.status === 'SUCCESS' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'"
-                      class="px-2.5 py-1 rounded-full text-xs font-semibold border inline-block">
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let log of logs()" class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
                   {{ log.status }}
+                </app-ui-badge>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <a [routerLink]="['/monitors', log.productMonitorId]" class="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline">
+                  {{ log.productMonitorName || 'Geral' }}
+                </a>
+                <div class="text-xs text-gray-500 mt-1">{{ log.createdAt | date:'short' }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs font-mono text-slate-700">
+                  {{ log.modelName }}
                 </span>
               </td>
-              <td class="p-4 font-medium text-gray-800">
-                {{ log.productMonitorName || 'Geral' }}
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900"><span class="font-bold">{{ log.itemsCount }}</span> anúncios avaliados</div>
+                <div class="text-xs text-gray-500 mt-1">Latência: {{ formatDuration(log.durationMs) }}</div>
               </td>
-              <td class="p-4 text-gray-600">
-                <span class="px-2 py-0.5 bg-slate-100 rounded text-xs font-mono">{{ log.modelName }}</span>
-              </td>
-              <td class="p-4 text-gray-600">
-                <span class="font-semibold">{{ log.itemsCount }}</span> anúncios
-              </td>
-              <td class="p-4 text-gray-500">
-                {{ formatDuration(log.durationMs) }}
-              </td>
-              <td class="p-4 text-gray-500 text-xs">
-                {{ log.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}
-              </td>
-              <td class="p-4 text-right">
-                <button (click)="openDetailModal(log)"
-                        class="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-xs font-medium transition-colors">
-                  🔍 Ver Prompt & JSON
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button (click)="openDetailModal(log)" class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors font-semibold">
+                  Ver Payload
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </app-ui-card>
 
-    <!-- MODAL DE DETALHES DO PROMPT / RESPOSTA -->
-    <div *ngIf="selectedLog()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-        <!-- Modal Header -->
-        <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-          <div>
-            <h3 class="font-semibold text-gray-800 text-lg">Detalhes da Execução de IA (Gemini)</h3>
-            <p class="text-xs text-gray-500">Modelo: {{ selectedLog()?.modelName }} | Latência: {{ formatDuration(selectedLog()?.durationMs) }}</p>
+    <!-- Modal de Detalhes -->
+    <div *ngIf="selectedLog()" class="relative z-[100]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeDetailModal()"></div>
+
+      <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          
+          <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl">
+            <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-200">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modal-title">Detalhes da Execução de IA</h3>
+                  <p class="text-sm text-gray-500 mt-1">Modelo: <span class="font-mono text-xs">{{ selectedLog()?.modelName }}</span> | Latência: {{ formatDuration(selectedLog()?.durationMs) }}</p>
+                </div>
+                <button (click)="closeDetailModal()" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none">
+                  <span class="sr-only">Close</span>
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-gray-50 px-4 py-5 sm:p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              
+              <div *ngIf="selectedLog()?.errorMessage" class="rounded-md bg-red-50 p-4 border border-red-200">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                  </div>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Falha na execução</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                      <p>{{ selectedLog()?.errorMessage }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 mb-2">System Prompt</h4>
+                <pre class="bg-slate-900 text-slate-300 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 whitespace-pre-wrap">{{ selectedLog()?.systemPrompt }}</pre>
+              </div>
+
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 mb-2">User Prompt (Lote de Itens)</h4>
+                <pre class="bg-slate-900 text-emerald-400 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 whitespace-pre-wrap">{{ selectedLog()?.userPrompt }}</pre>
+              </div>
+
+              <div *ngIf="selectedLog()?.rawResponse">
+                <h4 class="text-sm font-semibold text-gray-900 mb-2">Resposta Raw / JSON</h4>
+                <pre class="bg-slate-900 text-amber-300 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-96 whitespace-pre-wrap">{{ formatJson(selectedLog()?.rawResponse) }}</pre>
+              </div>
+
+            </div>
+            
+            <div class="bg-white px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-200">
+              <button type="button" (click)="closeDetailModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                Fechar
+              </button>
+            </div>
           </div>
-          <button (click)="closeDetailModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">
-            ✕
-          </button>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="p-6 overflow-y-auto space-y-4 flex-1 text-xs font-mono">
-          <div *ngIf="selectedLog()?.errorMessage" class="bg-red-50 text-red-700 p-3 rounded border border-red-200">
-            <b>Erro:</b> {{ selectedLog()?.errorMessage }}
-          </div>
-
-          <div>
-            <h4 class="font-bold text-gray-700 font-sans text-sm mb-1">System Prompt:</h4>
-            <pre class="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap max-h-48 text-[11px]">{{ selectedLog()?.systemPrompt }}</pre>
-          </div>
-
-          <div>
-            <h4 class="font-bold text-gray-700 font-sans text-sm mb-1">User Prompt (Lote de Anúncios):</h4>
-            <pre class="bg-slate-900 text-emerald-400 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap max-h-48 text-[11px]">{{ selectedLog()?.userPrompt }}</pre>
-          </div>
-
-          <div *ngIf="selectedLog()?.rawResponse">
-            <h4 class="font-bold text-gray-700 font-sans text-sm mb-1">Resposta Retornada (Structured Output JSON):</h4>
-            <pre class="bg-slate-900 text-amber-300 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap max-h-60 text-[11px]">{{ formatJson(selectedLog()?.rawResponse) }}</pre>
-          </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 py-3 border-t bg-gray-50 flex justify-end">
-          <button (click)="closeDetailModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-xs font-medium">
-            Fechar
-          </button>
         </div>
       </div>
     </div>
