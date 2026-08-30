@@ -234,6 +234,11 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         return sb.length() > 0 ? sb.toString() : "Avalie a relevância e o custo-benefício geral do produto.";
     }
 
+    /**
+     * Método responsável por transformar todos os itens coletados em um json para a IA ler.
+     * @param batch
+     * @return
+     */
     private String formatBatchForPrompt(List<ScrapedListingDTO> batch) {
         List<Map<String, Object>> list = new ArrayList<>();
         for (ScrapedListingDTO item : batch) {

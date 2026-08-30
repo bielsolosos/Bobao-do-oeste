@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.UUID;
 
@@ -36,6 +37,7 @@ public class ScrapingJobDispatcher {
     private final ScrapingExecutionRepository scrapingExecutionRepository;
     private final BiScraperProperties properties;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     @Async("scraperDispatcherExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -49,7 +51,6 @@ public class ScrapingJobDispatcher {
         }
     }
 
-    @Transactional
     public void dispatchQuery(ProductMonitor monitor, MonitorSearchQuery query) {
         String requestId = UUID.randomUUID().toString();
         try {
@@ -59,24 +60,28 @@ public class ScrapingJobDispatcher {
 
             log.info("Criando ScrapingExecution e WebhookEvent com requestId '{}'", requestId);
 
-            // 1. Registra o evento de Webhook inicial para rastreamento
-            WebhookEvent webhookEvent = WebhookEvent.builder()
-                    .requestId(requestId)
-                    .source("SCRAPER_PYTHON")
-                    .status(WebhookStatus.RECEIVED)
-                    .rawPayload(objectMapper.createObjectNode())
-                    .build();
-            webhookEvent = webhookEventRepository.save(webhookEvent);
+            WebhookEvent webhookEvent = transactionTemplate.execute(status -> {
+                // 1. Registra o evento de Webhook inicial para rastreamento
+                WebhookEvent we = WebhookEvent.builder()
+                        .requestId(requestId)
+                        .source("SCRAPER_PYTHON")
+                        .status(WebhookStatus.RECEIVED)
+                        .rawPayload(objectMapper.createObjectNode())
+                        .build();
+                we = webhookEventRepository.save(we);
 
-            // 2. Registra a Execução pendente amarrada ao Monitor, Query e Webhook
-            ScrapingExecution execution = ScrapingExecution.builder()
-                    .productMonitor(monitor)
-                    .searchQuery(query)
-                    .webhookEvent(webhookEvent)
-                    .vendor(monitor.getTargetVendor())
-                    .status(ExecutionStatus.PENDING)
-                    .build();
-            scrapingExecutionRepository.save(execution);
+                // 2. Registra a Execução pendente amarrada ao Monitor, Query e Webhook
+                ScrapingExecution execution = ScrapingExecution.builder()
+                        .productMonitor(monitor)
+                        .searchQuery(query)
+                        .webhookEvent(we)
+                        .vendor(monitor.getTargetVendor())
+                        .status(ExecutionStatus.PENDING)
+                        .build();
+                scrapingExecutionRepository.save(execution);
+                
+                return we;
+            });
 
             // 3. Monta o payload de envio para o Scraper Python
             ScrapeJobRequest jobRequest = new ScrapeJobRequest(
