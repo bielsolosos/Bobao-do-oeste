@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
@@ -8,7 +7,7 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, UiButtonComponent],
+  imports: [ReactiveFormsModule, UiButtonComponent],
   template: `
     <div class="min-h-screen bg-gray-100 flex items-center justify-center p-4 relative z-10">
       <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 relative z-20">
@@ -16,12 +15,13 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
           <!-- MENSAGEM DE ERRO ESTATICA COMO BACKUP SEGURO -->
-          <div
-            *ngIf="errorMessage()"
-            class="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100 font-medium animate-pulse"
-          >
-            {{ errorMessage() }}
-          </div>
+          @if (errorMessage()) {
+            <div
+              class="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100 font-medium animate-pulse"
+            >
+              {{ errorMessage() }}
+            </div>
+          }
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Usuário</label>

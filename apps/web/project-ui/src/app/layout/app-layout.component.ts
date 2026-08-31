@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
@@ -7,7 +6,7 @@ import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.compone
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, UiToastComponent],
+  imports: [RouterModule, UiToastComponent],
   template: `
     <!-- MAIN WRAPPER (Flex-col para mobile, Flex-row para desktop) -->
     <app-ui-toast-container></app-ui-toast-container>

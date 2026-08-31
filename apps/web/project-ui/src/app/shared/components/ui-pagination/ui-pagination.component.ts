@@ -1,11 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-ui-pagination',
   standalone: true,
-  imports: [CommonModule],
-  templateUrl: './ui-pagination.component.html'
+  imports: [],
+  templateUrl: './ui-pagination.component.html',
 })
 export class UiPaginationComponent {
   @Input() currentPage: number = 0; // 0-indexed
