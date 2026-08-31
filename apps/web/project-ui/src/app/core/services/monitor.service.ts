@@ -53,8 +53,8 @@ export class MonitorService {
     return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/listings`, { params });
   }
 
-  getMonitorListings(monitorId: string, page = 0, size = 20): Observable<PageResponse<ScrapedListingResponse>> {
-    return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}`);
+  getMonitorListings(monitorId: string, page = 0, size = 20, sort = 'lastSeenAt,desc'): Observable<PageResponse<ScrapedListingResponse>> {
+    return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}&sort=${sort}`);
   }
 
 }
