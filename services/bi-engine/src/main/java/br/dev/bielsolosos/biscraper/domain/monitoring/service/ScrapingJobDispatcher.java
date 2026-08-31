@@ -70,10 +70,13 @@ public class ScrapingJobDispatcher {
                 monitor.getName(), monitor.getId(), monitor.getSearchQueries().size());
 
         for (MonitorSearchQuery query : monitor.getSearchQueries()) {
-            dispatchQuery(monitor, query);
+            if (query.isActive()) {
+                dispatchQuery(monitor, query);
+            }
         }
     }
 
+    @Async("scraperDispatcherExecutor")
     public void dispatchQuery(ProductMonitor monitor, MonitorSearchQuery query) {
         String requestId = UUID.randomUUID().toString();
         try {

@@ -122,6 +122,16 @@ public class WebhookScrapperService {
             return;
         }
 
+        if (!monitor.isActive()) {
+            log.info("Monitor '{}' (ID: {}) está desativado. Ignorando ingestão de {} anúncio(s).",
+                    monitor.getName(), monitor.getId(), listings.size());
+            execution.setStatus(ExecutionStatus.SUCCESS);
+            execution.setTotalFound(listings.size());
+            execution.setNewItemsCount(0);
+            scrapingExecutionRepository.save(execution);
+            return;
+        }
+
         List<ScrapedListing> listingsToSave = new ArrayList<>();
         List<ScrapedListingDTO> newListings = new ArrayList<>();
 

@@ -194,4 +194,44 @@ class WebhookScrapperServiceTest {
         assertEquals(0, execution.getNewItemsCount());
         assertEquals(1, execution.getTotalFound());
     }
+
+    @Test
+    @DisplayName("Deve descartar ingestão de anúncios se o monitor estiver desativado")
+    void processScrappingEventWithInactiveMonitor() {
+        monitor.setActive(false);
+
+        ScrapedListingDTO item1 = new ScrapedListingDTO(
+                "item-1",
+                Vendor.MERCADO_LIVRE,
+                "MLB12345",
+                "Macbook Pro M1",
+                BigDecimal.valueOf(5000),
+                null,
+                "https://mercadolivre.com.br/item1",
+                "Descrição",
+                "SP",
+                "São Paulo",
+                "Centro",
+                true,
+                "MERCADO_ENVIOS",
+                List.of("https://img.com/1.jpg"),
+                "2026-08-27T18:45:31.807374",
+                "2026-08-27T18:45:31.807374"
+        );
+
+        ScrapeResponseDTO scrapeResponse = new ScrapeResponseDTO(true, null, List.of(item1));
+        WebhookIncomingPayload payload = new WebhookIncomingPayload("req-123", "job-123", "SUCCESS", scrapeResponse);
+
+        when(webhookEventRepository.findByRequestId("req-123")).thenReturn(Optional.of(webhookEvent));
+        when(scrapingExecutionRepository.findByWebhookEventRequestId("req-123")).thenReturn(Optional.of(execution));
+
+        webhookScrapperService.processScrappingEvent(payload);
+
+        verifyNoInteractions(scrapedListingRepository);
+        verify(productMonitorRepository, never()).save(any(ProductMonitor.class));
+        verify(scrapingExecutionRepository, times(1)).save(execution);
+        assertEquals(ExecutionStatus.SUCCESS, execution.getStatus());
+        assertEquals(0, execution.getNewItemsCount());
+    }
 }
+

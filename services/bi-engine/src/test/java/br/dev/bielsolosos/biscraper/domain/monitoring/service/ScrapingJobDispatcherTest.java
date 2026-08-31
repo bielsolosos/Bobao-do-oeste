@@ -94,4 +94,27 @@ class ScrapingJobDispatcherTest {
         verify(scrapingExecutionRepository, times(1)).save(any(ScrapingExecution.class));
         verify(scraperHttpClient, times(1)).dispatchAsyncScrape(any(AsyncScrapeClientRequest.class));
     }
+
+    @Test
+    @DisplayName("Não deve despachar queries inativas no evento de criação de monitor")
+    void onMonitorCreatedIgnoresInactiveQueries() {
+        ProductMonitor monitorWithInactive = ProductMonitor.builder()
+                .id(UUID.randomUUID())
+                .name("Busca Inativa")
+                .build();
+
+        MonitorSearchQuery inactiveQuery = MonitorSearchQuery.builder()
+                .id(UUID.randomUUID())
+                .queryTerm("termo inativo")
+                .active(false)
+                .build();
+
+        monitorWithInactive.addSearchQuery(inactiveQuery);
+
+        dispatcher.onMonitorCreated(new MonitorCreatedEvent(monitorWithInactive));
+
+        verifyNoInteractions(scraperHttpClient);
+        verifyNoInteractions(webhookEventRepository);
+        verifyNoInteractions(scrapingExecutionRepository);
+    }
 }
