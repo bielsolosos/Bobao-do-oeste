@@ -29,7 +29,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ScrapingJobDispatcher {
 
     private final ScraperHttpClient scraperHttpClient;
@@ -59,7 +58,7 @@ public class ScrapingJobDispatcher {
         // seriam silenciosamente descartadas pelo Hibernate (ou lançariam exceção no flush), resultando na perda dos logs de eventos.
         // PROPAGATION_REQUIRES_NEW força o Spring a suspender a transação read-only, abrir uma nova transação com 
         // permissão total de escrita, comitar os registros e, em seguida, retomar a transação original.
-        this.requiresNewTransactionTemplate = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
         this.requiresNewTransactionTemplate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 

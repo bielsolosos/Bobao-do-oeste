@@ -14,10 +14,22 @@ public class AsyncConfig {
     @Bean(name = "scraperDispatcherExecutor")
     public Executor scraperDispatcherExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(50);
-        executor.setQueueCapacity(500);
-        executor.setThreadNamePrefix("ScraperDispatch-");
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("ScrapDispatch-");
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean(name = "webhookProcessorExecutor")
+    public Executor webhookProcessorExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        // Maior capacidade para lidar com gargalos pesados de banco e chamadas de IA
+        executor.setCorePoolSize(20);
+        executor.setMaxPoolSize(100);
+        executor.setQueueCapacity(2000);
+        executor.setThreadNamePrefix("WebhookProc-");
         executor.initialize();
         return executor;
     }

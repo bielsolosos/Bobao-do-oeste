@@ -44,7 +44,7 @@ public class WebhookScrapperService {
     private final AnalisyFactorySelector analisysSelector;
     private final ObjectMapper objectMapper;
 
-    @Async("scraperDispatcherExecutor")
+    @Async("webhookProcessorExecutor")
     @Transactional
     public void processScrappingEvent(WebhookIncomingPayload payload) {
         try {
