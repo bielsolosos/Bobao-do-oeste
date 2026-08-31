@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { MonitorService } from '../../core/services/monitor.service';
+import { AiLogService } from '../../core/services/ai-log.service';
 import { AiAnalysisLogResponse } from '../../core/models/ai-log.model';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
 import { UiBadgeComponent } from '../../shared/components/ui-badge/ui-badge.component';
@@ -143,7 +143,7 @@ import { RouterModule } from '@angular/router';
   `
 })
 export class AiLogsListComponent implements OnInit {
-  private monitorService = inject(MonitorService);
+  private aiLogService = inject(AiLogService);
 
   logs = signal<AiAnalysisLogResponse[]>([]);
   isLoading = signal<boolean>(true);
@@ -155,7 +155,7 @@ export class AiLogsListComponent implements OnInit {
 
   loadLogs() {
     this.isLoading.set(true);
-    this.monitorService.getAllAiLogs(0, 50).subscribe({
+    this.aiLogService.getAllAiLogs(0, 50).subscribe({
       next: (res) => {
         this.logs.set(res.content);
         this.isLoading.set(false);

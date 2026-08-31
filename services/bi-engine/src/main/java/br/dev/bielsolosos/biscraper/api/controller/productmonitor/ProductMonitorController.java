@@ -1,6 +1,6 @@
 package br.dev.bielsolosos.biscraper.api.controller.productmonitor;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.AiAnalysisLogResponse;
+import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
@@ -26,6 +26,7 @@ import java.util.UUID;
 public class ProductMonitorController {
 
     private final ProductMonitorService service;
+    private final AiAnalysisLogService aiAnalysisLogService;
 
     @Operation(summary = "Criar um novo monitor de busca com parâmetros e IA")
     @PostMapping
@@ -64,19 +65,12 @@ public class ProductMonitorController {
         return ResponseEntity.ok(service.listMonitorListings(id, pageable));
     }
 
-    @Operation(summary = "Listar histórico e logs de chamadas de IA do usuário")
-    @GetMapping("/ai-logs")
-    public ResponseEntity<Page<AiAnalysisLogResponse>> listAllAiLogs(
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(service.listAllAiLogs(pageable));
-    }
-
     @Operation(summary = "Listar logs de chamadas de IA de um monitor específico")
     @GetMapping("/{id}/ai-logs")
-    public ResponseEntity<Page<AiAnalysisLogResponse>> listMonitorAiLogs(
+    public ResponseEntity<Page<br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogResponse>> listMonitorAiLogs(
             @PathVariable UUID id,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(service.listMonitorAiLogs(id, pageable));
+        return ResponseEntity.ok(aiAnalysisLogService.listMonitorAiLogs(id, pageable));
     }
 
     @Operation(summary = "Buscar detalhes de um monitor específico pelo ID")

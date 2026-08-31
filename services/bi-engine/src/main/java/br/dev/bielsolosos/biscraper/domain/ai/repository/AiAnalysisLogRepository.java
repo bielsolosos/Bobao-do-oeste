@@ -1,6 +1,6 @@
-package br.dev.bielsolosos.biscraper.domain.monitoring.repository;
+package br.dev.bielsolosos.biscraper.domain.ai.repository;
 
-import br.dev.bielsolosos.biscraper.domain.monitoring.model.AiAnalysisLog;
+import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

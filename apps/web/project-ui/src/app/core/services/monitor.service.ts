@@ -57,11 +57,4 @@ export class MonitorService {
     return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}`);
   }
 
-  getAllAiLogs(page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
-    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${this.apiUrl}/ai-logs?page=${page}&size=${size}`);
-  }
-
-  getMonitorAiLogs(monitorId: string, page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
-    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${this.apiUrl}/${monitorId}/ai-logs?page=${page}&size=${size}`);
-  }
 }

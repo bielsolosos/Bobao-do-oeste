@@ -37,7 +37,22 @@ public class ScrapingJobDispatcher {
     private final ScrapingExecutionRepository scrapingExecutionRepository;
     private final BiScraperProperties properties;
     private final ObjectMapper objectMapper;
-    private final TransactionTemplate transactionTemplate;
+    private final org.springframework.transaction.support.TransactionTemplate requiresNewTransactionTemplate;
+
+    public ScrapingJobDispatcher(ScraperHttpClient scraperHttpClient, 
+                                 WebhookEventRepository webhookEventRepository, 
+                                 ScrapingExecutionRepository scrapingExecutionRepository, 
+                                 BiScraperProperties properties, 
+                                 ObjectMapper objectMapper, 
+                                 org.springframework.transaction.PlatformTransactionManager transactionManager) {
+        this.scraperHttpClient = scraperHttpClient;
+        this.webhookEventRepository = webhookEventRepository;
+        this.scrapingExecutionRepository = scrapingExecutionRepository;
+        this.properties = properties;
+        this.objectMapper = objectMapper;
+        this.requiresNewTransactionTemplate = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        this.requiresNewTransactionTemplate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
 
     @Async("scraperDispatcherExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -60,7 +75,7 @@ public class ScrapingJobDispatcher {
 
             log.info("Criando ScrapingExecution e WebhookEvent com requestId '{}'", requestId);
 
-            WebhookEvent webhookEvent = transactionTemplate.execute(status -> {
+            WebhookEvent webhookEvent = requiresNewTransactionTemplate.execute(status -> {
                 // 1. Registra o evento de Webhook inicial para rastreamento
                 WebhookEvent we = WebhookEvent.builder()
                         .requestId(requestId)

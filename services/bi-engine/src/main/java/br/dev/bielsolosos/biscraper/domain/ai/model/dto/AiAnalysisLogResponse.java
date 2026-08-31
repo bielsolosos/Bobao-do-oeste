@@ -1,4 +1,4 @@
-package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor;
+package br.dev.bielsolosos.biscraper.domain.ai.model.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

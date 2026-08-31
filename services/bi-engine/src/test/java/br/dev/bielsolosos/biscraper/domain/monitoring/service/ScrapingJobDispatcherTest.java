@@ -42,6 +42,9 @@ class ScrapingJobDispatcherTest {
     @Spy
     private BiScraperProperties properties = new BiScraperProperties();
 
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -81,6 +84,7 @@ class ScrapingJobDispatcherTest {
         );
 
         when(scraperHttpClient.dispatchAsyncScrape(any(AsyncScrapeClientRequest.class))).thenReturn(clientResponse);
+        when(transactionManager.getTransaction(any())).thenReturn(new org.springframework.transaction.support.SimpleTransactionStatus());
         when(webhookEventRepository.save(any(WebhookEvent.class))).thenAnswer(i -> i.getArgument(0));
         when(scrapingExecutionRepository.save(any(ScrapingExecution.class))).thenAnswer(i -> i.getArgument(0));
 

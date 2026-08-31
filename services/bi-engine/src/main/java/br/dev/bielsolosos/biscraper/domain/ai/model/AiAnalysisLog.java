@@ -1,9 +1,11 @@
-package br.dev.bielsolosos.biscraper.domain.monitoring.model;
+package br.dev.bielsolosos.biscraper.domain.ai.model;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

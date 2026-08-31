@@ -5,6 +5,7 @@ import { MonitorService } from '../../../core/services/monitor.service';
 import { ProductMonitorResponse } from '../../../core/models/monitor.model';
 import { ScrapedListingResponse } from '../../../core/models/listing.model';
 import { AiAnalysisLogResponse } from '../../../core/models/ai-log.model';
+import { AiLogService } from '../../../core/services/ai-log.service';
 import { UiTabsComponent, TabItem } from '../../../shared/components/ui-tabs/ui-tabs.component';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
@@ -201,6 +202,7 @@ import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.c
 })
 export class MonitorDetailComponent implements OnInit {
   private monitorService = inject(MonitorService);
+  private aiLogService = inject(AiLogService);
   private route = inject(ActivatedRoute);
 
   monitorId: string = '';
@@ -263,7 +265,7 @@ export class MonitorDetailComponent implements OnInit {
 
   loadAiLogs() {
     this.isLoadingAiLogs.set(true);
-    this.monitorService.getMonitorAiLogs(this.monitorId, 0, 50).subscribe({
+    this.aiLogService.getMonitorAiLogs(this.monitorId, 0, 50).subscribe({
       next: (res) => {
         this.aiLogs.set(res.content);
         this.isLoadingAiLogs.set(false);

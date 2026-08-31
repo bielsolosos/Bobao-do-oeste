@@ -39,6 +39,9 @@ class ProductMonitorControllerTest {
     @Mock
     private ProductMonitorService service;
 
+    @Mock
+    private br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService aiAnalysisLogService;
+
     @InjectMocks
     private ProductMonitorController controller;
 
