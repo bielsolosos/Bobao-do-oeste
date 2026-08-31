@@ -133,8 +133,11 @@ public class ScrapingJobDispatcher {
 
             if (response != null && response.jobId() != null) {
                 MDC.put("jobId", response.jobId());
-                webhookEvent.setJobId(response.jobId());
-                webhookEventRepository.save(webhookEvent);
+                requiresNewTransactionTemplate.execute(status -> {
+                    WebhookEvent evt = webhookEventRepository.findById(webhookEvent.getId()).orElse(webhookEvent);
+                    evt.setJobId(response.jobId());
+                    return webhookEventRepository.save(evt);
+                });
             }
 
             log.info("Scraper Python enfileirou com sucesso! JobId: '{}'", response != null ? response.jobId() : "N/A");
