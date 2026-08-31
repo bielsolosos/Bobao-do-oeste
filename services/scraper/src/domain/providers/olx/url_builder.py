@@ -63,7 +63,9 @@ class OlxUrlBuilder:
         path = "/".join(path_parts)
         url = f"{cls.BASE_DOMAIN}/{path}"
 
-        query_params = {}
+        query_params = {
+            "sf": "1",
+        }
 
         if request.keyword:
             query_params["q"] = request.keyword.strip()

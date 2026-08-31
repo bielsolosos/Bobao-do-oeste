@@ -11,7 +11,7 @@ def test_olx_url_builder_national_search_default():
         keyword="thinkpad",
     )
     url1 = OlxUrlBuilder.build(req1)
-    assert url1 == "https://www.olx.com.br/brasil?q=thinkpad"
+    assert url1 == "https://www.olx.com.br/brasil?sf=1&q=thinkpad"
 
     req2 = ScrapeRequest(
         vendor=VendorEnum.OLX,
@@ -22,7 +22,7 @@ def test_olx_url_builder_national_search_default():
         require_delivery=True,
     )
     url2 = OlxUrlBuilder.build(req2)
-    assert url2 == "https://www.olx.com.br/brasil?q=notebook&ps=500&pe=1000&olxpay=1"
+    assert url2 == "https://www.olx.com.br/brasil?sf=1&q=notebook&ps=500&pe=1000&olxpay=1"
 
     req3 = ScrapeRequest(
         vendor=VendorEnum.OLX,
@@ -30,7 +30,7 @@ def test_olx_url_builder_national_search_default():
         state="br",
     )
     url3 = OlxUrlBuilder.build(req3)
-    assert url3 == "https://www.olx.com.br/brasil?q=rtx+4090"
+    assert url3 == "https://www.olx.com.br/brasil?sf=1&q=rtx+4090"
 
 
 def test_olx_url_builder_state_search():
@@ -50,6 +50,7 @@ def test_olx_url_builder_state_search():
     assert "informatica-e-acessorios/notebooks" in url
     assert "estado-sp" in url
     assert "sao-paulo-e-regiao" in url
+    assert "sf=1" in url
     assert "q=thinkpad+t480" in url
     assert "ps=800" in url
     assert "pe=2000" in url
@@ -63,6 +64,7 @@ def test_olx_url_builder_pagination():
     )
     url_p2 = OlxUrlBuilder.build(req, page=2)
     assert "o=2" in url_p2
+    assert "sf=1" in url_p2
 
 
 def test_olx_parser_next_data_extraction():
