@@ -40,6 +40,7 @@ class ScrapingService:
         self.session.add(execution)
         await self.session.commit()
         await self.session.refresh(execution)
+        execution_id = execution.id
 
         try:
             # 3. Resolve o provedor e executa a coleta
@@ -47,7 +48,7 @@ class ScrapingService:
             scraped_items, used_fallback = await provider.scrape(request)
 
             # 4. Grava/atualiza os anúncios no banco em lote
-            new_items_count = await self._persist_listings(execution.id, scraped_items)
+            new_items_count = await self._persist_listings(execution_id, scraped_items)
 
             # 5. Finaliza a execução com status SUCCESS
             finished_at = datetime.now(timezone.utc)
@@ -65,7 +66,7 @@ class ScrapingService:
             await self.session.refresh(execution)
 
             logger.info(
-                f"Scraping execution {execution.id} finished successfully. "
+                f"Scraping execution {execution_id} finished successfully. "
                 f"Found {len(scraped_items)} items ({new_items_count} new) in {duration_ms}ms"
             )
 
@@ -77,21 +78,36 @@ class ScrapingService:
 
         except Exception as e:
             await self.session.rollback()
-            logger.error(f"Scraping execution {execution.id} failed: {e}", exc_info=True)
+            logger.error(f"Scraping execution {execution_id} failed: {e}", exc_info=True)
             finished_at = datetime.now(timezone.utc)
             duration_ms = int((time.perf_counter() - start_time) * 1000)
 
-            execution.status = ExecutionStatusEnum.FAILED
-            execution.finished_at = finished_at
-            execution.duration_ms = duration_ms
-            execution.error_message = str(e)
-
-            self.session.add(execution)
-            await self.session.commit()
+            stmt = select(ScrapingExecution).where(ScrapingExecution.id == execution_id)
+            res = await self.session.execute(stmt)
+            exec_to_update = res.scalars().first()
+            if exec_to_update:
+                exec_to_update.status = ExecutionStatusEnum.FAILED
+                exec_to_update.finished_at = finished_at
+                exec_to_update.duration_ms = duration_ms
+                exec_to_update.error_message = str(e)
+                self.session.add(exec_to_update)
+                await self.session.commit()
+                await self.session.refresh(exec_to_update)
+                summary = ExecutionSummaryDTO.model_validate(exec_to_update)
+            else:
+                summary = ExecutionSummaryDTO(
+                    id=execution_id,
+                    vendor=request.vendor,
+                    status=ExecutionStatusEnum.FAILED,
+                    error_message=str(e)[:500],
+                    started_at=started_at,
+                    finished_at=finished_at,
+                    duration_ms=duration_ms,
+                )
 
             return ScrapeResponse(
                 success=False,
-                execution=ExecutionSummaryDTO.model_validate(execution),
+                execution=summary,
                 items=[],
             )
 
