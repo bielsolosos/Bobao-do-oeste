@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -37,19 +37,28 @@ public class ScrapingJobDispatcher {
     private final ScrapingExecutionRepository scrapingExecutionRepository;
     private final BiScraperProperties properties;
     private final ObjectMapper objectMapper;
-    private final org.springframework.transaction.support.TransactionTemplate requiresNewTransactionTemplate;
+    private final TransactionTemplate requiresNewTransactionTemplate;
 
     public ScrapingJobDispatcher(ScraperHttpClient scraperHttpClient, 
                                  WebhookEventRepository webhookEventRepository, 
                                  ScrapingExecutionRepository scrapingExecutionRepository, 
                                  BiScraperProperties properties, 
                                  ObjectMapper objectMapper, 
-                                 org.springframework.transaction.PlatformTransactionManager transactionManager) {
+                                 PlatformTransactionManager transactionManager) {
         this.scraperHttpClient = scraperHttpClient;
         this.webhookEventRepository = webhookEventRepository;
         this.scrapingExecutionRepository = scrapingExecutionRepository;
         this.properties = properties;
         this.objectMapper = objectMapper;
+        
+        // DOCUMENTAÇÃO ARQUITETURAL: Por que REQUIRES_NEW?
+        // O método dispatchQuery frequentemente é chamado a partir de um contexto de agendamento (ScrapingScheduler)
+        // que possui uma transação @Transactional(readOnly = true) para carregar lazy collections.
+        // Se utilizássemos o comportamento padrão (Propagation.REQUIRED), o TransactionTemplate entraria de carona
+        // na transação read-only do pai. Consequentemente, as operações de INSERT abaixo (WebhookEvent e ScrapingExecution)
+        // seriam silenciosamente descartadas pelo Hibernate (ou lançariam exceção no flush), resultando na perda dos logs de eventos.
+        // PROPAGATION_REQUIRES_NEW força o Spring a suspender a transação read-only, abrir uma nova transação com 
+        // permissão total de escrita, comitar os registros e, em seguida, retomar a transação original.
         this.requiresNewTransactionTemplate = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
         this.requiresNewTransactionTemplate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
