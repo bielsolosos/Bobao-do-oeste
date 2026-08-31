@@ -74,3 +74,13 @@ export interface PageResponse<T> {
   numberOfElements: number;
   empty: boolean;
 }
+
+export interface ScraperQueueStatusResponse {
+  queued_jobs: number;
+  running_jobs: number;
+  total_pending_jobs: number;
+  pending_webhooks: number;
+  total_success_jobs: number;
+  total_failed_jobs: number;
+}
+

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
-import { ProductMonitorRequest, ProductMonitorResponse, PageResponse } from '../models/monitor.model';
+import { ProductMonitorRequest, ProductMonitorResponse, PageResponse, ScraperQueueStatusResponse } from '../models/monitor.model';
 import { ScrapedListingResponse } from '../models/listing.model';
 import { AiAnalysisLogResponse } from '../models/ai-log.model';
 
@@ -57,4 +57,8 @@ export class MonitorService {
     return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}&sort=${sort}`);
   }
 
+  getScraperQueueStatus(): Observable<ScraperQueueStatusResponse> {
+    return this.http.get<ScraperQueueStatusResponse>(`${environment.apiUrl}/scraper/queue-status`);
+  }
 }
+

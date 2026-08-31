@@ -30,7 +30,7 @@ import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.compone
           </div>
           <span
             class="ml-3 text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-white"
-            >BI Engine</span
+            >Bobão do Oeste</span
           >
         </div>
 

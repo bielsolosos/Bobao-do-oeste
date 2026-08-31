@@ -90,3 +90,30 @@ async def test_execution_service_crud():
         exec_list = await service.list_executions(vendor=VendorEnum.OLX)
         assert len(exec_list) >= 1
         assert any(e.execution_id == exec_item.id for e in exec_list)
+
+
+@pytest.mark.asyncio
+async def test_queue_service_metrics():
+    from src.domain.enums import DeliveryStatusEnum, JobStatusEnum
+    from src.domain.models import ScrapeJob, WebhookDelivery
+    from src.domain.services import QueueService
+
+    async with async_session_maker() as session:
+        job1 = ScrapeJob(vendor=VendorEnum.OLX, status=JobStatusEnum.QUEUED, request_payload={})
+        job2 = ScrapeJob(vendor=VendorEnum.OLX, status=JobStatusEnum.RUNNING, request_payload={})
+        session.add_all([job1, job2])
+        await session.commit()
+        await session.refresh(job1)
+
+        wh1 = WebhookDelivery(scrape_job_id=job1.id, request_id="req-wh-1", webhook_url="http://test", status=DeliveryStatusEnum.PENDING)
+        session.add(wh1)
+        await session.commit()
+
+        service = QueueService(session)
+        stats = await service.get_queue_status()
+
+        assert stats.queued_jobs >= 1
+        assert stats.running_jobs >= 1
+        assert stats.total_pending_jobs >= 2
+        assert stats.pending_webhooks >= 1
+

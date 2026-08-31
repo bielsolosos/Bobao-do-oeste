@@ -123,3 +123,15 @@ class WebhookPayload(BaseModel):
     job_id: str
     status: str = Field(..., description="SUCCESS ou FAILED")
     response: Dict[str, Any] = Field(..., description="ScrapeResponse completo em formato dict")
+
+
+class QueueStatusDTO(BaseModel):
+    """Métricas em tempo real da fila de execução do Scraper e de entregas de webhooks."""
+
+    queued_jobs: int = 0
+    running_jobs: int = 0
+    total_pending_jobs: int = 0
+    pending_webhooks: int = 0
+    total_success_jobs: int = 0
+    total_failed_jobs: int = 0
+

@@ -4,6 +4,7 @@ from src.api.v1.async_scrape_routes import router as async_scrape_router
 from src.api.v1.dashboard_routes import router as dashboard_router
 from src.api.v1.execution_routes import router as executions_router
 from src.api.v1.listing_routes import router as listings_router
+from src.api.v1.queue_routes import router as queue_router
 from src.api.v1.scrape_routes import router as scrape_router
 from src.api.v1.webhook_routes import router as webhook_router
 from src.core.security import verify_basic_auth
@@ -15,6 +16,7 @@ api_router.include_router(async_scrape_router)
 api_router.include_router(executions_router)
 api_router.include_router(listings_router)
 api_router.include_router(webhook_router)
+api_router.include_router(queue_router)
 
 # Router principal
 main_router = APIRouter()
