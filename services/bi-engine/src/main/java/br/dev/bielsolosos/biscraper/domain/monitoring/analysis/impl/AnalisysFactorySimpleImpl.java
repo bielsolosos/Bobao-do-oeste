@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions.Builder;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
@@ -111,17 +112,15 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         String userPrompt = "Analise os seguintes anúncios:\n" + itemsJson;
 
         try {
-            ChatOptions options = ChatOptions.builder()
-                    .model(modelName)
-                    .temperature(0.2)
-                    .build();
 
-            BatchAnalysisResponse aiResponse = chatClient.prompt()
-                    .options(options)
-                    .system(systemPrompt)
-                    .user(userPrompt)
-                    .call()
-                    .entity(BatchAnalysisResponse.class);
+             BatchAnalysisResponse aiResponse = chatClient.prompt()
+                     .options(ChatOptions.builder()
+                             .model(modelName)
+                             .temperature(0.2))
+                     .system(systemPrompt)
+                     .user(userPrompt)
+                     .call()
+                     .entity(BatchAnalysisResponse.class);
 
             int durationMs = (int) (System.currentTimeMillis() - startTime);
 

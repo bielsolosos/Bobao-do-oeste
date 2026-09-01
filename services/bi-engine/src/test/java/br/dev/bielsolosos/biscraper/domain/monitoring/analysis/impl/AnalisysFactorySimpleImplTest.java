@@ -23,6 +23,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.lang.module.ModuleDescriptor.Builder;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,7 +96,7 @@ class AnalisysFactorySimpleImplTest {
         BatchAnalysisResponse aiResponse = new BatchAnalysisResponse(List.of(res1, res2, res3));
 
         when(chatClient.prompt()
-                .options(any(ChatOptions.class))
+                .options(any(ChatOptions.Builder.class))
                 .system(anyString())
                 .user(anyString())
                 .call()
@@ -145,7 +147,7 @@ class AnalisysFactorySimpleImplTest {
         AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository);
 
         when(chatClient.prompt()
-                .options(any(ChatOptions.class))
+                .options(any(ChatOptions.Builder.class))
                 .system(anyString())
                 .user(anyString())
                 .call()
