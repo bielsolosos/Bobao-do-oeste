@@ -11,7 +11,7 @@ from selectolax.parser import HTMLParser
 
 from src.core.logger import logger
 from src.domain.enums import DeliveryTypeEnum, VendorEnum
-from src.domain.schemas import ScrapedListingDTO
+from src.domain.schemas import ScrapedListingDTO, ScrapedListingDetailDTO
 
 
 class OlxPayloadParser:
@@ -244,3 +244,174 @@ class OlxPayloadParser:
             except Exception:
                 return None
         return None
+
+    @classmethod
+    def parse_ad_detail_html(cls, html_content: str, url: str) -> Optional[ScrapedListingDetailDTO]:
+        """Extrai todos os dados profundos e galeria de fotos da página interna de um anúncio na OLX."""
+        if not html_content:
+            return None
+
+        tree = HTMLParser(html_content)
+
+        # 1. Tentativa de extração via __NEXT_DATA__
+        next_data_node = tree.css_first('script#__NEXT_DATA__[type="application/json"]')
+        if next_data_node and next_data_node.text():
+            try:
+                data = json.loads(next_data_node.text())
+                detail = cls._extract_detail_from_next_data(data, url)
+                if detail:
+                    logger.info(f"Successfully extracted ad detail from __NEXT_DATA__ for {url}")
+                    return detail
+            except Exception as e:
+                logger.warning(f"Failed extracting ad detail from __NEXT_DATA__: {e}. Falling back to DOM.")
+
+        # 2. Extração via DOM
+        detail = cls._extract_detail_from_dom(tree, url)
+        if detail:
+            logger.info(f"Extracted ad detail via DOM fallback for {url}")
+            return detail
+
+        logger.error(f"Failed to extract ad detail from both NEXT_DATA and DOM for {url}")
+        return None
+
+    @classmethod
+    def _extract_detail_from_next_data(cls, data: Dict[str, Any], url: str) -> Optional[ScrapedListingDetailDTO]:
+        page_props = data.get("props", {}).get("pageProps", {})
+        ad = (
+            page_props.get("ad")
+            or page_props.get("initialData", {}).get("ad")
+            or page_props.get("adData")
+            or page_props
+        )
+
+        if not isinstance(ad, dict):
+            return None
+
+        # ID do anúncio
+        id_match = re.search(r"-(\d{8,12})(?:\?|$)", url)
+        listing_id = str(ad.get("listId") or ad.get("id") or (id_match.group(1) if id_match else ""))
+        if not listing_id:
+            return None
+
+        title = str(ad.get("subject") or ad.get("title") or "Sem título").strip()
+        description = ad.get("body") or ad.get("description")
+        price = cls._parse_price(ad.get("price") or ad.get("priceValue") or ad.get("rawPrice"))
+        old_price = cls._parse_price(ad.get("oldPrice") or ad.get("originalPrice"))
+
+        # Localização
+        location = ad.get("location") or {}
+        state = location.get("uf") or location.get("state")
+        city = location.get("municipality") or location.get("city")
+        neighborhood = location.get("neighbourhood") or location.get("neighborhood")
+
+        # Entrega
+        has_delivery = bool(
+            ad.get("olxPay") or ad.get("olxDelivery") or ad.get("hasOlxPay") or ad.get("deliveryAvailable")
+        )
+        delivery_type = DeliveryTypeEnum.OLX_PAY if has_delivery else DeliveryTypeEnum.HAND_DELIVERY
+
+        # Fotos completas em alta definição
+        images: List[str] = []
+        raw_images = ad.get("images") or ad.get("photos") or []
+        for img in raw_images:
+            if isinstance(img, str):
+                images.append(img)
+            elif isinstance(img, dict):
+                img_url = img.get("original") or img.get("url") or img.get("thumbnail")
+                if img_url:
+                    images.append(img_url)
+
+        # Propriedades e especificações detalhadas (RAM, SSD, Modelo, Condição, etc)
+        properties: Dict[str, Any] = {}
+        raw_props = ad.get("properties") or ad.get("adParameters") or ad.get("attributes") or []
+        for prop in raw_props:
+            if isinstance(prop, dict):
+                label = prop.get("label") or prop.get("name") or prop.get("title")
+                val = prop.get("value") or prop.get("formattedValue")
+                if label and val:
+                    properties[str(label).strip()] = val
+
+        # Dados do Vendedor
+        user = ad.get("user") or ad.get("seller") or ad.get("owner") or {}
+        seller_name = user.get("name") or user.get("nickname")
+        seller_info = {
+            "user_id": user.get("userId") or user.get("id"),
+            "member_since": user.get("memberSince") or user.get("createdAt"),
+            "verified": user.get("verified"),
+        }
+
+        pub_date = cls._parse_date(ad.get("date") or ad.get("dateCreated") or ad.get("publicationDate"))
+
+        return ScrapedListingDetailDTO(
+            vendor=VendorEnum.OLX,
+            vendor_listing_id=listing_id,
+            url=url,
+            title=title,
+            price=price,
+            original_price=old_price,
+            description=description,
+            state=state,
+            city=city,
+            neighborhood=neighborhood,
+            has_delivery=has_delivery,
+            delivery_type=delivery_type,
+            properties=properties,
+            images=images,
+            seller_name=seller_name,
+            seller_info=seller_info,
+            published_at=pub_date,
+            scraped_at=datetime.now(timezone.utc),
+        )
+
+    @classmethod
+    def _extract_detail_from_dom(cls, tree: HTMLParser, url: str) -> Optional[ScrapedListingDetailDTO]:
+        id_match = re.search(r"-(\d{8,12})(?:\?|$)", url)
+        listing_id = id_match.group(1) if id_match else ""
+        if not listing_id:
+            return None
+
+        # Título
+        h1 = tree.css_first("h1")
+        title = h1.text(strip=True) if h1 else "Sem título"
+
+        # Preço
+        price = 0.0
+        price_node = tree.css_first("[class*='ad__price'], [data-testid='ad-price'], h2[class*='price']")
+        if price_node:
+            price = cls._parse_price(price_node.text(strip=True))
+
+        # Descrição
+        desc_node = tree.css_first("[class*='ad__description'], [data-testid='ad-description'], span[class*='description']")
+        description = desc_node.text(strip=True) if desc_node else ""
+
+        # Imagens
+        images: List[str] = []
+        for img in tree.css("img[src*='olx.com.br']"):
+            src = img.attributes.get("src") or img.attributes.get("data-src")
+            if src and "logo" not in src and src not in images:
+                images.append(src)
+
+        # Propriedades
+        properties: Dict[str, Any] = {}
+        for prop_row in tree.css("[data-testid='ad-properties'] div, [class*='ad__properties'] div"):
+            text = prop_row.text(strip=True)
+            if ":" in text:
+                parts = text.split(":", 1)
+                properties[parts[0].strip()] = parts[1].strip()
+
+        state_match = re.search(r"https?://([a-z]{2})\.olx\.com\.br", url)
+        state = state_match.group(1).upper() if state_match else None
+
+        return ScrapedListingDetailDTO(
+            vendor=VendorEnum.OLX,
+            vendor_listing_id=listing_id,
+            url=url,
+            title=title,
+            price=price,
+            description=description,
+            state=state,
+            properties=properties,
+            images=images,
+            scraped_at=datetime.now(timezone.utc),
+        )
+
