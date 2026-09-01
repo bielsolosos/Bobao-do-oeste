@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     WEBHOOK_DELIVERY_MAX_BACKOFF_SECONDS: float = 60.0
     WEBHOOK_STUCK_TIMEOUT_SECONDS: int = 60
 
+    # Cache Cleanup Background Task Settings (1 hour by default)
+    CACHE_CLEANUP_INTERVAL_SECONDS: int = 3600
+
     @property
     def is_sqlite(self) -> bool:
         return self.DATABASE_URL.startswith("sqlite")

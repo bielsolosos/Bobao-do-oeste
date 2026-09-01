@@ -8,6 +8,7 @@ from src.api.router import main_router
 from src.core.config import settings
 from src.core.database import init_db
 from src.core.logger import logger
+from src.core.workers.cache_cleanup import get_cache_cleanup_worker
 from src.core.workers.scrape import get_scrape_worker
 from src.core.workers.webhook import get_webhook_worker
 
@@ -19,15 +20,18 @@ async def lifespan(app: FastAPI):
 
     scrape_worker = get_scrape_worker()
     webhook_worker = get_webhook_worker()
+    cleanup_worker = get_cache_cleanup_worker()
 
     if settings.APP_ENV != "testing":
         await scrape_worker.start()
         await webhook_worker.start()
+        await cleanup_worker.start()
 
     try:
         yield
     finally:
         if settings.APP_ENV != "testing":
+            await cleanup_worker.stop()
             await webhook_worker.stop()
             await scrape_worker.stop()
         logger.info(f"Shutting down {settings.APP_NAME}...")

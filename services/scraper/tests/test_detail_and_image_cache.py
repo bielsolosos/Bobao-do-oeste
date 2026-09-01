@@ -188,3 +188,21 @@ async def test_scrape_detail_api_endpoint():
             assert img_resp.status_code == 200
             assert img_resp.content == fake_bytes
             assert img_resp.headers["content-type"] == "image/jpeg"
+
+
+@pytest.mark.asyncio
+async def test_cache_cleanup_worker_lifecycle():
+    from src.core.workers.cache_cleanup import CacheCleanupWorker
+
+    worker = CacheCleanupWorker(interval_seconds=3600)
+    await worker.start()
+    assert worker._task is not None
+    assert not worker._task.done()
+
+    # Executa uma rodada manual de limpeza
+    deleted = await worker.run_once()
+    assert isinstance(deleted, int)
+
+    await worker.stop()
+    assert worker._stop_event.is_set()
+

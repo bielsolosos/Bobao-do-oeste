@@ -11,7 +11,7 @@ from sqlmodel import col, delete, select
 from src.core.engine.http_client import SmartHttpClient
 from src.core.logger import logger
 from src.domain.enums import VendorEnum
-from src.domain.models import AdImageCache
+from src.domain.models import AdDetailCache, AdImageCache
 from src.domain.schemas import CachedImageDTO
 
 
@@ -134,12 +134,22 @@ class ImageCacheService:
         return cached_dtos
 
     async def cleanup_expired(self) -> int:
-        """Exclui todas as imagens cujo TTL expirou."""
+        """Exclui todas as imagens e detalhes em cache cujo TTL expirou."""
         now = datetime.now(timezone.utc)
-        stmt = delete(AdImageCache).where(AdImageCache.expires_at <= now)
-        res = await self.session.execute(stmt)
+        stmt_img = delete(AdImageCache).where(AdImageCache.expires_at <= now)
+        res_img = await self.session.execute(stmt_img)
+
+        stmt_detail = delete(AdDetailCache).where(AdDetailCache.expires_at <= now)
+        res_detail = await self.session.execute(stmt_detail)
+
         await self.session.commit()
-        deleted_count = res.rowcount or 0
-        if deleted_count > 0:
-            logger.info(f"Cleaned up {deleted_count} expired images from SQLite cache.")
-        return deleted_count
+        deleted_images = res_img.rowcount or 0
+        deleted_details = res_detail.rowcount or 0
+        total_deleted = deleted_images + deleted_details
+
+        if total_deleted > 0:
+            logger.info(
+                f"Purged expired cache from SQLite: {deleted_images} images, {deleted_details} ad details."
+            )
+        return total_deleted
+
