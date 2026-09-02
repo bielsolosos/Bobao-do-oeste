@@ -3,14 +3,15 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.analysis.impl;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
+import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
+import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogRepository;
+import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.BatchAnalysisResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.ItemAnalysisResult;
-import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
-import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +24,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.beans.factory.ObjectProvider;
 
-import java.lang.module.ModuleDescriptor.Builder;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -49,6 +49,9 @@ class AnalisysFactorySimpleImplTest {
     @Mock
     private AiAnalysisLogRepository aiAnalysisLogRepository;
 
+    @Mock
+    private ScrappingDetailsTools detailsTools;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ScrapingExecution execution;
@@ -73,17 +76,17 @@ class AnalisysFactorySimpleImplTest {
     @DisplayName("Deve retornar AnalysisType.SIMPLE")
     void shouldReturnCorrectAnalysisType() {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
         assertEquals(AnalysisType.SIMPLE, factory.getAnalisysType());
     }
 
     @Test
     @DisplayName("Deve classificar anúncios em Tiers e salvar AiAnalysisLog quando Gemini responder com sucesso")
-    void shouldClassifyItemsIntoTiersSuccessfully() {
+    void shouldClassifyItemsIntoTiersSuccessfully() throws Exception {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
 
         ScrapedListingDTO item1 = createListing("item-1", "Dell G15 i7 16GB RTX 3050", BigDecimal.valueOf(3500));
         ScrapedListingDTO item2 = createListing("item-2", "Acer Nitro 5 i5 8GB", BigDecimal.valueOf(2800));
@@ -95,10 +98,20 @@ class AnalisysFactorySimpleImplTest {
 
         BatchAnalysisResponse aiResponse = new BatchAnalysisResponse(List.of(res1, res2, res3));
 
+        // Etapa 1: Retorna a análise enriquecida em texto
+        when(chatClient.prompt()
+                .tools(any())
+                .options(any(ChatOptions.Builder.class))
+                .system(any(java.util.function.Consumer.class))
+                .user(any(java.util.function.Consumer.class))
+                .call()
+                .content()).thenReturn("Análise enriquecida preliminar dos anúncios com Tools");
+
+        // Etapa 2: Estrutura no DTO BatchAnalysisResponse
         when(chatClient.prompt()
                 .options(any(ChatOptions.Builder.class))
-                .system(anyString())
-                .user(anyString())
+                .system(any(java.util.function.Consumer.class))
+                .user(any(java.util.function.Consumer.class))
                 .call()
                 .entity(BatchAnalysisResponse.class)).thenReturn(aiResponse);
 
@@ -119,7 +132,7 @@ class AnalisysFactorySimpleImplTest {
         assertEquals(MatchTier.NONE, results.get(2).matchTier());
         assertEquals(BigDecimal.valueOf(20.0).setScale(2), results.get(2).matchScore());
 
-        verify(aiAnalysisLogRepository, times(1)).save(any(AiAnalysisLog.class));
+        verify(aiAnalysisLogRepository, times(2)).save(any(AiAnalysisLog.class));
     }
 
     @Test
@@ -127,7 +140,7 @@ class AnalisysFactorySimpleImplTest {
     void shouldFallbackWhenChatClientUnavailable() {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
 
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
 
         ScrapedListingDTO item1 = createListing("item-1", "Notebook", BigDecimal.valueOf(3000));
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -144,14 +157,15 @@ class AnalisysFactorySimpleImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
 
         when(chatClient.prompt()
+                .tools(any())
                 .options(any(ChatOptions.Builder.class))
-                .system(anyString())
-                .user(anyString())
+                .system(any(java.util.function.Consumer.class))
+                .user(any(java.util.function.Consumer.class))
                 .call()
-                .entity(BatchAnalysisResponse.class)).thenThrow(new RuntimeException("Gemini quota 429 exceeded"));
+                .content()).thenThrow(new RuntimeException("Gemini quota 429 exceeded"));
 
         ScrapedListingDTO item1 = createListing("item-1", "Notebook", BigDecimal.valueOf(3000));
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));

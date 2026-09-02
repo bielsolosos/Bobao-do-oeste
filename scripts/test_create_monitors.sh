@@ -6,7 +6,7 @@
 
 set -e
 
-BASE_URL="${API_URL:-https://dsdhidk2zh3q113xogtsr0k1.devops.bielsolosos.dev.br}"
+BASE_URL="${API_URL:-http://localhost:8080}"
 USERNAME="${API_USER:-admin}"
 PASSWORD="${API_PASS:-admin123}"
 
@@ -43,27 +43,19 @@ fi
 echo -e "${GREEN}✅ Autenticado com sucesso! Token JWT obtido.${NC}"
 echo ""
 
-# 2. Criar Monitor 1 - NOTEBOOK (A cada 1 minuto)
-echo -e "${BLUE}[2/3] Criando Monitor 1: ThinkPad T480 (NOTEBOOK - EVERY_MINUTE)...${NC}"
+# 2. Criar Monitor 1 - SIMPLE (A cada 5 minutos)
+echo -e "${BLUE}[2/2] Criando Monitor: Teste Tool (MacBook M1)...${NC}"
 MONITOR_NOTEBOOK_PAYLOAD='{
-  "name": "ThinkPad T480 SP",
-  "description": "Monitoramento rápido de ThinkPad T480",
+  "name": "Teste Tool",
   "vendor": "OLX",
-  "analysisType": "NOTEBOOK",
+  "frequency": "EVERY_5_MINUTES",
+  "analysisType": "SIMPLE",
   "analysisTypeFields": {
-    "minimumRamGb": 16,
-    "needsDedicatedGpu": false,
-    "requiredProcessor": "i5 ou i7",
-    "requiredStorage": "256GB SSD"
+    "prompt": "Preciso de Macs m1 e que sejam especificamente m1 ou de apple silicon. Busque na descrição e nas especificações também"
   },
   "searchKeywords": [
-    "thinkpad t480"
-  ],
-  "minPrice": 800.00,
-  "maxPrice": 2200.00,
-  "stateFilter": "sp",
-  "requireDelivery": true,
-  "frequency": "EVERY_MINUTE"
+    "macbook"
+  ]
 }'
 
 RESPONSE_MONITOR_1=$(curl -s -X POST "${BASE_URL}/api/v1/product-monitors" \
@@ -75,34 +67,34 @@ echo -e "${GREEN}✅ Resposta do Monitor 1:${NC}"
 echo "${RESPONSE_MONITOR_1}"
 echo ""
 
-# 3. Criar Monitor 2 - SIMPLE (A cada 1 minuto)
-echo -e "${BLUE}[3/3] Criando Monitor 2: RTX 3060 (SIMPLE - EVERY_MINUTE)...${NC}"
-MONITOR_GPU_PAYLOAD='{
-  "name": "RTX 3060 SP",
-  "description": "Monitoramento rápido de GPU RTX 3060",
-  "vendor": "OLX",
-  "analysisType": "SIMPLE",
-  "analysisTypeFields": {
-    "prompt": "Avaliar se a placa é 12GB e em bom estado de conservação"
-  },
-  "searchKeywords": [
-    "rtx 3060"
-  ],
-  "minPrice": 1000.00,
-  "maxPrice": 1900.00,
-  "stateFilter": "sp",
-  "requireDelivery": true,
-  "frequency": "EVERY_MINUTE"
-}'
+# # 3. Criar Monitor 2 - SIMPLE (A cada 1 minuto)
+# echo -e "${BLUE}[3/3] Criando Monitor 2: RTX 3060 (SIMPLE - EVERY_MINUTE)...${NC}"
+# MONITOR_GPU_PAYLOAD='{
+#   "name": "RTX 3060 SP",
+#   "description": "Monitoramento rápido de GPU RTX 3060",
+#   "vendor": "OLX",
+#   "analysisType": "SIMPLE",
+#   "analysisTypeFields": {
+#     "prompt": "Avaliar se a placa é 12GB e em bom estado de conservação"
+#   },
+#   "searchKeywords": [
+#     "rtx 3060"
+#   ],
+#   "minPrice": 1000.00,
+#   "maxPrice": 1900.00,
+#   "stateFilter": "sp",
+#   "requireDelivery": true,
+#   "frequency": "EVERY_MINUTE"
+# }'
 
-RESPONSE_MONITOR_2=$(curl -s -X POST "${BASE_URL}/api/v1/product-monitors" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -d "${MONITOR_GPU_PAYLOAD}")
+# RESPONSE_MONITOR_2=$(curl -s -X POST "${BASE_URL}/api/v1/product-monitors" \
+#   -H "Content-Type: application/json" \
+#   -H "Authorization: Bearer ${TOKEN}" \
+#   -d "${MONITOR_GPU_PAYLOAD}")
 
-echo -e "${GREEN}✅ Resposta do Monitor 2:${NC}"
-echo "${RESPONSE_MONITOR_2}"
-echo ""
+# echo -e "${GREEN}✅ Resposta do Monitor 2:${NC}"
+# echo "${RESPONSE_MONITOR_2}"
+# echo ""
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${GREEN}🎉 2 Monitores criados com frequência EVERY_MINUTE!${NC}"
 echo -e "${GREEN}Eles dispararam imediatamente e continuarão rodando a cada 60s pelo Scheduler!${NC}"
