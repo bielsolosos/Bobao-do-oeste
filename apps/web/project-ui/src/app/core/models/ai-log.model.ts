@@ -12,5 +12,8 @@ export interface AiAnalysisLogResponse {
   status: 'SUCCESS' | 'ERROR';
   durationMs?: number;
   errorMessage?: string;
+  promptTokens?: number;
+  generationTokens?: number;
+  totalTokens?: number;
   createdAt: string;
 }
