@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "Marketplace Scraper Service"
     APP_ENV: str = "development"
+    APP_BASEURL: str = "http://localhost:8001"
     PORT: int = 8001
     HOST: str = "127.0.0.1"
     LOG_LEVEL: str = "INFO"

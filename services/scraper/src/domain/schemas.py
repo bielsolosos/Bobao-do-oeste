@@ -155,6 +155,7 @@ class CachedImageDTO(BaseModel):
     image_index: int
     original_url: str
     endpoint_url: str
+    full_endpoint_url: Optional[str] = None
     mime_type: str
     size_bytes: int
     expires_at: datetime
