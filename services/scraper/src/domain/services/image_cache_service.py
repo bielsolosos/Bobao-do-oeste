@@ -8,8 +8,8 @@ from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, delete, select
 
+from src.core.config import settings
 from src.core.engine.http_client import SmartHttpClient
-from src.core.config import Settings
 from src.core.logger import logger
 from src.domain.enums import VendorEnum
 from src.domain.models import AdDetailCache, AdImageCache
@@ -57,7 +57,7 @@ class ImageCacheService:
                 image_index=r.image_index,
                 original_url=r.original_url,
                 endpoint_url=f"/api/v1/scrape/images/{r.id}",
-                full_endpoint_url=f"{Settings.APP_BASEURL}/api/v1/scrape/images/{r.id}",
+                full_endpoint_url=f"{settings.APP_BASEURL}/api/v1/scrape/images/{r.id}",
                 mime_type=r.mime_type,
                 size_bytes=r.size_bytes,
                 expires_at=r.expires_at,
@@ -118,7 +118,7 @@ class ImageCacheService:
                         image_index=idx,
                         original_url=img_url,
                         endpoint_url=f"/api/v1/scrape/images/{cache_record.id}",
-                        full_endpoint_url=f"{Settings.APP_BASEURL}/api/v1/scrape/images/{cache_record.id}",
+                        full_endpoint_url=f"{settings.APP_BASEURL}/api/v1/scrape/images/{cache_record.id}",
                         mime_type=mime_type,
                         size_bytes=size_bytes,
                         expires_at=expires_at,
