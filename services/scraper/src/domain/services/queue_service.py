@@ -20,9 +20,9 @@ class QueueService:
     async def get_queue_status(self) -> QueueStatusDTO:
         """Calcula a volumetria agregada de jobs e webhooks em tempo real."""
         # 1. Contagem de jobs agrupados por status
-        stmt_jobs = select(ScrapeJob.status, func.count(col(ScrapeJob.id))).group_by(ScrapeJob.status)
+        stmt_jobs = select(col(ScrapeJob.status), func.count(col(ScrapeJob.id))).group_by(col(ScrapeJob.status))
         res_jobs = await self.session.execute(stmt_jobs)
-        job_counts = dict(res_jobs.all())
+        job_counts = {row[0]: row[1] for row in res_jobs.all()}
 
         queued = job_counts.get(JobStatusEnum.QUEUED, 0)
         running = job_counts.get(JobStatusEnum.RUNNING, 0)

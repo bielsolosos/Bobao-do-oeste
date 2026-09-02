@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlmodel import select
+from sqlmodel import col, select
 
 from src.core.config import settings
 from src.core.database import async_session_maker
@@ -107,9 +107,10 @@ async def test_image_cache_service_and_expiration():
             assert mime == "image/jpeg"
 
             # Simula expiração alterando o expires_at para o passado
-            stmt = select(AdImageCache).where(AdImageCache.id == image_id)
+            stmt = select(AdImageCache).where(col(AdImageCache.id) == image_id)
             res = await session.execute(stmt)
             record = res.scalars().first()
+            assert record is not None
             record.expires_at = datetime.now(timezone.utc) - timedelta(hours=2)
             session.add(record)
             await session.commit()
