@@ -26,8 +26,7 @@ spring:
       genai:
         api-key: ${GEMINI_API_KEY:AIzaSyBnjz8fLgcPeOOexLPVIfXU8w5HiQaqB7Q}
         chat:
-          options:
-            model: ${GEMINI_MODEL:gemini-2.5-flash}
+          model: ${GEMINI_MODEL:gemini-2.5-flash}
 
 biscraper:
   jwt:

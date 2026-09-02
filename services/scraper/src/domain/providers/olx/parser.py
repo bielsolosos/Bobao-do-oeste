@@ -370,37 +370,109 @@ class OlxPayloadParser:
         if not listing_id:
             return None
 
-        # Título
-        h1 = tree.css_first("h1")
-        title = h1.text(strip=True) if h1 else "Sem título"
+        # 1. Título
+        title = ""
+        for sel in [
+            "span[class*='ad__sc-1l883pa-2']",
+            "h1[data-testid='ad-title']",
+            "h1",
+            "[class*='typo-title-medium']",
+        ]:
+            n = tree.css_first(sel)
+            if n:
+                t = n.text(strip=True)
+                if t and t not in ["Acesse a sua conta", "Compartilhar", "Detalhes", "Localização"]:
+                    title = t
+                    break
 
-        # Preço
+        # Fallback de título via JSON-LD ou tag <title>
+        if not title:
+            for script in tree.css("script[type='application/ld+json']"):
+                try:
+                    ld = json.loads(script.text() or "{}")
+                    if isinstance(ld, dict) and ld.get("name"):
+                        title = str(ld["name"]).strip()
+                        break
+                except Exception:
+                    pass
+
+        if not title:
+            title_tag = tree.css_first("title")
+            if title_tag and title_tag.text(strip=True):
+                title = title_tag.text(strip=True).split("|")[0].split("-")[0].strip()
+
+        title = title or "Sem título"
+
+        # 2. Preço
         price = 0.0
-        price_node = tree.css_first("[class*='ad__price'], [data-testid='ad-price'], h2[class*='price']")
-        if price_node:
-            price = cls._parse_price(price_node.text(strip=True))
+        for sel in [
+            "[class*='ad__sc-q5xder-1']",
+            "[class*='typo-title-large']",
+            "[class*='ad__price']",
+            "[data-testid='ad-price']",
+            "h2[class*='price']",
+        ]:
+            price_node = tree.css_first(sel)
+            if price_node and "R$" in price_node.text():
+                parsed = cls._parse_price(price_node.text(strip=True))
+                if parsed >= 0:
+                    price = parsed
+                    break
 
-        # Descrição
+        # 3. Descrição
         desc_node = tree.css_first(
-            "[class*='ad__description'], [data-testid='ad-description'], span[class*='description']"
+            "[class*='advc-ad-description'], [class*='ad__description'], [data-testid='ad-description'], span[class*='description']"
         )
         description = desc_node.text(strip=True) if desc_node else ""
 
-        # Imagens
+        # 4. Imagens
         images: List[str] = []
-        for img in tree.css("img[src*='olx.com.br']"):
-            src = img.attributes.get("src") or img.attributes.get("data-src")
-            if src and "logo" not in src and src not in images:
-                images.append(src)
+        for img in tree.css("img"):
+            src = img.attributes.get("src") or img.attributes.get("data-src") or ""
+            if "img.olx.com.br/images" in src and "logo" not in src and "svg" not in src and "tip-badge" not in src:
+                if src not in images:
+                    images.append(src)
 
-        # Propriedades
+        for script in tree.css("script[type='application/ld+json']"):
+            try:
+                ld = json.loads(script.text() or "{}")
+                if isinstance(ld, dict) and "image" in ld:
+                    img_data = ld["image"]
+                    if isinstance(img_data, list):
+                        for i in img_data:
+                            if isinstance(i, str) and i not in images and "svg" not in i:
+                                images.append(i)
+                    elif isinstance(img_data, str) and img_data not in images and "svg" not in img_data:
+                        images.append(img_data)
+            except Exception:
+                pass
+
+        # 5. Propriedades / Especificações Técnicas
         properties: Dict[str, Any] = {}
+
+        # 5.1 Novo layout de containers da OLX
+        for container in tree.css(
+            "[data-ds-component='DS-Container'], [class*='ad__sc-2h9gkk-1'], [class*='ad__sc-2h9gkk-0']"
+        ):
+            label_node = container.css_first(".typo-overline, [class*='typo-overline']")
+            if label_node:
+                label = label_node.text(strip=True)
+                val_nodes = [
+                    n.text(strip=True)
+                    for n in container.css("span, a, p")
+                    if n != label_node and n.text(strip=True) and n.text(strip=True) != label
+                ]
+                if val_nodes:
+                    properties[label] = val_nodes[0]
+
+        # 5.2 Layout clássico chave:valor
         for prop_row in tree.css("[data-testid='ad-properties'] div, [class*='ad__properties'] div"):
             text = prop_row.text(strip=True)
             if ":" in text:
                 parts = text.split(":", 1)
                 properties[parts[0].strip()] = parts[1].strip()
 
+        # 6. Localização
         state_match = re.search(r"https?://([a-z]{2})\.olx\.com\.br", url)
         state = state_match.group(1).upper() if state_match else None
 
