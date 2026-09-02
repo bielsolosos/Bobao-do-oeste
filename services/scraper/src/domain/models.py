@@ -155,4 +155,3 @@ class AdDetailCache(SQLModel, table=True):
     parsed_payload: Dict[str, Any] = Field(sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=get_utc_now, index=True)
     expires_at: datetime = Field(index=True)
-

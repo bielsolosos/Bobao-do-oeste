@@ -1,5 +1,4 @@
 import base64
-import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
@@ -205,4 +204,3 @@ async def test_cache_cleanup_worker_lifecycle():
 
     await worker.stop()
     assert worker._stop_event.is_set()
-

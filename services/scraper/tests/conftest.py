@@ -35,4 +35,3 @@ async def stop_workers_after_test():
     await get_scrape_worker().stop()
     await get_webhook_worker().stop()
     await get_cache_cleanup_worker().stop()
-

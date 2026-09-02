@@ -11,7 +11,7 @@ from selectolax.parser import HTMLParser
 
 from src.core.logger import logger
 from src.domain.enums import DeliveryTypeEnum, VendorEnum
-from src.domain.schemas import ScrapedListingDTO, ScrapedListingDetailDTO
+from src.domain.schemas import ScrapedListingDetailDTO, ScrapedListingDTO
 
 
 class OlxPayloadParser:
@@ -381,7 +381,9 @@ class OlxPayloadParser:
             price = cls._parse_price(price_node.text(strip=True))
 
         # Descrição
-        desc_node = tree.css_first("[class*='ad__description'], [data-testid='ad-description'], span[class*='description']")
+        desc_node = tree.css_first(
+            "[class*='ad__description'], [data-testid='ad-description'], span[class*='description']"
+        )
         description = desc_node.text(strip=True) if desc_node else ""
 
         # Imagens
@@ -414,4 +416,3 @@ class OlxPayloadParser:
             images=images,
             scraped_at=datetime.now(timezone.utc),
         )
-

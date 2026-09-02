@@ -121,4 +121,3 @@ async def cleanup_expired_images(
     service = ImageCacheService(session)
     deleted_count = await service.cleanup_expired()
     return {"success": True, "deleted_images": deleted_count}
-
