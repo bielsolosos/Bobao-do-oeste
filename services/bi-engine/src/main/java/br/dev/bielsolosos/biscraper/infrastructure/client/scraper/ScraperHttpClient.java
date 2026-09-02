@@ -67,14 +67,15 @@ public class ScraperHttpClient {
                 .body(ScrapeDetailResponse.class);
     }
 
+
     public br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse getQueueStatus() {
         String authHeader = getBasicAuthHeader();
         try {
             return restClient.get()
-                    .uri("/api/v1/queue/status")
-                    .header(HttpHeaders.AUTHORIZATION, authHeader)
-                    .retrieve()
-                    .body(br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse.class);
+                .uri("/api/v1/queue/status")
+                .header(HttpHeaders.AUTHORIZATION, authHeader)
+                .retrieve()
+                .body(br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse.class);
         } catch (Exception e) {
             log.warn("Não foi possível obter status da fila do Scraper Python: {}", e.getMessage());
             return new br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse(0, 0, 0, 0, 0, 0);
@@ -86,4 +87,3 @@ public class ScraperHttpClient {
         return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
     }
 }
-

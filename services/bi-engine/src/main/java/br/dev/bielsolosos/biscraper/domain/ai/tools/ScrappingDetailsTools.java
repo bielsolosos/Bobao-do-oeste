@@ -33,7 +33,7 @@ public class ScrappingDetailsTools {
         log.info("Tool ScrappingDetailsTools chamada para vendor={} e url={}", vendor, url);
 
         try {                                                               // Não baixa as imagens e nem força o browser
-            ScrapeDetailResponse response = scraperHttpClient.scrapeDetail(new ScrapeDetailRequest(url, vendor, false, 1, false));
+            ScrapeDetailResponse response = scraperHttpClient.scrapeDetail(new ScrapeDetailRequest(url, vendor, false, 24, false));
 
             if (response != null && response.success() && response.data() != null) {
                 var data = response.data();
