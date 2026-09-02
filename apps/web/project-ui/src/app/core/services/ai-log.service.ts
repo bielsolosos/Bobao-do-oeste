@@ -19,4 +19,8 @@ export class AiLogService {
   getMonitorAiLogs(monitorId: string, page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
     return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${environment.apiUrl}/product-monitors/${monitorId}/ai-logs?page=${page}&size=${size}`);
   }
+
+  getLogsByListingId(listingId: string, page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
+    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${this.apiUrl}/by-listing/${listingId}?page=${page}&size=${size}`);
+  }
 }

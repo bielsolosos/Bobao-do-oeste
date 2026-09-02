@@ -152,6 +152,32 @@ export class MonitorDetailComponent implements OnInit {
     }
   }
 
+  isListingAiLogsModalOpen = signal(false);
+  selectedListingLogs = signal<AiAnalysisLogResponse[]>([]);
+  isLoadingListingLogs = signal(false);
+
+  openListingAiLogs(listingId: string) {
+    this.isListingAiLogsModalOpen.set(true);
+    this.isLoadingListingLogs.set(true);
+    this.selectedListingLogs.set([]);
+
+    this.aiLogService.getLogsByListingId(listingId).subscribe({
+      next: (res) => {
+        this.selectedListingLogs.set(res.content);
+        this.isLoadingListingLogs.set(false);
+      },
+      error: (err) => {
+        console.error(err);
+        this.toast.error('Erro', 'Não foi possível carregar os logs da IA para este item.');
+        this.isLoadingListingLogs.set(false);
+      }
+    });
+  }
+
+  closeListingAiLogs() {
+    this.isListingAiLogsModalOpen.set(false);
+  }
+
   formatJson(obj: any): string {
     if (!obj || Object.keys(obj).length === 0) return 'Nenhuma regra específica cadastrada.';
     const cleanObj = { ...obj };
