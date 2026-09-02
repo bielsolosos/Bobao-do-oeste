@@ -1,0 +1,18 @@
+# Configuração do GitHub Linguist para gráficos de linguagens
+# Esconde arquivos indesejados das estatísticas de linguagens do repositório
+*.sh linguist-detectable=false
+*.html linguist-detectable=false
+*.css linguist-detectable=false
+*.scss linguist-detectable=false
+*.json linguist-detectable=false
+*.xml linguist-detectable=false
+*.yaml linguist-detectable=false
+*.yml linguist-detectable=false
+*.md linguist-detectable=false
+*.js linguist-detectable=false
+*.svg linguist-detectable=false
+
+# Garante a exibição apenas das linguagens principais do repositório
+*.java linguist-detectable=true
+*.py linguist-detectable=true
+*.ts linguist-detectable=true
