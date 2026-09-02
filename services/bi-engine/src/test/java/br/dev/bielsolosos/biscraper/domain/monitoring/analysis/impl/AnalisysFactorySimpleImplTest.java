@@ -4,7 +4,7 @@ import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
-import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogRepository;
+import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
 import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.BatchAnalysisResponse;
@@ -30,7 +30,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
@@ -47,7 +46,7 @@ class AnalisysFactorySimpleImplTest {
     private ChatClient chatClient;
 
     @Mock
-    private AiAnalysisLogRepository aiAnalysisLogRepository;
+    private AiAnalysisLogService aiAnalysisLogService;
 
     @Mock
     private ScrappingDetailsTools detailsTools;
@@ -59,12 +58,9 @@ class AnalisysFactorySimpleImplTest {
 
     @BeforeEach
     void setUp() {
-        monitor = ProductMonitor.builder()
-                .id(UUID.randomUUID())
-                .name("Notebook Gamer i7")
-                .description("Procurando notebook i7 com 16gb de ram")
-                .analysisType(AnalysisType.SIMPLE)
-                .build();
+        monitor = new ProductMonitor();
+        monitor.setId(UUID.randomUUID());
+        monitor.setName("Notebook Gamer i7");
 
         execution = ScrapingExecution.builder()
                 .id(UUID.randomUUID())
@@ -76,7 +72,7 @@ class AnalisysFactorySimpleImplTest {
     @DisplayName("Deve retornar AnalysisType.SIMPLE")
     void shouldReturnCorrectAnalysisType() {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
         assertEquals(AnalysisType.SIMPLE, factory.getAnalisysType());
     }
 
@@ -86,7 +82,7 @@ class AnalisysFactorySimpleImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
         ScrapedListingDTO item1 = createListing("item-1", "Dell G15 i7 16GB RTX 3050", BigDecimal.valueOf(3500));
         ScrapedListingDTO item2 = createListing("item-2", "Acer Nitro 5 i5 8GB", BigDecimal.valueOf(2800));
@@ -98,22 +94,32 @@ class AnalisysFactorySimpleImplTest {
 
         BatchAnalysisResponse aiResponse = new BatchAnalysisResponse(List.of(res1, res2, res3));
 
-        // Etapa 1: Retorna a análise enriquecida em texto
-        when(chatClient.prompt()
-                .tools(any())
-                .options(any(ChatOptions.Builder.class))
-                .system(any(java.util.function.Consumer.class))
-                .user(any(java.util.function.Consumer.class))
-                .call()
-                .content()).thenReturn("Análise enriquecida preliminar dos anúncios com Tools");
+        // Mocks do ChatResponse
+        org.springframework.ai.chat.model.ChatResponse mockResponse1 = mock(org.springframework.ai.chat.model.ChatResponse.class);
+        org.springframework.ai.chat.model.Generation generation1 = mock(org.springframework.ai.chat.model.Generation.class);
+        org.springframework.ai.chat.messages.AssistantMessage message1 = mock(org.springframework.ai.chat.messages.AssistantMessage.class);
+        
+        when(mockResponse1.getResult()).thenReturn(generation1);
+        when(generation1.getOutput()).thenReturn(message1);
+        when(message1.getText()).thenReturn("Análise enriquecida preliminar dos anúncios com Tools");
 
-        // Etapa 2: Estrutura no DTO BatchAnalysisResponse
-        when(chatClient.prompt()
-                .options(any(ChatOptions.Builder.class))
-                .system(any(java.util.function.Consumer.class))
-                .user(any(java.util.function.Consumer.class))
-                .call()
-                .entity(BatchAnalysisResponse.class)).thenReturn(aiResponse);
+        org.springframework.ai.chat.model.ChatResponse mockResponse2 = mock(org.springframework.ai.chat.model.ChatResponse.class);
+        org.springframework.ai.chat.model.Generation generation2 = mock(org.springframework.ai.chat.model.Generation.class);
+        org.springframework.ai.chat.messages.AssistantMessage message2 = mock(org.springframework.ai.chat.messages.AssistantMessage.class);
+        
+        when(mockResponse2.getResult()).thenReturn(generation2);
+        when(generation2.getOutput()).thenReturn(message2);
+        when(message2.getText()).thenReturn(objectMapper.writeValueAsString(aiResponse));
+
+        // Etapa 1
+        org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec1 = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
+        when(chatClient.prompt().tools(any()).options(any(org.springframework.ai.chat.prompt.ChatOptions.Builder.class)).system(any(java.util.function.Consumer.class)).user(any(java.util.function.Consumer.class)).call()).thenReturn(callSpec1);
+        when(callSpec1.chatResponse()).thenReturn(mockResponse1);
+
+        // Etapa 2
+        org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec2 = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
+        when(chatClient.prompt().options(any(org.springframework.ai.chat.prompt.ChatOptions.Builder.class)).system(any(java.util.function.Consumer.class)).user(any(java.util.function.Consumer.class)).call()).thenReturn(callSpec2);
+        when(callSpec2.chatResponse()).thenReturn(mockResponse2);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1, item2, item3));
 
@@ -132,7 +138,7 @@ class AnalisysFactorySimpleImplTest {
         assertEquals(MatchTier.NONE, results.get(2).matchTier());
         assertEquals(BigDecimal.valueOf(20.0).setScale(2), results.get(2).matchScore());
 
-        verify(aiAnalysisLogRepository, times(2)).save(any(AiAnalysisLog.class));
+        verify(aiAnalysisLogService, times(2)).saveLog(any(br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto.class));
     }
 
     @Test
@@ -140,7 +146,7 @@ class AnalisysFactorySimpleImplTest {
     void shouldFallbackWhenChatClientUnavailable() {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
 
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
         ScrapedListingDTO item1 = createListing("item-1", "Notebook", BigDecimal.valueOf(3000));
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -157,15 +163,11 @@ class AnalisysFactorySimpleImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogRepository, detailsTools);
+        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
-        when(chatClient.prompt()
-                .tools(any())
-                .options(any(ChatOptions.Builder.class))
-                .system(any(java.util.function.Consumer.class))
-                .user(any(java.util.function.Consumer.class))
-                .call()
-                .content()).thenThrow(new RuntimeException("Gemini quota 429 exceeded"));
+        org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpecEx = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
+        lenient().when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).system(any(java.util.function.Consumer.class)).user(any(java.util.function.Consumer.class)).call()).thenReturn(callSpecEx);
+        lenient().when(callSpecEx.chatResponse()).thenThrow(new RuntimeException("API indisponível"));
 
         ScrapedListingDTO item1 = createListing("item-1", "Notebook", BigDecimal.valueOf(3000));
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -175,7 +177,7 @@ class AnalisysFactorySimpleImplTest {
         assertEquals(BigDecimal.ZERO, results.get(0).matchScore());
         assertTrue(execution.isUsedFallback());
 
-        verify(aiAnalysisLogRepository, times(1)).save(argThat(log -> "ERROR".equals(log.getStatus())));
+        verify(aiAnalysisLogService, times(1)).saveLog(argThat(dto -> "ERROR".equals(dto.status())));
     }
 
     private ScrapedListingDTO createListing(String id, String title, BigDecimal price) {

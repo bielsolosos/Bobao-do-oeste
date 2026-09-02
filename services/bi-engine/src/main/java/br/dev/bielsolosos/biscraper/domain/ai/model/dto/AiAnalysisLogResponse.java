@@ -16,6 +16,9 @@ public record AiAnalysisLogResponse(
     String rawResponse,
     String status,
     Integer durationMs,
+    Integer promptTokens,
+    Integer generationTokens,
+    Integer totalTokens,
     String errorMessage,
     OffsetDateTime createdAt
 ) {}

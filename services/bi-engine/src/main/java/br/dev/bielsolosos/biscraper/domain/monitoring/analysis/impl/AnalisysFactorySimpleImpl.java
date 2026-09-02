@@ -1,30 +1,37 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.analysis.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.LlmModelEnum;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
+import br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto;
+import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.AnalisysFactory;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.BatchAnalysisResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.ItemAnalysisResult;
-import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
-import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogRepository;
-import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -78,17 +85,17 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
-    private final AiAnalysisLogRepository aiAnalysisLogRepository;
+    private final br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService aiAnalysisLogService;
     private final ScrappingDetailsTools detailsTools;
 
     public AnalisysFactorySimpleImpl(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
             ObjectMapper objectMapper,
-            AiAnalysisLogRepository aiAnalysisLogRepository,
+            br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService aiAnalysisLogService,
             ScrappingDetailsTools detailsTools
     ) {
         this.objectMapper = objectMapper;
-        this.aiAnalysisLogRepository = aiAnalysisLogRepository;
+        this.aiAnalysisLogService = aiAnalysisLogService;
         ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
         this.chatClient = builder != null ? builder.build() : null;
         this.detailsTools = detailsTools;
@@ -145,7 +152,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
         try {
             log.debug("Executando Etapa 1 (Investigação e Coleta com Tools) para lote de {} anúncios...", batch.size());
-            enrichedAnalysis = chatClient.prompt()
+            ChatResponse response = chatClient.prompt()
                     .tools(detailsTools)
                     .options(ChatOptions.builder()
                             .model(modelName)
@@ -153,23 +160,43 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .system(s -> s.text(ENRICHMENT_SYSTEM_TEMPLATE).param("userCriteria", userCriteria))
                     .user(u -> u.text("Analise os anúncios a seguir e obtenha mais informações via ferramenta quando necessário para montar o dossiê de cada um:\n{itemsJson}").param("itemsJson", itemsJson))
                     .call()
-                    .content();
+                    .chatResponse();
 
+            enrichedAnalysis = response.getResult().getOutput().getText();
             int step1Duration = (int) (System.currentTimeMillis() - step1Start);
 
             // Log de Auditoria da Etapa 1
-            logAiCall(monitor, execution, modelName, batch.size(),
-                    ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
-                    "Investigação de " + batch.size() + " anúncios:\n" + itemsJson,
-                    enrichedAnalysis, "SUCCESS", step1Duration, null);
+            AiAnalysisLogCreateDto dtoBuilder = AiAnalysisLogCreateDto.fromResponse(response)
+                    .productMonitor(monitor)
+                    .scrapingExecution(execution)
+                    .modelName(modelName)
+                    .itemsCount(batch.size())
+                    .systemPrompt(ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
+                    .userPrompt("Investigação de " + batch.size() + " anúncios:\n" + itemsJson)
+                    .rawResponse(enrichedAnalysis)
+                    .status("SUCCESS")
+                    .durationMs(step1Duration)
+                    .build();
+
+            aiAnalysisLogService.saveLog(dtoBuilder);
 
         } catch (Exception e) {
             int step1Duration = (int) (System.currentTimeMillis() - step1Start);
             log.error("Erro na Etapa 1 (Investigação com Gemini): {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
 
-            logAiCall(monitor, execution, modelName, batch.size(),
-                    ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
-                    itemsJson, null, "ERROR", step1Duration, "Etapa 1 (Investigação) falhou: " + e.getMessage());
+            AiAnalysisLogCreateDto errorDto = AiAnalysisLogCreateDto.builder()
+                    .productMonitor(monitor)
+                    .scrapingExecution(execution)
+                    .modelName(modelName)
+                    .itemsCount(batch.size())
+                    .systemPrompt(ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
+                    .userPrompt(itemsJson)
+                    .status("ERROR")
+                    .durationMs(step1Duration)
+                    .errorMessage("Etapa 1 (Investigação) falhou: " + e.getMessage())
+                    .build();
+
+            aiAnalysisLogService.saveLog(errorDto);
 
             if (execution != null) execution.setUsedFallback(true);
             return createFallbackResponses(execution, batch);
@@ -182,22 +209,38 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
         try {
             log.debug("Executando Etapa 2 (Avaliação e Estruturação de Objeto) para lote de {} anúncios...", batch.size());
-            BatchAnalysisResponse aiResponse = chatClient.prompt()
+            BeanOutputConverter<BatchAnalysisResponse> converter = new BeanOutputConverter<>(BatchAnalysisResponse.class);
+
+            ChatResponse response2 = chatClient.prompt()
                     .options(ChatOptions.builder()
                             .model(modelName)
                             .temperature(0.1))
                     .system(s -> s.text(EVALUATION_SYSTEM_TEMPLATE).param("userCriteria", userCriteria))
-                    .user(u -> u.text("Avalie os seguintes anúncios com base no dossiê técnico investigado e gere o resultado estruturado:\n\n{enrichedAnalysis}").param("enrichedAnalysis", enrichedAnalysis != null ? enrichedAnalysis : ""))
+                    .user(u -> u.text("Avalie os seguintes anúncios com base no dossiê técnico investigado e gere o resultado estruturado:\n\n{enrichedAnalysis}\n\n{format}")
+                                .param("enrichedAnalysis", enrichedAnalysis != null ? enrichedAnalysis : "")
+                                .param("format", converter.getFormat()))
                     .call()
-                    .entity(BatchAnalysisResponse.class);
+                    .chatResponse();
+
+            String responseContent = response2.getResult().getOutput().getText();
+            BatchAnalysisResponse aiResponse = converter.convert(responseContent);
 
             int step2Duration = (int) (System.currentTimeMillis() - step2Start);
 
             // Log de Auditoria da Etapa 2
-            logAiCall(monitor, execution, modelName, batch.size(),
-                    EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
-                    enrichedAnalysis,
-                    objectMapper.writeValueAsString(aiResponse), "SUCCESS", step2Duration, null);
+            AiAnalysisLogCreateDto dtoBuilder = AiAnalysisLogCreateDto.fromResponse(response2)
+                    .productMonitor(monitor)
+                    .scrapingExecution(execution)
+                    .modelName(modelName)
+                    .itemsCount(batch.size())
+                    .systemPrompt(EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
+                    .userPrompt(enrichedAnalysis != null ? enrichedAnalysis : "")
+                    .rawResponse(responseContent)
+                    .status("SUCCESS")
+                    .durationMs(step2Duration)
+                    .build();
+                    
+            aiAnalysisLogService.saveLog(dtoBuilder);
 
             if (aiResponse == null || aiResponse.results() == null || aiResponse.results().isEmpty()) {
                 log.warn("Gemini retornou resposta vazia para o lote de {} itens na Etapa 2. Aplicando fallback.", batch.size());
@@ -236,47 +279,23 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
         } catch (Exception e) {
             int step2Duration = (int) (System.currentTimeMillis() - step2Start);
-            log.error("Erro na Etapa 2 (Avaliação com Gemini): {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
+            log.error("Erro na Etapa 2 (Avaliação com Gemini): {}. Aplicando fallback.", e.getMessage(), e);
 
-            logAiCall(monitor, execution, modelName, batch.size(),
-                    EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
-                    enrichedAnalysis, null, "ERROR", step2Duration, "Etapa 2 (Avaliação) falhou: " + e.getMessage());
-
-            if (execution != null) execution.setUsedFallback(true);
-            return createFallbackResponses(execution, batch);
-        }
-    }
-
-    private void logAiCall(
-            ProductMonitor monitor,
-            ScrapingExecution execution,
-            String modelName,
-            int itemsCount,
-            String systemPrompt,
-            String userPrompt,
-            String rawResponse,
-            String status,
-            Integer durationMs,
-            String errorMessage
-    ) {
-        try {
-            AiAnalysisLog aiLog = AiAnalysisLog.builder()
+            var errorDto = br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto.builder()
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
-                    .vendor("GEMINI")
-                    .itemsCount(itemsCount)
-                    .systemPrompt(systemPrompt)
-                    .userPrompt(userPrompt)
-                    .rawResponse(rawResponse)
-                    .status(status)
-                    .durationMs(durationMs)
-                    .errorMessage(errorMessage)
+                    .itemsCount(batch.size())
+                    .systemPrompt(EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
+                    .userPrompt(enrichedAnalysis != null ? enrichedAnalysis : "")
+                    .status("ERROR")
+                    .durationMs(step2Duration)
+                    .errorMessage("Etapa 2 (Avaliação) falhou: " + e.getMessage())
                     .build();
+            aiAnalysisLogService.saveLog(errorDto);
 
-            aiAnalysisLogRepository.save(aiLog);
-        } catch (Exception ex) {
-            log.warn("Falha ao salvar AiAnalysisLog no banco: {}", ex.getMessage());
+            if (execution != null) execution.setUsedFallback(true);
+            return createFallbackResponses(execution, batch);
         }
     }
 

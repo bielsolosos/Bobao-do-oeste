@@ -26,6 +26,9 @@ public class AiAnalysisLogMapper {
                 log.getRawResponse(),
                 log.getStatus(),
                 log.getDurationMs(),
+                log.getPromptTokens(),
+                log.getGenerationTokens(),
+                log.getTotalTokens(),
                 log.getErrorMessage(),
                 log.getCreatedAt()
         );

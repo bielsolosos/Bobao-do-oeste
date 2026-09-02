@@ -29,4 +29,12 @@ public class AiAnalysisLogController {
         return ResponseEntity.ok(service.listAllAiLogs(pageable));
     }
 
+    @Operation(summary = "Listar logs de IA de um anúncio específico (para visualizar o 'pensamento' da IA)")
+    @GetMapping("/by-listing/{listingId}")
+    public ResponseEntity<Page<AiAnalysisLogResponse>> listAiLogsByListing(
+            @PathVariable UUID listingId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(service.listLogsByListing(listingId, pageable));
+    }
+
 }

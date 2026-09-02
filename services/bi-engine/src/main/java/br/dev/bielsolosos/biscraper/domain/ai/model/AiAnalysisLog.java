@@ -59,6 +59,15 @@ public class AiAnalysisLog {
     @Column(name = "duration_ms")
     private Integer durationMs;
 
+    @Column(name = "prompt_tokens")
+    private Integer promptTokens;
+
+    @Column(name = "generation_tokens")
+    private Integer generationTokens;
+
+    @Column(name = "total_tokens")
+    private Integer totalTokens;
+
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
