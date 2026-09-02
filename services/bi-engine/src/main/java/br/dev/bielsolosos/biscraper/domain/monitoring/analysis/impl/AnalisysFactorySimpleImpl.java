@@ -12,11 +12,12 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
 import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogRepository;
+import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptions.Builder;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
@@ -30,19 +31,67 @@ import java.util.stream.Collectors;
 public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
     private static final int BATCH_SIZE = 15;
+
+    private static final String ENRICHMENT_SYSTEM_TEMPLATE = """
+            Você é um especialista em investigação técnica de produtos em marketplaces.
+            Sua missão é realizar uma triagem inteligente e coletar informações adicionais APENAS quando estritamente necessário para validar se um anúncio atende ao critério do usuário.
+
+            CRITÉRIO DO USUÁRIO:
+            \"\"\"
+            {userCriteria}
+            \"\"\"
+
+            REGRAS GERAIS DE TRIAGEM E USO DE FERRAMENTAS:
+
+            1. Você possui acesso a ferramentas auxiliares (Tools) que podem enriquecer a sua investigação.
+            2. LEIA ATENTAMENTE a descrição de cada ferramenta antes de usá-la. As regras exatas de QUANDO e COMO usar (ou não usar) cada ferramenta estão documentadas na própria descrição delas. Você DEVE respeitá-las rigorosamente.
+            3. Como princípio de ouro: NUNCA acione ferramentas para produtos obviamente incompatíveis com o critério do usuário (marcas, categorias ou gerações erradas) ou que possuam defeitos graves que os desclassifiquem imediatamente.
+            4. Se o título e os dados básicos fornecidos na entrada inicial já contiverem todas as informações essenciais necessárias para 100%% de validação, confie nesses dados e poupe as chamadas às ferramentas.
+
+            SAÍDA DESTA ETAPA:
+            - NÃO calcule nem atribua notas de 0 a 100.
+            - Para cada anúncio (identificado por vendor_listing_id), compile um dossiê técnico conciso detalhando: identificação confirmada (marca/modelo/geração), especificações completas apuradas e o veredito se o item é um candidato válido ou foi descartado.
+            """;
+
+    private static final String EVALUATION_SYSTEM_TEMPLATE = """
+            Você é um especialista em inteligência de compras e juiz avaliador de mercado (hardware, peças de computador, videogames, eletrônicos em geral).
+            Sua função é avaliar detalhadamente cada anúncio com base no dossiê técnico investigado e nos critérios e preferências do usuário, atribuindo a pontuação final e gerando o resultado estruturado.
+
+            CRITÉRIO DO USUÁRIO:
+            \"\"\"
+            {userCriteria}
+            \"\"\"
+
+            DIRETRIZES DE AVALIAÇÃO E PONTUAÇÃO:
+            1. Avalie cada anúncio com um score numérico de 0.00 a 100.00:
+               - 85.00 a 100.00: Excelente oportunidade, atende perfeitamente aos requisitos e preferências do usuário (especificações corretas, modelo desejado, bom estado).
+               - 65.00 a 84.99: Boa oportunidade, atende aos requisitos principais com pequenas ressalvas aceitáveis (ex: variante ligeiramente diferente mas compatível, marcas de uso).
+               - 45.00 a 64.99: Parcialmente aderente ou com ressalvas moderadas.
+               - 0.00 a 44.99: Não relevante, produto incorreto, geração incompatível, fora do escopo ou preço abusivo.
+            2. Para cada anúncio (vendor_listing_id), forneça:
+               - score: nota de 0.00 a 100.00.
+               - summary: justificativa técnica concisa e objetiva explicando a nota.
+               - highlights: lista de diferenciais e pontos positivos.
+               - concerns: lista de limitações, ressalvas ou pontos de atenção.
+            3. Retorne a resposta estritamente no formato BatchAnalysisResponse.
+            """;
+
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
     private final AiAnalysisLogRepository aiAnalysisLogRepository;
+    private final ScrappingDetailsTools detailsTools;
 
     public AnalisysFactorySimpleImpl(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
             ObjectMapper objectMapper,
-            AiAnalysisLogRepository aiAnalysisLogRepository
+            AiAnalysisLogRepository aiAnalysisLogRepository,
+            ScrappingDetailsTools detailsTools
     ) {
         this.objectMapper = objectMapper;
         this.aiAnalysisLogRepository = aiAnalysisLogRepository;
         ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
         this.chatClient = builder != null ? builder.build() : null;
+        this.detailsTools = detailsTools;
     }
 
     @Override
@@ -84,52 +133,74 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             List<ScrapedListingDTO> batch,
             String userCriteria
     ) {
-        long startTime = System.currentTimeMillis();
         String itemsJson = formatBatchForPrompt(batch);
         ProductMonitor monitor = execution != null ? execution.getProductMonitor() : null;
         String modelName = LlmModelEnum.GEMINI_2_5_FLASH_LITE.getModel();
 
-        String systemPrompt = """
-                Você é um especialista em inteligência de compras e análise de mercado para marketplaces (OLX, Mercado Livre, etc.).
-                Sua função é avaliar cada anúncio recebido em relação aos critérios e preferências descritos pelo usuário.
-
-                CRITÉRIO DO USUÁRIO:
-                \"\"\"
-                %s
-                \"\"\"
-
-                INSTRUÇÕES:
-                1. Avalie cada anúncio com um score numérico de 0.00 a 100.00:
-                   - 85 a 100: Excelente oportunidade, atende a todos ou praticamente todos os requisitos descritos.
-                   - 65 a 84.99: Boa oportunidade, atende aos requisitos principais com pequenas divergências aceitáveis.
-                   - 45 a 64.99: Parcialmente aderente ou anúncio vago.
-                   - 0 a 44.99: Não relevante, produto incorreto, fora do escopo ou preço abusivo.
-                2. Forneça um resumo conciso (summary) explicando a avaliação.
-                3. Liste pontos positivos (highlights) e pontos de atenção/negativos (concerns).
-                4. Retorne a resposta estritamente no formato JSON compatível com BatchAnalysisResponse.
-                """.formatted(userCriteria);
-
-        String userPrompt = "Analise os seguintes anúncios:\n" + itemsJson;
+        // ==============================================================================
+        // ETAPA 1: Investigação e Coleta de Dados via Tool Calling (Sem cálculo de notas)
+        // ==============================================================================
+        long step1Start = System.currentTimeMillis();
+        String enrichedAnalysis;
 
         try {
+            log.debug("Executando Etapa 1 (Investigação e Coleta com Tools) para lote de {} anúncios...", batch.size());
+            enrichedAnalysis = chatClient.prompt()
+                    .tools(detailsTools)
+                    .options(ChatOptions.builder()
+                            .model(modelName)
+                            .temperature(0.2))
+                    .system(s -> s.text(ENRICHMENT_SYSTEM_TEMPLATE).param("userCriteria", userCriteria))
+                    .user(u -> u.text("Analise os anúncios a seguir e obtenha mais informações via ferramenta quando necessário para montar o dossiê de cada um:\n{itemsJson}").param("itemsJson", itemsJson))
+                    .call()
+                    .content();
 
-             BatchAnalysisResponse aiResponse = chatClient.prompt()
-                     .options(ChatOptions.builder()
-                             .model(modelName)
-                             .temperature(0.2))
-                     .system(systemPrompt)
-                     .user(userPrompt)
-                     .call()
-                     .entity(BatchAnalysisResponse.class);
+            int step1Duration = (int) (System.currentTimeMillis() - step1Start);
 
-            int durationMs = (int) (System.currentTimeMillis() - startTime);
+            // Log de Auditoria da Etapa 1
+            logAiCall(monitor, execution, modelName, batch.size(),
+                    ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
+                    "Investigação de " + batch.size() + " anúncios:\n" + itemsJson,
+                    enrichedAnalysis, "SUCCESS", step1Duration, null);
 
-            // Grava o log de auditoria da chamada no banco
-            logAiCall(monitor, execution, modelName, batch.size(), systemPrompt, userPrompt,
-                    objectMapper.writeValueAsString(aiResponse), "SUCCESS", durationMs, null);
+        } catch (Exception e) {
+            int step1Duration = (int) (System.currentTimeMillis() - step1Start);
+            log.error("Erro na Etapa 1 (Investigação com Gemini): {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
+
+            logAiCall(monitor, execution, modelName, batch.size(),
+                    ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
+                    itemsJson, null, "ERROR", step1Duration, "Etapa 1 (Investigação) falhou: " + e.getMessage());
+
+            if (execution != null) execution.setUsedFallback(true);
+            return createFallbackResponses(execution, batch);
+        }
+
+        // ==============================================================================
+        // ETAPA 2: Avaliação, Pontuação e Estruturação Estrita no DTO (BatchAnalysisResponse)
+        // ==============================================================================
+        long step2Start = System.currentTimeMillis();
+
+        try {
+            log.debug("Executando Etapa 2 (Avaliação e Estruturação de Objeto) para lote de {} anúncios...", batch.size());
+            BatchAnalysisResponse aiResponse = chatClient.prompt()
+                    .options(ChatOptions.builder()
+                            .model(modelName)
+                            .temperature(0.1))
+                    .system(s -> s.text(EVALUATION_SYSTEM_TEMPLATE).param("userCriteria", userCriteria))
+                    .user(u -> u.text("Avalie os seguintes anúncios com base no dossiê técnico investigado e gere o resultado estruturado:\n\n{enrichedAnalysis}").param("enrichedAnalysis", enrichedAnalysis != null ? enrichedAnalysis : ""))
+                    .call()
+                    .entity(BatchAnalysisResponse.class);
+
+            int step2Duration = (int) (System.currentTimeMillis() - step2Start);
+
+            // Log de Auditoria da Etapa 2
+            logAiCall(monitor, execution, modelName, batch.size(),
+                    EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
+                    enrichedAnalysis,
+                    objectMapper.writeValueAsString(aiResponse), "SUCCESS", step2Duration, null);
 
             if (aiResponse == null || aiResponse.results() == null || aiResponse.results().isEmpty()) {
-                log.warn("Gemini retornou resposta vazia para o lote de {} itens. Aplicando fallback.", batch.size());
+                log.warn("Gemini retornou resposta vazia para o lote de {} itens na Etapa 2. Aplicando fallback.", batch.size());
                 if (execution != null) execution.setUsedFallback(true);
                 return createFallbackResponses(execution, batch);
             }
@@ -164,11 +235,12 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             return batchResponses;
 
         } catch (Exception e) {
-            int durationMs = (int) (System.currentTimeMillis() - startTime);
-            log.error("Erro ao analisar lote de anúncios com Gemini: {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
+            int step2Duration = (int) (System.currentTimeMillis() - step2Start);
+            log.error("Erro na Etapa 2 (Avaliação com Gemini): {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
 
-            logAiCall(monitor, execution, modelName, batch.size(), systemPrompt, userPrompt,
-                    null, "ERROR", durationMs, e.getMessage());
+            logAiCall(monitor, execution, modelName, batch.size(),
+                    EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria),
+                    enrichedAnalysis, null, "ERROR", step2Duration, "Etapa 2 (Avaliação) falhou: " + e.getMessage());
 
             if (execution != null) execution.setUsedFallback(true);
             return createFallbackResponses(execution, batch);
@@ -243,6 +315,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         for (ScrapedListingDTO item : batch) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("vendor_listing_id", item.vendorListingId());
+            map.put("vendor", item.vendor() != null ? item.vendor().name() : "OLX");
+            map.put("url", item.url());
             map.put("title", item.title());
             map.put("price", item.price());
             map.put("original_price", item.originalPrice());

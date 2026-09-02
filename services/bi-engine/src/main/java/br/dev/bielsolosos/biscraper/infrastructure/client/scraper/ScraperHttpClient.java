@@ -1,8 +1,11 @@
 package br.dev.bielsolosos.biscraper.infrastructure.client.scraper;
 
+import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrapeClientRequest;
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrapeClientResponse;
+import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeDetailRequest;
+import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeDetailResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -52,14 +55,27 @@ public class ScraperHttpClient {
                 .body(AsyncScrapeClientResponse.class);
     }
 
+    public ScrapeDetailResponse scrapeDetail(ScrapeDetailRequest request) {
+        log.debug("Enviando POST /api/v1/scrape/detail para o Scraper em: {} para o anuncio: '{}'",
+                properties.getScraper().getBaseUrl(), request.url());
+
+        return restClient.post()
+                .uri("/api/v1/scrape/detail")
+                .header(HttpHeaders.AUTHORIZATION, getBasicAuthHeader())
+                .body(request)
+                .retrieve()
+                .body(ScrapeDetailResponse.class);
+    }
+
+
     public br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse getQueueStatus() {
         String authHeader = getBasicAuthHeader();
         try {
             return restClient.get()
-                    .uri("/api/v1/queue/status")
-                    .header(HttpHeaders.AUTHORIZATION, authHeader)
-                    .retrieve()
-                    .body(br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse.class);
+                .uri("/api/v1/queue/status")
+                .header(HttpHeaders.AUTHORIZATION, authHeader)
+                .retrieve()
+                .body(br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse.class);
         } catch (Exception e) {
             log.warn("Não foi possível obter status da fila do Scraper Python: {}", e.getMessage());
             return new br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScraperQueueStatusResponse(0, 0, 0, 0, 0, 0);
@@ -71,4 +87,3 @@ public class ScraperHttpClient {
         return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
     }
 }
-
