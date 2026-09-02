@@ -71,10 +71,12 @@ class OlxUrlBuilder:
             query_params["q"] = request.keyword.strip()
 
         if request.min_price is not None:
-            query_params["ps"] = int(request.min_price) if request.min_price.is_integer() else request.min_price
+            val = int(request.min_price) if request.min_price.is_integer() else request.min_price
+            query_params["ps"] = str(val)
 
         if request.max_price is not None:
-            query_params["pe"] = int(request.max_price) if request.max_price.is_integer() else request.max_price
+            val = int(request.max_price) if request.max_price.is_integer() else request.max_price
+            query_params["pe"] = str(val)
 
         if request.require_delivery:
             query_params["olxpay"] = "1"

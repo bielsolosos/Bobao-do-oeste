@@ -85,3 +85,36 @@ class SmartHttpClient:
             except Exception as e:
                 logger.error(f"Error fetching URL {url}: {e}")
                 raise
+
+    async def get_bytes(
+        self,
+        url: str,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> tuple[bytes, str]:
+        """
+        Baixa os bytes brutos da resposta (ex: imagens) e retorna (bytes, content_type).
+        """
+        req_headers = {
+            **self.default_headers,
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "Referer": "https://www.olx.com.br/",
+            "Sec-Fetch-Dest": "image",
+            "Sec-Fetch-Mode": "no-cors",
+            "Sec-Fetch-Site": "cross-site",
+            **(headers or {}),
+        }
+        async with AsyncSession(impersonate="chrome120") as session:
+            try:
+                response = await session.get(
+                    url,
+                    headers=req_headers,
+                    timeout=self.timeout,
+                    allow_redirects=True,
+                )
+                if response.status_code != 200:
+                    raise Exception(f"Failed to fetch image bytes from {url} with status code {response.status_code}")
+                content_type = response.headers.get("content-type", "image/jpeg")
+                return response.content, content_type
+            except Exception as e:
+                logger.error(f"Error downloading image bytes from {url}: {e}")
+                raise

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import LargeBinary, Text
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel, UniqueConstraint
 
 from src.domain.enums import DeliveryStatusEnum, DeliveryTypeEnum, ExecutionStatusEnum, JobStatusEnum, VendorEnum
@@ -125,3 +126,32 @@ class WebhookDelivery(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=get_utc_now)
     updated_at: datetime = Field(default_factory=get_utc_now)
+
+
+class AdImageCache(SQLModel, table=True):
+    __tablename__: Any = "ad_image_cache"
+    __table_args__ = (UniqueConstraint("vendor", "vendor_listing_id", "image_index", name="uq_ad_image_cache"),)
+
+    id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    vendor: VendorEnum = Field(default=VendorEnum.OLX, index=True)
+    vendor_listing_id: str = Field(index=True)
+    image_index: int = Field(default=0)
+    original_url: str = Field(sa_column=Column(Text, nullable=False))
+    image_bytes: bytes = Field(sa_column=Column(LargeBinary, nullable=False))
+    mime_type: str = Field(default="image/jpeg")
+    size_bytes: int = Field(default=0)
+    created_at: datetime = Field(default_factory=get_utc_now, index=True)
+    expires_at: datetime = Field(index=True)
+
+
+class AdDetailCache(SQLModel, table=True):
+    __tablename__: Any = "ad_detail_cache"
+    __table_args__ = (UniqueConstraint("vendor", "vendor_listing_id", name="uq_ad_detail_cache"),)
+
+    id: str = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    vendor: VendorEnum = Field(default=VendorEnum.OLX, index=True)
+    vendor_listing_id: str = Field(index=True)
+    url: str = Field(sa_column=Column(Text, nullable=False))
+    parsed_payload: Dict[str, Any] = Field(sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=get_utc_now, index=True)
+    expires_at: datetime = Field(index=True)

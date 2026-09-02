@@ -63,4 +63,3 @@ async def test_queue_status_with_auth():
     assert "pending_webhooks" in data
     assert "total_success_jobs" in data
     assert "total_failed_jobs" in data
-

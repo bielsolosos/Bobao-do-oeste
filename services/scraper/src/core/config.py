@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "Marketplace Scraper Service"
     APP_ENV: str = "development"
+    APP_BASEURL: str = "http://localhost:8001"
     PORT: int = 8001
     HOST: str = "127.0.0.1"
     LOG_LEVEL: str = "INFO"
@@ -40,6 +41,9 @@ class Settings(BaseSettings):
     WEBHOOK_DELIVERY_BASE_BACKOFF_SECONDS: float = 1.0
     WEBHOOK_DELIVERY_MAX_BACKOFF_SECONDS: float = 60.0
     WEBHOOK_STUCK_TIMEOUT_SECONDS: int = 60
+
+    # Cache Cleanup Background Task Settings (1 hour by default)
+    CACHE_CLEANUP_INTERVAL_SECONDS: int = 3600
 
     @property
     def is_sqlite(self) -> bool:

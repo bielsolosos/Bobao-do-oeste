@@ -2,7 +2,9 @@
 
 Este documento detalha o funcionamento interno de cada componente do **`scraper-service`**, explicando os desafios técnicos de contornar proteções anti-bot, a anatomia das páginas da OLX, as estratégias de parsing, a camada de serviços de domínio e a persistência no banco de dados.
 
-> 🚦 **Nova camada de fila:** As requisições `POST /api/v1/scrape` agora passam por uma **fila persistente SQLite** antes de chegar ao `ScrapingService`. Veja o [`QUEUE_GUIDE.md`](QUEUE_GUIDE.md) para o ciclo de vida completo, máquina de estados e recuperação de falhas.
+> 🚦 **Nova camada de fila:** As requisições `POST /api/v1/scrape` passam por uma **fila persistente SQLite** antes de chegar ao `ScrapingService`. Veja o [`QUEUE_GUIDE.md`](QUEUE_GUIDE.md).
+>
+> 🖼️ **Deep Scraping & Cache de Imagens:** Para raspagem de anúncio único por URL com extração completa de specs e cache de imagens com TTL no SQLite, veja o [`DETAIL_AND_IMAGE_CACHE_GUIDE.md`](DETAIL_AND_IMAGE_CACHE_GUIDE.md).
 
 ---
 

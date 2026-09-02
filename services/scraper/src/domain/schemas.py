@@ -135,3 +135,69 @@ class QueueStatusDTO(BaseModel):
     total_success_jobs: int = 0
     total_failed_jobs: int = 0
 
+
+class ScrapeDetailRequest(BaseModel):
+    """Parâmetros para raspagem profunda de um anúncio individual."""
+
+    url: str = Field(..., min_length=10, description="URL direta da página do anúncio (ex: OLX)")
+    vendor: VendorEnum = Field(default=VendorEnum.OLX, description="Marketplace correspondente")
+    download_images: bool = Field(default=True, description="Se deve baixar e cachear as imagens em disco/sqlite")
+    ttl_hours: int = Field(
+        default=12, ge=1, le=168, description="Tempo de vida (TTL) do cache das imagens e detalhes em horas"
+    )
+    force_browser: bool = Field(default=False, description="Forçar uso de navegador Playwright")
+
+
+class CachedImageDTO(BaseModel):
+    """Representação de uma imagem baixada e armazenada no cache com TTL."""
+
+    id: str
+    image_index: int
+    original_url: str
+    endpoint_url: str
+    full_endpoint_url: Optional[str] = None
+    mime_type: str
+    size_bytes: int
+    expires_at: datetime
+
+
+class ScrapedListingDetailDTO(BaseModel):
+    """Dados ricos e completos extraídos da página interna do anúncio."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    vendor: VendorEnum
+    vendor_listing_id: str
+    url: str
+    title: str
+    price: float
+    original_price: Optional[float] = None
+    description: Optional[str] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
+    neighborhood: Optional[str] = None
+    has_delivery: bool = False
+    delivery_type: DeliveryTypeEnum = DeliveryTypeEnum.UNKNOWN
+    properties: Dict[str, Any] = Field(
+        default_factory=dict, description="Tabela de especificações e atributos do anúncio"
+    )
+    images: List[str] = Field(
+        default_factory=list, description="Lista com todas as URLs originais das fotos em alta resolução"
+    )
+    cached_images: List[CachedImageDTO] = Field(
+        default_factory=list, description="Imagens salvas no cache local SQLite"
+    )
+    seller_name: Optional[str] = None
+    seller_info: Dict[str, Any] = Field(default_factory=dict, description="Metadados do anunciante/vendedor")
+    published_at: Optional[datetime] = None
+    scraped_at: Optional[datetime] = None
+
+
+class ScrapeDetailResponse(BaseModel):
+    """Resposta completa da extração profunda do anúncio."""
+
+    success: bool
+    from_cache: bool = False
+    used_fallback: bool = False
+    data: Optional[ScrapedListingDetailDTO] = None
+    error_message: Optional[str] = None

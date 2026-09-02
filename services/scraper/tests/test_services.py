@@ -105,7 +105,9 @@ async def test_queue_service_metrics():
         await session.commit()
         await session.refresh(job1)
 
-        wh1 = WebhookDelivery(scrape_job_id=job1.id, request_id="req-wh-1", webhook_url="http://test", status=DeliveryStatusEnum.PENDING)
+        wh1 = WebhookDelivery(
+            scrape_job_id=job1.id, request_id="req-wh-1", webhook_url="http://test", status=DeliveryStatusEnum.PENDING
+        )
         session.add(wh1)
         await session.commit()
 
@@ -116,4 +118,3 @@ async def test_queue_service_metrics():
         assert stats.running_jobs >= 1
         assert stats.total_pending_jobs >= 2
         assert stats.pending_webhooks >= 1
-

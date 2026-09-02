@@ -16,4 +16,3 @@ router = APIRouter(prefix="/queue", tags=["Queue"])
 async def get_queue_status(session: AsyncSession = Depends(get_session)) -> QueueStatusDTO:
     service = QueueService(session)
     return await service.get_queue_status()
-
