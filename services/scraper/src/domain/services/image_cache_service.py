@@ -26,8 +26,8 @@ class ImageCacheService:
         """Retorna os bytes e mime_type da imagem se ela existir e não tiver expirado."""
         now = datetime.now(timezone.utc)
         stmt = select(AdImageCache).where(
-            AdImageCache.id == image_id,
-            AdImageCache.expires_at > now,
+            col(AdImageCache.id) == image_id,
+            col(AdImageCache.expires_at) > now,
         )
         res = await self.session.execute(stmt)
         record = res.scalars().first()
@@ -35,19 +35,17 @@ class ImageCacheService:
             return None
         return record.image_bytes, record.mime_type
 
-    async def get_cached_images_for_listing(
-        self, vendor: VendorEnum, vendor_listing_id: str
-    ) -> List[CachedImageDTO]:
+    async def get_cached_images_for_listing(self, vendor: VendorEnum, vendor_listing_id: str) -> List[CachedImageDTO]:
         """Retorna os metadados das imagens cacheadas e válidas para um anúncio."""
         now = datetime.now(timezone.utc)
         stmt = (
             select(AdImageCache)
             .where(
-                AdImageCache.vendor == vendor,
-                AdImageCache.vendor_listing_id == vendor_listing_id,
-                AdImageCache.expires_at > now,
+                col(AdImageCache.vendor) == vendor,
+                col(AdImageCache.vendor_listing_id) == vendor_listing_id,
+                col(AdImageCache.expires_at) > now,
             )
-            .order_by(AdImageCache.image_index)
+            .order_by(col(AdImageCache.image_index).asc())
         )
         res = await self.session.execute(stmt)
         records = res.scalars().all()
@@ -136,20 +134,17 @@ class ImageCacheService:
     async def cleanup_expired(self) -> int:
         """Exclui todas as imagens e detalhes em cache cujo TTL expirou."""
         now = datetime.now(timezone.utc)
-        stmt_img = delete(AdImageCache).where(AdImageCache.expires_at <= now)
+        stmt_img = delete(AdImageCache).where(col(AdImageCache.expires_at) <= now)
         res_img = await self.session.execute(stmt_img)
 
-        stmt_detail = delete(AdDetailCache).where(AdDetailCache.expires_at <= now)
+        stmt_detail = delete(AdDetailCache).where(col(AdDetailCache.expires_at) <= now)
         res_detail = await self.session.execute(stmt_detail)
 
         await self.session.commit()
-        deleted_images = res_img.rowcount or 0
-        deleted_details = res_detail.rowcount or 0
+        deleted_images: int = getattr(res_img, "rowcount", 0) or 0
+        deleted_details: int = getattr(res_detail, "rowcount", 0) or 0
         total_deleted = deleted_images + deleted_details
 
         if total_deleted > 0:
-            logger.info(
-                f"Purged expired cache from SQLite: {deleted_images} images, {deleted_details} ad details."
-            )
+            logger.info(f"Purged expired cache from SQLite: {deleted_images} images, {deleted_details} ad details.")
         return total_deleted
-

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from src.core.config import settings
 from src.core.engine import HttpClientBlockedException, PlaywrightBrowserFallback, SmartHttpClient
@@ -40,9 +40,9 @@ class ScrapeDetailService:
         # 2. Verificação de Cache ativo (se listing_id foi identificado)
         if listing_id:
             stmt = select(AdDetailCache).where(
-                AdDetailCache.vendor == vendor,
-                AdDetailCache.vendor_listing_id == listing_id,
-                AdDetailCache.expires_at > now,
+                col(AdDetailCache.vendor) == vendor,
+                col(AdDetailCache.vendor_listing_id) == listing_id,
+                col(AdDetailCache.expires_at) > now,
             )
             res = await self.session.execute(stmt)
             cached_detail_record = res.scalars().first()
