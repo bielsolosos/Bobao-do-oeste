@@ -4,6 +4,11 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, filter, switchMap, take, throwError, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+interface RefreshResponse {
+  token: string;
+  refreshToken?: string;
+}
+
 let isRefreshing = false;
 let refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
@@ -23,7 +28,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      if ((error.status === 401 || error.status === 403) && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
         return handle401Error(req, next, http, router);
       }
 
@@ -38,7 +43,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
-const handle401Error = (req: HttpRequest<any>, next: HttpHandlerFn, http: HttpClient, router: Router): Observable<HttpEvent<any>> => {
+const handle401Error = (req: HttpRequest<unknown>, next: HttpHandlerFn, http: HttpClient, router: Router): Observable<HttpEvent<unknown>> => {
   if (!isRefreshing) {
     isRefreshing = true;
     refreshTokenSubject.next(null);
@@ -46,8 +51,8 @@ const handle401Error = (req: HttpRequest<any>, next: HttpHandlerFn, http: HttpCl
     const refreshToken = localStorage.getItem('refresh_token');
 
     if (refreshToken) {
-      return http.post<any>(`${environment.apiUrl}/auth/refresh`, { refreshToken }).pipe(
-        switchMap((res: any) => {
+      return http.post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, { refreshToken }).pipe(
+        switchMap((res) => {
           isRefreshing = false;
           
           localStorage.setItem('jwt_token', res.token);
@@ -64,6 +69,8 @@ const handle401Error = (req: HttpRequest<any>, next: HttpHandlerFn, http: HttpCl
           }));
         }),
         catchError((err) => {
+          refreshTokenSubject.error(err);
+          refreshTokenSubject = new BehaviorSubject<string | null>(null);
           isRefreshing = false;
           localStorage.removeItem('jwt_token');
           localStorage.removeItem('refresh_token');

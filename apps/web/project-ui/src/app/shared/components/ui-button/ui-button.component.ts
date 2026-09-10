@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
     <button
       [type]="type"
       [disabled]="disabled || loading"
-      (click)="onClick.emit($event)"
+      (click)="clicked.emit($event)"
       [ngClass]="getButtonClasses()"
       class="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
     >
@@ -48,7 +48,7 @@ export class UiButtonComponent {
   @Input() disabled: boolean = false;
   @Input() fullWidth: boolean = false;
 
-  @Output() onClick = new EventEmitter<Event>();
+  @Output() clicked = new EventEmitter<Event>();
 
   getButtonClasses(): string {
     let classes = '';

@@ -4,7 +4,6 @@ import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 import { ProductMonitorRequest, ProductMonitorResponse, PageResponse, ScraperQueueStatusResponse } from '../models/monitor.model';
 import { ScrapedListingResponse } from '../models/listing.model';
-import { AiAnalysisLogResponse } from '../models/ai-log.model';
 
 @Injectable({
   providedIn: 'root'
@@ -29,19 +28,19 @@ export class MonitorService {
     return this.http.put<ProductMonitorResponse>(`${this.apiUrl}/${id}`, monitor);
   }
 
-  deactivateMonitor(id: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/deactivate`, null, { responseType: 'text' });
+  deactivateMonitor(id: string): Observable<string> {
+    return this.http.patch<string>(`${this.apiUrl}/${id}/deactivate`, null, { responseType: 'text' });
   }
 
-  activateMonitor(id: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/activate`, null, { responseType: 'text' });
+  activateMonitor(id: string): Observable<string> {
+    return this.http.patch<string>(`${this.apiUrl}/${id}/activate`, null, { responseType: 'text' });
   }
 
-  deleteMonitor(id: string): Observable<any> {
+  deleteMonitor(id: string): Observable<string> {
     return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' });
   }
 
-  getAllListings(page = 0, size = 20, filters?: any): Observable<PageResponse<ScrapedListingResponse>> {
+  getAllListings(page = 0, size = 20, filters?: Record<string, string | number | boolean>): Observable<PageResponse<ScrapedListingResponse>> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (filters) {
       Object.keys(filters).forEach(key => {
@@ -61,4 +60,3 @@ export class MonitorService {
     return this.http.get<ScraperQueueStatusResponse>(`${environment.apiUrl}/scraper/queue-status`);
   }
 }
-

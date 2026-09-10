@@ -1,28 +1,48 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
-import { ProductMonitorRequest, AnalysisType } from '../../../core/models/monitor.model';
+import {
+  AnalysisType,
+  ProductMonitorRequest,
+  ScrapingFrequency,
+  Vendor,
+} from '../../../core/models/monitor.model';
 import { UiButtonComponent } from '../../../shared/components/ui-button/ui-button.component';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
+import { UiFormFieldComponent } from '../../../shared/components/ui-form-field/ui-form-field.component';
+import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
+
+const priceRangeValidator = (control: AbstractControl): ValidationErrors | null => {
+  const min = control.get('minPrice')?.value;
+  const max = control.get('maxPrice')?.value;
+  if (min == null || max == null || min === '' || max === '') return null;
+  return Number(min) <= Number(max) ? null : { priceRange: true };
+};
 
 @Component({
   selector: 'app-monitor-form',
   standalone: true,
-  imports: [ReactiveFormsModule, UiButtonComponent, UiCardComponent],
+  imports: [
+    ReactiveFormsModule,
+    UiButtonComponent,
+    UiCardComponent,
+    UiFormFieldComponent,
+    UiPageHeaderComponent,
+  ],
   template: `
-    <div class="mb-6 flex justify-between items-end">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">
-          {{ isEditMode ? 'Editar Monitor' : 'Novo Monitor' }}
-        </h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Configure os parâmetros da sua busca e análise de IA.
-        </p>
-      </div>
-    </div>
+    <app-ui-page-header
+      [title]="isEditMode ? 'Editar monitor' : 'Novo monitor'"
+      subtitle="Configure os parâmetros da sua busca e análise de IA."
+    ></app-ui-page-header>
 
     <div class="max-w-4xl">
       <app-ui-card [noPadding]="true">
@@ -55,6 +75,11 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
 
         @if (!isLoading()) {
           <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            @if (submitted() && form.invalid) {
+              <div class="mx-6 mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                Revise os campos destacados antes de salvar o monitor.
+              </div>
+            }
             <div class="px-6 py-6">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Seção Básica -->
@@ -65,17 +90,20 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
                     Informações Gerais
                   </h3>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Nome da Busca <span class="text-red-500">*</span></label
-                      >
+                    <app-ui-form-field
+                      label="Nome da busca"
+                      forId="monitor-name"
+                      [required]="true"
+                      [error]="fieldError('name')"
+                    >
                       <input
+                        id="monitor-name"
                         formControlName="name"
                         type="text"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
+                        class="ui-input"
                         placeholder="Ex: Macbooks M1 baratos"
                       />
-                    </div>
+                    </app-ui-form-field>
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1"
                         >Plataforma Alvo <span class="text-red-500">*</span></label
@@ -130,11 +158,9 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
                         formControlName="frequency"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
                       >
-                        <option value="EVERY_MINUTE">A cada 1 minuto (Agressivo)</option>
-                        <option value="EVERY_5_MINUTES">A cada 5 minutos</option>
-                        <option value="EVERY_30_MINUTES">A cada 30 minutos</option>
-                        <option value="HOURLY">1 vez por hora</option>
-                        <option value="DAILY">1 vez por dia</option>
+                        @for (frequency of frequencies; track frequency.value) {
+                          <option [value]="frequency.value">{{ frequency.label }}</option>
+                        }
                       </select>
                     </div>
                   </div>
@@ -160,6 +186,9 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
                         placeholder="99999"
                       />
+                      @if (priceRangeError) {
+                        <p class="col-span-2 mt-1 text-xs font-medium text-red-600">{{ priceRangeError }}</p>
+                      }
                     </div>
                   </div>
                 </div>
@@ -240,7 +269,7 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
               <app-ui-button
                 type="button"
                 variant="outline"
-                (onClick)="router.navigate(['/monitors'])"
+                (clicked)="router.navigate(['/monitors'])"
               >
                 Cancelar
               </app-ui-button>
@@ -268,8 +297,21 @@ export class MonitorFormComponent implements OnInit {
 
   isSaving = signal(false);
   isLoading = signal(false);
+  submitted = signal(false);
   isEditMode = false;
   monitorId: string | null = null;
+
+  readonly frequencies = [
+    { value: 'EVERY_MINUTE', label: 'A cada 1 minuto' },
+    { value: 'EVERY_5_MINUTES', label: 'A cada 5 minutos' },
+    { value: 'EVERY_30_MINUTES', label: 'A cada 30 minutos' },
+    { value: 'HOURLY', label: 'Uma vez por hora' },
+    { value: 'EVERY_6_HOURS', label: 'A cada 6 horas' },
+    { value: 'TWICE_DAILY', label: 'Duas vezes por dia' },
+    { value: 'DAILY', label: 'Uma vez por dia' },
+    { value: 'WEEKLY', label: 'Uma vez por semana' },
+    { value: 'MANUAL', label: 'Somente manual' },
+  ] as const;
 
   form = this.fb.group({
     name: ['', Validators.required],
@@ -287,10 +329,28 @@ export class MonitorFormComponent implements OnInit {
       minimumRamGb: [8],
       needsDedicatedGpu: [null as boolean | null],
     }),
-  });
+  }, { validators: priceRangeValidator });
 
   get analysisTypeCtrl() {
     return this.form.get('analysisType')!;
+  }
+
+  fieldError(name: string): string {
+    const control = this.form.get(name);
+    if (!control || (!control.touched && !this.submitted()) || !control.errors) return '';
+    if (control.hasError('required')) return 'Este campo é obrigatório.';
+    return 'Verifique este campo.';
+  }
+
+  get priceRangeError(): string {
+    if (!this.form.hasError('priceRange') || (!this.submitted() && !this.form.get('maxPrice')?.touched)) {
+      return '';
+    }
+    return 'O preço máximo deve ser maior ou igual ao mínimo.';
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.isSaving();
   }
 
   ngOnInit() {
@@ -307,8 +367,6 @@ export class MonitorFormComponent implements OnInit {
     this.monitorService.getMonitorById(id).subscribe({
       next: (m) => {
         try {
-          console.log('Monitor carregado da API:', m);
-
           let keywords = '';
           if (m.searchQueries && Array.isArray(m.searchQueries)) {
             keywords = m.searchQueries
@@ -320,8 +378,8 @@ export class MonitorFormComponent implements OnInit {
           let minPrice = null;
           let maxPrice = null;
           if (m.searchQueries && m.searchQueries.length > 0) {
-            minPrice = (m.searchQueries[0] as any)?.minPrice || null;
-            maxPrice = (m.searchQueries[0] as any)?.maxPrice || null;
+            minPrice = m.searchQueries[0]?.minPrice ?? null;
+            maxPrice = m.searchQueries[0]?.maxPrice ?? null;
           }
 
           this.form.patchValue({
@@ -342,7 +400,7 @@ export class MonitorFormComponent implements OnInit {
             });
           } else if (m.analysisType === 'NOTEBOOK' && m.expectedSpecs) {
             this.form.get('notebookFields')?.patchValue({
-              minimumRamGb: m.expectedSpecs.minimumRamGb || 8,
+               minimumRamGb: m.expectedSpecs.minimumRamGb ?? 8,
               needsDedicatedGpu:
                 m.expectedSpecs.needsDedicatedGpu !== undefined
                   ? m.expectedSpecs.needsDedicatedGpu
@@ -367,6 +425,7 @@ export class MonitorFormComponent implements OnInit {
   }
 
   onSubmit() {
+    this.submitted.set(true);
     if (this.form.invalid) {
       this.toast.warning('Atenção', 'Preencha todos os campos obrigatórios.');
       return;
@@ -375,12 +434,12 @@ export class MonitorFormComponent implements OnInit {
     this.isSaving.set(true);
     const v = this.form.value;
 
-    let analysisTypeFields: any = null;
+    let analysisTypeFields: ProductMonitorRequest['analysisTypeFields'];
     if (v.analysisType === 'SIMPLE') {
-      analysisTypeFields = { prompt: v.simpleFields?.prompt };
+      analysisTypeFields = { prompt: v.simpleFields?.prompt ?? undefined };
     } else if (v.analysisType === 'NOTEBOOK') {
       analysisTypeFields = {
-        minimumRamGb: v.notebookFields?.minimumRamGb,
+        minimumRamGb: v.notebookFields?.minimumRamGb ?? undefined,
         needsDedicatedGpu: v.notebookFields?.needsDedicatedGpu,
       };
     }
@@ -393,13 +452,13 @@ export class MonitorFormComponent implements OnInit {
     const payload: ProductMonitorRequest = {
       name: v.name!,
       description: v.description || undefined,
-      vendor: v.vendor as any,
-      frequency: v.frequency as any,
+      vendor: v.vendor as Vendor,
+      frequency: v.frequency as ScrapingFrequency,
       analysisType: v.analysisType as AnalysisType,
       analysisTypeFields,
       searchKeywords: keywordsArray,
-      minPrice: v.minPrice || undefined,
-      maxPrice: v.maxPrice || undefined,
+      minPrice: v.minPrice ?? undefined,
+      maxPrice: v.maxPrice ?? undefined,
     };
 
     const request$ = this.isEditMode

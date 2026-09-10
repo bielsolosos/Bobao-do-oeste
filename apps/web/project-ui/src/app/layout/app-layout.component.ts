@@ -1,19 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
-import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.component';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterModule, UiToastComponent],
+  imports: [RouterModule],
   template: `
     <!-- MAIN WRAPPER (Flex-col para mobile, Flex-row para desktop) -->
-    <app-ui-toast-container></app-ui-toast-container>
     <div class="h-screen w-full bg-slate-50 flex flex-col md:flex-row overflow-hidden">
       <!-- SIDEBAR (Apenas visível em telas md ou maiores) -->
       <aside
-        class="hidden md:flex w-64 bg-slate-900 text-white flex-col shadow-xl z-20 flex-shrink-0 h-full"
+        class="hidden md:flex w-64 bg-slate-900 text-white flex-col shadow-xl z-[var(--z-nav)] flex-shrink-0 h-full"
       >
         <div class="h-16 flex items-center px-6 border-b border-slate-800">
           <div
@@ -151,7 +149,7 @@ import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.compone
                 />
               </svg>
             </div>
-            <h2 class="text-lg font-bold text-gray-800 tracking-tight">BI Engine</h2>
+             <h2 class="text-lg font-bold text-gray-800 tracking-tight">Bobão do Oeste</h2>
           </div>
 
           <!-- DESKTOP TITLE -->
@@ -180,7 +178,7 @@ import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.compone
 
               <!-- Menu flutuante -->
               <div
-                class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block z-50"
+                class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block group-focus-within:block z-[var(--z-nav)]"
               >
                 <div class="px-4 py-2 border-b border-gray-100 sm:hidden">
                   <p class="text-sm font-medium text-gray-900 truncate">
@@ -189,6 +187,7 @@ import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.compone
                   <p class="text-xs text-gray-500 truncate">{{ getPrimaryRole() }}</p>
                 </div>
                 <button
+                  type="button"
                   (click)="logout()"
                   class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
@@ -207,7 +206,7 @@ import { UiToastComponent } from '../shared/components/ui-toast/ui-toast.compone
 
       <!-- BOTTOM NAVIGATION BAR (Apenas visível em telas mobile) -->
       <nav
-        class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-between z-50 h-[68px] px-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+        class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-between z-[var(--z-nav)] h-[68px] px-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
       >
         <!-- Dashboard -->
         <a

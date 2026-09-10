@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 
-import { UiToastService, ToastMessage } from './ui-toast.service';
+import { UiToastService } from './ui-toast.service';
 
 @Component({
   selector: 'app-ui-toast-container',
@@ -9,9 +9,9 @@ import { UiToastService, ToastMessage } from './ui-toast.service';
   template: `
     <!-- Ajustado para ficar no TOPO e com largura maior (w-96) -->
     <div
-      class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none w-96 max-w-[90vw]"
+      class="fixed top-6 right-6 z-[var(--z-toast)] flex flex-col gap-3 pointer-events-none w-96 max-w-[90vw]"
     >
-      @for (toast of toastService.toasts(); track toast) {
+      @for (toast of toastService.toasts(); track toast.id) {
         <div
           class="pointer-events-auto w-full bg-white shadow-xl rounded-lg ring-1 ring-black/5 overflow-hidden transition-all flex items-start p-4 animate-slide-in"
         >
@@ -85,6 +85,7 @@ import { UiToastService, ToastMessage } from './ui-toast.service';
           </div>
           <div class="ml-4 flex-shrink-0 flex">
             <button
+              type="button"
               (click)="toastService.remove(toast.id)"
               class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 transition-colors focus:outline-none"
             >

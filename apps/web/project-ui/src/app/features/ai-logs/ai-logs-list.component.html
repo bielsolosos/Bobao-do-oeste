@@ -1,11 +1,9 @@
-<div class="mb-6 flex justify-between items-end">
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Auditoria & Logs de Chamadas da IA</h1>
-    <p class="text-sm text-gray-500 mt-1">
-      Histórico detalhado de prompts, respostas do Gemini, latência e consumo.
-    </p>
-  </div>
+<app-ui-page-header
+  title="Auditoria e logs da IA"
+  subtitle="Histórico de prompts, respostas do Gemini, latência e consumo."
+>
   <button
+    type="button"
     (click)="loadLogs()"
     class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
   >
@@ -19,17 +17,18 @@
     </svg>
     Atualizar
   </button>
-</div>
+</app-ui-page-header>
 
 <app-ui-card [noPadding]="true">
   @if (isLoading()) {
-    <div class="p-12 text-center text-gray-500">Carregando histórico de IA...</div>
+    <app-ui-skeleton variant="table" [rows]="6"></app-ui-skeleton>
   }
 
   @if (!isLoading() && logs().length === 0) {
-    <div class="p-12 text-center text-gray-500">
-      Nenhum registro de chamada de IA encontrado até o momento.
-    </div>
+    <app-ui-empty-state
+      title="Nenhum log de IA encontrado"
+      message="As análises realizadas pelos seus monitores aparecerão aqui."
+    ></app-ui-empty-state>
   }
 
   @if (!isLoading() && logs().length > 0) {
@@ -70,7 +69,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          @for (log of logs(); track log) {
+          @for (log of logs(); track log.id) {
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="px-6 py-4 whitespace-nowrap">
                 <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
@@ -103,6 +102,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
+                  type="button"
                   (click)="openDetailModal(log)"
                   class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors font-semibold"
                 >
@@ -128,46 +128,14 @@
 </app-ui-card>
 
 <!-- Modal de Detalhes -->
-@if (selectedLog()) {
-  <div class="relative z-[100]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div
-      class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-      (click)="closeDetailModal()"
-    ></div>
-    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div
-          class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl"
-        >
-          <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-200">
-            <div class="flex justify-between items-start">
-              <div>
-                <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
-                  Detalhes da Execução de IA
-                </h3>
-                <p class="text-sm text-gray-500 mt-1">
-                  Modelo: <span class="font-mono text-xs">{{ selectedLog()?.modelName }}</span> |
-                  Latência: {{ formatDuration(selectedLog()?.durationMs) }}
-                </p>
-              </div>
-              <button
-                (click)="closeDetailModal()"
-                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
-              >
-                <span class="sr-only">Close</span>
-                <svg
-                  class="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="bg-gray-50 px-4 py-5 sm:p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+<app-ui-modal
+  [open]="selectedLog() !== null"
+  title="Detalhes da execução de IA"
+  [subtitle]="'Modelo: ' + (selectedLog()?.modelName || '-') + ' | Latência: ' + formatDuration(selectedLog()?.durationMs)"
+  size="lg"
+  (closed)="closeDetailModal()"
+>
+          <div class="space-y-6">
             @if (selectedLog()?.errorMessage) {
               <div class="rounded-md bg-red-50 p-4 border border-red-200">
                 <div class="flex">
@@ -210,19 +178,4 @@
               </div>
             }
           </div>
-          <div
-            class="bg-white px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-200"
-          >
-            <button
-              type="button"
-              (click)="closeDetailModal()"
-              class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-}
+</app-ui-modal>

@@ -3,20 +3,21 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { AiLogService } from '../../../core/services/ai-log.service';
-import { ProductMonitorResponse } from "../../../core/models/monitor.model";
-import { ScrapedListingResponse } from "../../../core/models/listing.model";;
+import { ProductMonitorResponse } from '../../../core/models/monitor.model';
+import { ScrapedListingResponse } from '../../../core/models/listing.model';
 import { AiAnalysisLogResponse } from '../../../core/models/ai-log.model';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
-import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
+import { BadgeVariant, UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
 import { UiTabsComponent, TabItem } from '../../../shared/components/ui-tabs/ui-tabs.component';
 import { UiPaginationComponent } from '../../../shared/components/ui-pagination/ui-pagination.component';
+import { UiModalComponent } from '../../../shared/components/ui-modal/ui-modal.component';
 
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
 
 @Component({
   selector: 'app-monitor-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, DatePipe, UiCardComponent, UiBadgeComponent, UiTabsComponent, UiPaginationComponent],
+  imports: [CommonModule, RouterModule, DatePipe, UiCardComponent, UiBadgeComponent, UiTabsComponent, UiPaginationComponent, UiModalComponent],
   templateUrl: './monitor-detail.component.html',
   styles: [`
     .animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
@@ -89,7 +90,7 @@ export class MonitorDetailComponent implements OnInit {
   loadListings(page: number = this.currentPage()) {
     this.isLoadingListings.set(true);
     this.monitorService.getMonitorListings(this.monitorId, page, this.pageSize(), this.currentSort()).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.listings.set(res.content);
         this.currentPage.set(res.number);
         this.totalPages.set(res.totalPages);
@@ -121,10 +122,14 @@ export class MonitorDetailComponent implements OnInit {
   loadAiLogs() {
     this.isLoadingAiLogs.set(true);
     this.aiLogService.getMonitorAiLogs(this.monitorId, 0, 50).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.aiLogs.set(res.content);
         this.isLoadingAiLogs.set(false);
-      }
+      },
+      error: () => {
+        this.isLoadingAiLogs.set(false);
+        this.toast.error('Erro', 'Não foi possível carregar o histórico da IA.');
+      },
     });
   }
 
@@ -134,7 +139,7 @@ export class MonitorDetailComponent implements OnInit {
     if (tabId === 'ai-logs' && this.aiLogs().length === 0 && this.hasAiAnalysis()) this.loadAiLogs();
   }
 
-  getTierBadge(tier: string): any {
+  getTierBadge(tier: string): BadgeVariant {
     switch(tier) {
       case 'HIGH': return 'high';
       case 'MEDIUM': return 'medium';
@@ -178,11 +183,11 @@ export class MonitorDetailComponent implements OnInit {
     this.isListingAiLogsModalOpen.set(false);
   }
 
-  formatJson(obj: any): string {
+  formatJson(obj: Record<string, unknown> | null | undefined): string {
     if (!obj || Object.keys(obj).length === 0) return 'Nenhuma regra específica cadastrada.';
     const cleanObj = { ...obj };
-    delete cleanObj.minPrice;
-    delete cleanObj.maxPrice;
+    delete cleanObj['minPrice'];
+    delete cleanObj['maxPrice'];
     
     return JSON.stringify(cleanObj, null, 2);
   }

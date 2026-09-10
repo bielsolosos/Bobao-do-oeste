@@ -1,4 +1,4 @@
-export type WebhookStatus = 'PENDING' | 'PROCESSED' | 'FAILED';
+export type WebhookStatus = 'PENDING' | 'RECEIVED' | 'PROCESSING' | 'PROCESSED' | 'FAILED' | 'DUPLICATE';
 
 export interface WebhookEventSummaryResponse {
   id: string;

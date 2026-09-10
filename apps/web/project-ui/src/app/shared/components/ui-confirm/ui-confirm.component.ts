@@ -9,10 +9,13 @@ import { UiButtonComponent } from '../ui-button/ui-button.component';
   imports: [UiButtonComponent],
   template: `
     @if (confirmService.isOpen()) {
-      <div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="relative z-[var(--z-overlay)]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div
           class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity backdrop-blur-sm"
+          tabindex="-1"
           (click)="cancel()"
+          (keydown.enter)="cancel()"
+          (keydown.space)="cancel()"
         ></div>
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
           <div
@@ -74,11 +77,11 @@ import { UiButtonComponent } from '../ui-button/ui-button.component';
               <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
                 <app-ui-button
                   [variant]="confirmService.config()?.isDestructive ? 'danger' : 'primary'"
-                  (onClick)="confirm()"
+                  (clicked)="confirm()"
                 >
                   {{ confirmService.config()?.confirmText }}
                 </app-ui-button>
-                <app-ui-button variant="outline" (onClick)="cancel()">
+                <app-ui-button variant="outline" (clicked)="cancel()">
                   {{ confirmService.config()?.cancelText }}
                 </app-ui-button>
               </div>

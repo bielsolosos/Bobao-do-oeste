@@ -5,8 +5,11 @@ import { ProductMonitorResponse } from '../../../core/models/monitor.model';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
-import { UiConfirmComponent } from '../../../shared/components/ui-confirm/ui-confirm.component';
+import { UiConfirmService } from '../../../shared/components/ui-confirm/ui-confirm.service';
+import { UiEmptyStateComponent } from '../../../shared/components/ui-empty-state/ui-empty-state.component';
+import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
 import { UiPaginationComponent } from '../../../shared/components/ui-pagination/ui-pagination.component';
+import { UiSkeletonComponent } from '../../../shared/components/ui-skeleton/ui-skeleton.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
 
 @Component({
@@ -17,14 +20,17 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
     RouterModule,
     UiCardComponent,
     UiBadgeComponent,
-    UiConfirmComponent,
+    UiEmptyStateComponent,
+    UiPageHeaderComponent,
     UiPaginationComponent,
+    UiSkeletonComponent,
   ],
   templateUrl: './monitor-list.component.html',
 })
 export class MonitorListComponent implements OnInit {
   private monitorService = inject(MonitorService);
   private toast = inject(UiToastService);
+  private confirm = inject(UiConfirmService);
 
   monitors = signal<ProductMonitorResponse[]>([]);
   isLoading = signal<boolean>(true);
@@ -42,14 +48,14 @@ export class MonitorListComponent implements OnInit {
   loadMonitors(page: number = this.currentPage()) {
     this.isLoading.set(true);
     this.monitorService.getMonitors(page, this.pageSize()).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.monitors.set(res.content);
         this.currentPage.set(res.number);
         this.totalPages.set(res.totalPages);
         this.totalElements.set(res.totalElements);
         this.isLoading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.toast.error('Erro', 'Não foi possível carregar a lista de monitores.');
         this.isLoading.set(false);
       },
@@ -91,22 +97,22 @@ export class MonitorListComponent implements OnInit {
     });
   }
 
-  deleteMonitor(id: string, name: string) {
-    const confirmed = window.confirm(
-      `Atenção! Deseja realmente excluir o monitor "${name}"? Esta ação é irreversível.`,
-    );
+  async deleteMonitor(id: string, name: string) {
+    const confirmed = await this.confirm.confirm({
+      title: 'Excluir monitor?',
+      message: `O monitor "${name}" e seu histórico de anúncios serão excluídos. Essa ação não pode ser desfeita.`,
+      confirmText: 'Excluir monitor',
+      isDestructive: true,
+    });
 
-    if (confirmed) {
-      this.monitorService.deleteMonitor(id).subscribe({
-        next: () => {
-          this.toast.success('Excluído', 'Monitor excluído com sucesso.');
-          this.loadMonitors();
-        },
-        error: (err) => {
-          console.error('Erro de request DELETE:', err);
-          this.toast.error('Erro', 'Falha ao excluir monitor.');
-        },
-      });
-    }
+    if (!confirmed) return;
+
+    this.monitorService.deleteMonitor(id).subscribe({
+      next: () => {
+        this.toast.success('Monitor excluído', 'O monitor foi removido com sucesso.');
+        this.loadMonitors();
+      },
+      error: () => this.toast.error('Erro', 'Falha ao excluir monitor.'),
+    });
   }
 }

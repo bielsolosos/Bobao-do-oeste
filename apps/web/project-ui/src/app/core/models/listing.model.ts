@@ -18,7 +18,7 @@ export interface ExtractedSpecs {
   cons?: string[];
   estimatedMarketValue?: number;
   dealVerdict?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ScrapedListingResponse {

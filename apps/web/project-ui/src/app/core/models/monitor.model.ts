@@ -14,6 +14,8 @@ export type ScrapingFrequency =
 export interface MonitorSearchQueryResponse {
   id: string;
   keyword: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface SimpleAnalysisFields {
@@ -25,6 +27,12 @@ export interface NotebookAnalysisFields {
   needsDedicatedGpu?: boolean | null;
 }
 
+export interface MonitorExpectedSpecs extends SimpleAnalysisFields, NotebookAnalysisFields {
+  minPrice?: number;
+  maxPrice?: number;
+  [key: string]: unknown;
+}
+
 export interface ProductMonitorResponse {
   id: string;
   name: string;
@@ -34,7 +42,7 @@ export interface ProductMonitorResponse {
   active: boolean;
   frequency: ScrapingFrequency;
   cronExpression?: string;
-  expectedSpecs?: any;
+  expectedSpecs?: MonitorExpectedSpecs;
   searchQueries: MonitorSearchQueryResponse[];
   lastScrapedAt?: string;
   createdAt: string;
@@ -46,7 +54,7 @@ export interface ProductMonitorRequest {
   description?: string;
   vendor: Vendor;
   analysisType: AnalysisType;
-  analysisTypeFields?: any;
+  analysisTypeFields?: SimpleAnalysisFields | NotebookAnalysisFields;
   searchKeywords: string[];
   minPrice?: number;
   maxPrice?: number;
@@ -83,4 +91,3 @@ export interface ScraperQueueStatusResponse {
   total_success_jobs: number;
   total_failed_jobs: number;
 }
-

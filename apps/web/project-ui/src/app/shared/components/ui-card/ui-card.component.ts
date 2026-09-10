@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
       [ngClass]="extraClasses"
     >
       <!-- Header -->
-      @if (title || subtitle || hasHeaderAction) {
+      @if (title || subtitle) {
         <div
           class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
         >
@@ -21,11 +21,6 @@ import { CommonModule } from '@angular/common';
               <p class="text-sm text-gray-500 mt-1">{{ subtitle }}</p>
             }
           </div>
-          @if (hasHeaderAction) {
-            <div>
-              <ng-content select="[card-action]"></ng-content>
-            </div>
-          }
         </div>
       }
 
@@ -34,12 +29,6 @@ import { CommonModule } from '@angular/common';
         <ng-content></ng-content>
       </div>
 
-      <!-- Footer -->
-      @if (hasFooter) {
-        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
-          <ng-content select="[card-footer]"></ng-content>
-        </div>
-      }
     </div>
   `,
 })
@@ -47,7 +36,5 @@ export class UiCardComponent {
   @Input() title?: string;
   @Input() subtitle?: string;
   @Input() noPadding: boolean = false;
-  @Input() hasHeaderAction: boolean = false;
-  @Input() hasFooter: boolean = false;
   @Input() extraClasses: string = '';
 }

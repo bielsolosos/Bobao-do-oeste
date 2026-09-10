@@ -1,6 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+export type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'high' | 'medium' | 'low';
+
 @Component({
   selector: 'app-ui-badge',
   standalone: true,
@@ -12,7 +14,7 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class UiBadgeComponent {
-  @Input() variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'high' | 'medium' | 'low' = 'neutral';
+  @Input() variant: BadgeVariant = 'neutral';
   @Input() rounded: 'full' | 'sm' | 'md' = 'full';
   @Input() size: 'xs' | 'sm' | 'md' = 'xs';
 

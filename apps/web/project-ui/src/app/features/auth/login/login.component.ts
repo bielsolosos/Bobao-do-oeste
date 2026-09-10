@@ -11,7 +11,15 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
   template: `
     <div class="min-h-screen bg-gray-100 flex items-center justify-center p-4 relative z-10">
       <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 relative z-20">
-        <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">Login no BI Engine</h2>
+        <div class="mb-8 text-center">
+          <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white shadow-lg shadow-brand-500/20">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7Z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold tracking-tight text-slate-900">Bobão do Oeste</h2>
+          <p class="mt-1 text-sm text-slate-500">Inteligência para suas buscas de produtos</p>
+        </div>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
           <!-- MENSAGEM DE ERRO ESTATICA COMO BACKUP SEGURO -->
@@ -26,9 +34,12 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Usuário</label>
             <input
+              id="username"
               type="text"
+              autocomplete="username"
+              aria-label="Usuário"
               formControlName="username"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+              class="ui-input"
               placeholder="Ex: admin"
             />
           </div>
@@ -36,9 +47,12 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
             <input
+              id="password"
               type="password"
+              autocomplete="current-password"
+              aria-label="Senha"
               formControlName="password"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+              class="ui-input"
               placeholder="••••••••"
             />
           </div>
@@ -75,8 +89,12 @@ export class LoginComponent {
       this.isLoading.set(true);
       this.errorMessage.set(null);
 
-      this.authService.login(this.loginForm.value).subscribe({
-        next: (res) => {
+      this.authService.login({
+        username: this.loginForm.value.username ?? '',
+        password: this.loginForm.value.password ?? '',
+      }).subscribe({
+        next: () => {
+          this.isLoading.set(false);
           this.toast.success('Sucesso', 'Bem-vindo de volta!');
         },
         error: (err) => {
@@ -85,10 +103,8 @@ export class LoginComponent {
 
           if (err.status === 401 || err.status === 403) {
             this.errorMessage.set('Usuário ou senha incorretos.');
-            this.toast.error('Acesso Negado', 'Usuário ou senha incorretos.');
           } else {
             this.errorMessage.set('Falha ao conectar com o servidor.');
-            this.toast.error('Erro', 'Falha ao conectar.');
           }
         },
       });

@@ -7,11 +7,13 @@
     "dev": "ng serve --configuration development",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "lint": "eslint . --max-warnings=0"
   },
   "private": true,
   "packageManager": "npm@11.16.0",
   "dependencies": {
+    "@angular/cdk": "^22.1.6",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
@@ -23,15 +25,21 @@
     "zone.js": "^0.16.2"
   },
   "devDependencies": {
+    "@angular-eslint/builder": "^22.5.0",
+    "@angular-eslint/eslint-plugin": "^22.5.0",
+    "@angular-eslint/eslint-plugin-template": "^22.5.0",
+    "@angular-eslint/template-parser": "^22.5.0",
     "@angular/build": "^22.1.6",
     "@angular/cli": "^22.1.6",
     "@angular/compiler-cli": "^22.1.0",
     "@tailwindcss/postcss": "^4.1.12",
+    "eslint": "^10.10.0",
     "jsdom": "^28.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.12",
     "typescript": "~6.0.2",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^4.0.8"
   }
 }

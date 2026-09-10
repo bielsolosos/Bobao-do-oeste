@@ -15,6 +15,12 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: frontend-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     defaults:
       run:
         working-directory: apps/web/project-ui
@@ -30,7 +36,13 @@ jobs:
         cache-dependency-path: apps/web/project-ui/package-lock.json
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Unit tests
+      run: npm test -- --watch=false
 
     - name: Build Application
       run: npm run build --configuration=production

@@ -4,32 +4,35 @@ import { MonitorService } from '../../core/services/monitor.service';
 import { WebhookService } from '../../core/services/webhook.service';
 import { ScraperQueueStatusResponse } from '../../core/models/monitor.model';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
+import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
+import { UiPageHeaderComponent } from '../../shared/components/ui-page-header/ui-page-header.component';
 import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [CommonModule, UiCardComponent, RouterModule],
+  imports: [CommonModule, UiCardComponent, UiButtonComponent, UiPageHeaderComponent, RouterModule],
   template: `
-    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Visão Geral</h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Métricas e status geral da sua operação de inteligência e scraping.
-        </p>
-      </div>
-      <div>
-        <button
-          (click)="loadMetrics()"
-          class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none"
-        >
+    <app-ui-page-header
+      title="Visão geral"
+      subtitle="Métricas e status da sua operação de inteligência e scraping."
+    >
+        <app-ui-button variant="secondary" (clicked)="loadMetrics()">
           <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          Atualizar Métricas
-        </button>
+          Atualizar métricas
+        </app-ui-button>
+    </app-ui-page-header>
+
+    @if (queueUnavailable()) {
+      <div class="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
+        <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v4m0 4h.01M10.3 4.4 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.4a2 2 0 0 0-3.4 0Z" />
+        </svg>
+        <span>Não foi possível consultar o scraper. Os dados da fila estão indisponíveis.</span>
       </div>
-    </div>
+    }
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <!-- Card: Monitores -->
@@ -41,7 +44,11 @@ import { RouterModule } from '@angular/router';
                 Total de Monitores
               </p>
               <div class="mt-2 flex items-baseline gap-2">
-                <span class="text-3xl font-bold text-gray-900">{{ metrics().monitors }}</span>
+                @if (!metricUnavailable().monitors) {
+                  <span class="text-3xl font-bold text-gray-900">{{ metrics().monitors }}</span>
+                } @else {
+                  <span class="text-2xl font-semibold text-slate-400">--</span>
+                }
               </div>
             </div>
             <div class="p-3 bg-blue-50 rounded-lg">
@@ -77,7 +84,11 @@ import { RouterModule } from '@angular/router';
                 Anúncios Extraídos
               </p>
               <div class="mt-2 flex items-baseline gap-2">
-                <span class="text-3xl font-bold text-gray-900">{{ metrics().listings }}</span>
+                @if (!metricUnavailable().listings) {
+                  <span class="text-3xl font-bold text-gray-900">{{ metrics().listings }}</span>
+                } @else {
+                  <span class="text-2xl font-semibold text-slate-400">--</span>
+                }
               </div>
             </div>
             <div class="p-3 bg-emerald-50 rounded-lg">
@@ -111,7 +122,11 @@ import { RouterModule } from '@angular/router';
                 Webhooks Recebidos
               </p>
               <div class="mt-2 flex items-baseline gap-2">
-                <span class="text-3xl font-bold text-gray-900">{{ metrics().webhooks }}</span>
+                @if (!metricUnavailable().webhooks) {
+                  <span class="text-3xl font-bold text-gray-900">{{ metrics().webhooks }}</span>
+                } @else {
+                  <span class="text-2xl font-semibold text-slate-400">--</span>
+                }
               </div>
             </div>
             <div class="p-3 bg-purple-50 rounded-lg">
@@ -147,13 +162,18 @@ import { RouterModule } from '@angular/router';
                 Fila Scraper Python
               </p>
               <div class="mt-2 flex items-baseline gap-2">
-                <span class="text-3xl font-bold" [ngClass]="queueStatus().total_pending_jobs > 0 ? 'text-amber-600' : 'text-gray-900'">
-                  {{ queueStatus().total_pending_jobs }}
-                </span>
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                      [ngClass]="queueStatus().total_pending_jobs > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'">
-                  {{ queueStatus().total_pending_jobs > 0 ? 'Processando' : 'Ocioso' }}
-                </span>
+                @if (!queueUnavailable()) {
+                  <span class="text-3xl font-bold" [ngClass]="queueStatus().total_pending_jobs > 0 ? 'text-amber-600' : 'text-gray-900'">
+                    {{ queueStatus().total_pending_jobs }}
+                  </span>
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                        [ngClass]="queueStatus().total_pending_jobs > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'">
+                    {{ queueStatus().total_pending_jobs > 0 ? 'Processando' : 'Ocioso' }}
+                  </span>
+                } @else {
+                  <span class="text-2xl font-semibold text-slate-400">--</span>
+                  <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Indisponível</span>
+                }
               </div>
             </div>
             <div class="p-3 rounded-lg" [ngClass]="queueStatus().total_pending_jobs > 0 ? 'bg-amber-50' : 'bg-cyan-50'">
@@ -173,10 +193,14 @@ import { RouterModule } from '@angular/router';
               </svg>
             </div>
           </div>
-          <div class="mt-4 flex items-center justify-between text-xs text-gray-500">
-            <span>Fila: <strong class="text-gray-800">{{ queueStatus().queued_jobs }}</strong> | Rodando: <strong class="text-gray-800">{{ queueStatus().running_jobs }}</strong></span>
-            <span>Webhooks: <strong class="text-gray-800">{{ queueStatus().pending_webhooks }}</strong></span>
-          </div>
+           @if (!queueUnavailable()) {
+             <div class="mt-4 flex items-center justify-between text-xs text-gray-500">
+               <span>Fila: <strong class="text-gray-800">{{ queueStatus().queued_jobs }}</strong> | Rodando: <strong class="text-gray-800">{{ queueStatus().running_jobs }}</strong></span>
+               <span>Webhooks: <strong class="text-gray-800">{{ queueStatus().pending_webhooks }}</strong></span>
+             </div>
+           } @else {
+             <div class="mt-4 text-xs font-medium text-amber-700">Dados indisponíveis no momento.</div>
+           }
         </div>
       </app-ui-card>
     </div>
@@ -191,6 +215,7 @@ export class DashboardHomeComponent implements OnInit {
     listings: 0,
     webhooks: 0,
   });
+  metricUnavailable = signal({ monitors: false, listings: false, webhooks: false });
 
   queueStatus = signal<ScraperQueueStatusResponse>({
     queued_jobs: 0,
@@ -200,6 +225,7 @@ export class DashboardHomeComponent implements OnInit {
     total_success_jobs: 0,
     total_failed_jobs: 0,
   });
+  queueUnavailable = signal(false);
 
   ngOnInit() {
     this.loadMetrics();
@@ -207,24 +233,39 @@ export class DashboardHomeComponent implements OnInit {
 
   loadMetrics() {
     this.monitorService.getMonitors(0, 1).subscribe({
-      next: (res) => this.metrics.update((m) => ({ ...m, monitors: res.totalElements })),
-      error: () => {}
+      next: (res) => {
+        this.metrics.update((m) => ({ ...m, monitors: res.totalElements }));
+        this.metricUnavailable.update((m) => ({ ...m, monitors: false }));
+      },
+      error: () => this.markMetricUnavailable('monitors')
     });
 
     this.monitorService.getAllListings(0, 1).subscribe({
-      next: (res) => this.metrics.update((m) => ({ ...m, listings: res.totalElements })),
-      error: () => {}
+      next: (res) => {
+        this.metrics.update((m) => ({ ...m, listings: res.totalElements }));
+        this.metricUnavailable.update((m) => ({ ...m, listings: false }));
+      },
+      error: () => this.markMetricUnavailable('listings')
     });
 
     this.webhookService.getEvents(0, 1).subscribe({
-      next: (res) => this.metrics.update((m) => ({ ...m, webhooks: res.totalElements })),
-      error: () => {}
+      next: (res) => {
+        this.metrics.update((m) => ({ ...m, webhooks: res.totalElements }));
+        this.metricUnavailable.update((m) => ({ ...m, webhooks: false }));
+      },
+      error: () => this.markMetricUnavailable('webhooks')
     });
 
     this.monitorService.getScraperQueueStatus().subscribe({
-      next: (status) => this.queueStatus.set(status),
-      error: () => {}
+      next: (status) => {
+        this.queueUnavailable.set(false);
+        this.queueStatus.set(status);
+      },
+      error: () => this.queueUnavailable.set(true)
     });
   }
-}
 
+  private markMetricUnavailable(metric: 'monitors' | 'listings' | 'webhooks'): void {
+    this.metricUnavailable.update((current) => ({ ...current, [metric]: true }));
+  }
+}

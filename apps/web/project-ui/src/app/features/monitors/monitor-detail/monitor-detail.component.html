@@ -71,7 +71,7 @@
         <div
           class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"
         >
-          <div class="text-sm text-gray-500">Exibindo {{ totalElements() }} anúncios</div>
+       <div class="text-sm text-gray-500">Total: {{ totalElements() }} anúncios</div>
           <div class="flex items-center space-x-2">
             <label for="sortListings" class="text-sm text-gray-600">Ordenar por:</label>
             <select
@@ -122,7 +122,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              @for (item of listings(); track item) {
+               @for (item of listings(); track item.id) {
                 <tr>
                   <td class="px-6 py-4">
                     <div class="flex items-start gap-4">
@@ -130,7 +130,7 @@
                         class="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-md overflow-hidden border border-gray-200"
                       >
                         @if (item.images && item.images.length > 0) {
-                          <img [src]="item.images[0]" class="h-full w-full object-cover" />
+                           <img [src]="item.images[0]" loading="lazy" [alt]="item.title" class="h-full w-full object-cover" />
                         }
                         @if (!item.images || item.images.length === 0) {
                           <div class="h-full w-full flex items-center justify-center text-gray-400">
@@ -153,7 +153,8 @@
                       <div>
                         <a
                           [href]="item.url"
-                          target="_blank"
+                           target="_blank"
+                           rel="noopener noreferrer"
                           class="text-sm font-medium text-blue-600 hover:underline line-clamp-2"
                         >
                           {{ item.title }}
@@ -196,7 +197,7 @@
                           Score: {{ item.matchScore }}%
                         </div>
                       }
-                      <button (click)="openListingAiLogs(item.id)" class="text-[11px] text-blue-600 underline mt-2 flex hover:text-blue-800 font-medium cursor-pointer">
+                      <button type="button" (click)="openListingAiLogs(item.id)" class="text-[11px] text-blue-600 underline mt-2 flex hover:text-blue-800 font-medium cursor-pointer">
                         Dossiê da IA
                       </button>
                     </td>
@@ -270,7 +271,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              @for (log of aiLogs(); track log) {
+               @for (log of aiLogs(); track log.id) {
                 <tr>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
@@ -309,7 +310,7 @@
             Palavras-chave Atuais
           </h4>
           <div class="flex flex-wrap gap-2">
-            @for (q of monitor()?.searchQueries; track q) {
+            @for (q of monitor()?.searchQueries; track q.id) {
               <span
                 class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200"
               >
@@ -353,16 +354,14 @@
 }
 
 <!-- MODAL DOSSIÊ DA IA -->
-@if (isListingAiLogsModalOpen()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
-      <div class="p-4 border-b flex justify-between items-center">
-        <h3 class="text-lg font-bold">Dossiê e Histórico de Análise de IA</h3>
-        <button (click)="closeListingAiLogs()" class="text-gray-500 hover:text-gray-700">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-      </div>
-      <div class="p-4 overflow-y-auto flex-1 space-y-6">
+<app-ui-modal
+  [open]="isListingAiLogsModalOpen()"
+  title="Dossiê e histórico da análise de IA"
+  subtitle="Detalhes das etapas e do consumo desta análise."
+  size="lg"
+  (closed)="closeListingAiLogs()"
+>
+      <div class="space-y-6">
         @if (isLoadingListingLogs()) {
           <div class="text-center p-8 text-gray-500">Buscando pensamento da IA...</div>
         } @else if (selectedListingLogs().length === 0) {
@@ -391,6 +390,4 @@
           }
         }
       </div>
-    </div>
-  </div>
-}
+</app-ui-modal>

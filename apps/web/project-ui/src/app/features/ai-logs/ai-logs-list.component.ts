@@ -6,11 +6,15 @@ import { AiAnalysisLogResponse } from '../../core/models/ai-log.model';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
 import { UiBadgeComponent } from '../../shared/components/ui-badge/ui-badge.component';
 import { UiPaginationComponent } from '../../shared/components/ui-pagination/ui-pagination.component';
+import { UiEmptyStateComponent } from '../../shared/components/ui-empty-state/ui-empty-state.component';
+import { UiModalComponent } from '../../shared/components/ui-modal/ui-modal.component';
+import { UiPageHeaderComponent } from '../../shared/components/ui-page-header/ui-page-header.component';
+import { UiSkeletonComponent } from '../../shared/components/ui-skeleton/ui-skeleton.component';
 
 @Component({
   selector: 'app-ai-logs-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, UiCardComponent, UiBadgeComponent, UiPaginationComponent],
+  imports: [CommonModule, RouterModule, UiCardComponent, UiBadgeComponent, UiPaginationComponent, UiEmptyStateComponent, UiModalComponent, UiPageHeaderComponent, UiSkeletonComponent],
   templateUrl: './ai-logs-list.component.html'
 })
 export class AiLogsListComponent implements OnInit {
@@ -32,15 +36,14 @@ export class AiLogsListComponent implements OnInit {
   loadLogs(page: number = this.currentPage()) {
     this.isLoading.set(true);
     this.aiLogService.getAllAiLogs(page, this.pageSize()).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.logs.set(res.content);
         this.currentPage.set(res.number);
         this.totalPages.set(res.totalPages);
         this.totalElements.set(res.totalElements);
         this.isLoading.set(false);
       },
-      error: (err: any) => {
-        console.error('Erro ao carregar logs de IA', err);
+      error: () => {
         this.isLoading.set(false);
       }
     });

@@ -20,7 +20,7 @@ export interface TabItem {
           [value]="activeTabId"
           (change)="onSelectNative($event)"
         >
-          @for (tab of tabs; track tab) {
+          @for (tab of tabs; track tab.id) {
             <option [value]="tab.id">{{ tab.label }}</option>
           }
         </select>
@@ -28,8 +28,9 @@ export interface TabItem {
       <div class="hidden sm:block">
         <div class="border-b border-gray-200">
           <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            @for (tab of tabs; track tab) {
+            @for (tab of tabs; track tab.id) {
               <button
+                type="button"
                 (click)="selectTab(tab.id)"
                 [ngClass]="
                   activeTabId === tab.id
@@ -68,7 +69,6 @@ export class UiTabsComponent {
   @Output() tabChange = new EventEmitter<string>();
 
   selectTab(id: string) {
-    this.activeTabId = id;
     this.tabChange.emit(id);
   }
 

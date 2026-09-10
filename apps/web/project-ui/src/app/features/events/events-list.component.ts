@@ -3,15 +3,18 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { WebhookService } from '../../core/services/webhook.service';
 import { WebhookEventSummaryResponse } from '../../core/models/webhook.model';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
-import { UiBadgeComponent } from '../../shared/components/ui-badge/ui-badge.component';
+import { BadgeVariant, UiBadgeComponent } from '../../shared/components/ui-badge/ui-badge.component';
 import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
 import { UiToastService } from '../../shared/components/ui-toast/ui-toast.service';
 import { UiPaginationComponent } from '../../shared/components/ui-pagination/ui-pagination.component';
+import { UiEmptyStateComponent } from '../../shared/components/ui-empty-state/ui-empty-state.component';
+import { UiPageHeaderComponent } from '../../shared/components/ui-page-header/ui-page-header.component';
+import { UiSkeletonComponent } from '../../shared/components/ui-skeleton/ui-skeleton.component';
 
 @Component({
   selector: 'app-events-list',
   standalone: true,
-  imports: [CommonModule, DatePipe, UiCardComponent, UiBadgeComponent, UiButtonComponent, UiPaginationComponent],
+  imports: [CommonModule, DatePipe, UiCardComponent, UiBadgeComponent, UiButtonComponent, UiPaginationComponent, UiEmptyStateComponent, UiPageHeaderComponent, UiSkeletonComponent],
   templateUrl: './events-list.component.html'
 })
 export class EventsListComponent implements OnInit {
@@ -33,14 +36,14 @@ export class EventsListComponent implements OnInit {
   loadEvents(page: number = this.currentPage()) {
     this.isLoading.set(true);
     this.webhookService.getEvents(page, this.pageSize()).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.events.set(res.content);
         this.currentPage.set(res.number);
         this.totalPages.set(res.totalPages);
         this.totalElements.set(res.totalElements);
         this.isLoading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.toast.error('Erro', 'Não foi possível carregar os webhooks.');
         this.isLoading.set(false);
       }
@@ -56,7 +59,7 @@ export class EventsListComponent implements OnInit {
     this.loadEvents(page);
   }
 
-  getStatusVariant(status: string): any {
+  getStatusVariant(status: string): BadgeVariant {
     switch (status) {
       case 'PROCESSED': return 'success';
       case 'FAILED': return 'danger';

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { LoginComponent } from './features/auth/login/login.component';
 import { AppLayoutComponent } from './layout/app-layout.component';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -20,10 +21,12 @@ export const routes: Routes = [
       },
       {
         path: 'monitors/new',
+        canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./features/monitors/monitor-form/monitor-form.component').then(m => m.MonitorFormComponent)
       },
       {
         path: 'monitors/edit/:id',
+        canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./features/monitors/monitor-form/monitor-form.component').then(m => m.MonitorFormComponent)
       },
       {

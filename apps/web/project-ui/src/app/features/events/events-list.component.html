@@ -1,11 +1,8 @@
-<div class="mb-6 flex justify-between items-end">
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Infraestrutura: Webhooks</h1>
-    <p class="text-sm text-gray-500 mt-1">
-      Monitoramento de eventos assíncronos que chegaram do motor de scraping (Python).
-    </p>
-  </div>
-  <app-ui-button (onClick)="loadEvents()" variant="secondary">
+<app-ui-page-header
+  title="Infraestrutura: webhooks"
+  subtitle="Monitoramento dos eventos assíncronos recebidos do motor de scraping."
+>
+  <app-ui-button (clicked)="loadEvents()" variant="secondary">
     <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         stroke-linecap="round"
@@ -16,15 +13,18 @@
     </svg>
     Atualizar
   </app-ui-button>
-</div>
+</app-ui-page-header>
 
 <app-ui-card [noPadding]="true">
   @if (isLoading()) {
-    <div class="p-12 text-center text-gray-500">Carregando histórico de eventos...</div>
+    <app-ui-skeleton variant="table" [rows]="6"></app-ui-skeleton>
   }
 
   @if (!isLoading() && events().length === 0) {
-    <div class="p-12 text-center text-gray-500">Nenhum evento recebido até o momento.</div>
+    <app-ui-empty-state
+      title="Nenhum evento recebido"
+      message="Os eventos enviados pelo scraper aparecerão aqui quando uma execução for concluída."
+    ></app-ui-empty-state>
   }
 
   @if (!isLoading() && events().length > 0) {
@@ -59,7 +59,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          @for (e of events(); track e) {
+          @for (e of events(); track e.id) {
             <tr class="hover:bg-gray-50/50 transition-colors">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                 {{ e.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}

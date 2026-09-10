@@ -24,6 +24,10 @@ export class UiPaginationComponent {
     return this.currentPage >= this.totalPages - 1 || this.totalPages === 0;
   }
 
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index);
+  }
+
   onSelectPageSize(event: Event) {
     const value = (event.target as HTMLSelectElement).value;
     this.pageSizeChange.emit(Number(value));
