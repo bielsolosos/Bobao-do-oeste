@@ -1,105 +1,75 @@
 <div
-  class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4 rounded-b-lg"
+  class="mt-4 flex flex-col gap-3 border-t border-brand-950/10 bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
 >
-  <div class="flex flex-1 justify-between sm:hidden">
+  <div class="flex items-center justify-between gap-3 sm:justify-start">
+    <p class="text-sm text-brand-950/70">
+      Página
+      <span class="font-semibold text-brand-950">{{ totalElements > 0 ? currentPage + 1 : 0 }}</span>
+      de
+      <span class="font-semibold text-brand-950">{{ totalPages }}</span>
+      <span class="hidden sm:inline"> ({{ totalElements }} resultados)</span>
+    </p>
+
+    <div class="flex items-center gap-2">
+      <label for="pageSize" class="text-sm text-brand-950/60">Linhas:</label>
+      <select
+        id="pageSize"
+        (change)="onSelectPageSize($event)"
+        class="rounded-lg border border-brand-950/20 bg-surface py-1.5 pl-2 pr-8 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      >
+        @for (size of pageSizeOptions; track size) {
+          <option [value]="size" [selected]="size == pageSize">{{ size }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <nav class="flex items-center justify-between gap-1 sm:justify-end" aria-label="Paginação">
     <button
+      type="button"
       (click)="prevPage()"
       [disabled]="isFirstPage"
-      class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      class="inline-flex items-center gap-1 rounded-lg border border-brand-950/15 px-3 py-2 text-sm font-medium text-brand-950/70 transition-colors hover:bg-brand-950/5 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      Anterior
+      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+      </svg>
+      <span class="hidden sm:inline">Anterior</span>
     </button>
+
+    <div class="hidden items-center gap-1 sm:flex">
+      @for (page of visiblePages; track $index) {
+        @if (page === '...') {
+          <span class="px-2 py-2 text-sm text-brand-950/40">...</span>
+        } @else {
+          <button
+            type="button"
+            (click)="onPageClick(page)"
+            [attr.aria-current]="page === currentPage ? 'page' : null"
+            [attr.aria-label]="'Ir para página ' + (page + 1)"
+            [class]="
+              page === currentPage
+                ? 'bg-brand-amber-strong text-brand-950'
+                : 'text-brand-950/70 hover:bg-brand-950/5'
+            "
+            class="min-w-9 rounded-lg px-3 py-2 text-sm font-semibold transition-colors"
+          >
+            {{ page + 1 }}
+          </button>
+        }
+      }
+    </div>
+
     <button
+      type="button"
       (click)="nextPage()"
       [disabled]="isLastPage"
-      class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      class="inline-flex items-center gap-1 rounded-lg border border-brand-950/15 px-3 py-2 text-sm font-medium text-brand-950/70 transition-colors hover:bg-brand-950/5 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      Próxima
+      <span class="hidden sm:inline">Próxima</span>
+      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+      </svg>
     </button>
-  </div>
-
-  <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-    <div class="flex items-center space-x-4">
-      <p class="text-sm text-gray-700">
-        Mostrando página
-        <span class="font-medium">{{ totalElements > 0 ? currentPage + 1 : 0 }}</span> de
-        <span class="font-medium">{{ totalPages }}</span>
-        (Total: <span class="font-medium">{{ totalElements }}</span> resultados)
-      </p>
-
-      <div class="flex items-center space-x-2">
-        <label for="pageSize" class="text-sm text-gray-600">Linhas:</label>
-        <select
-          id="pageSize"
-          (change)="onSelectPageSize($event)"
-          class="block w-full rounded-md border-0 py-1 pl-2 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6"
-        >
-          @for (size of pageSizeOptions; track size) {
-            <option [value]="size" [selected]="size == pageSize">{{ size }}</option>
-          }
-        </select>
-      </div>
-    </div>
-    <div>
-      <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-        <button
-          (click)="prevPage()"
-          [disabled]="isFirstPage"
-          class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span class="sr-only">Anterior</span>
-          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fill-rule="evenodd"
-              d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </button>
-
-        @for (p of [].constructor(totalPages); track p; let i = $index) {
-          @if (
-            totalPages <= 7 ||
-            i === 0 || i === totalPages - 1 || (i >= currentPage - 1 && i <= currentPage + 1)
-          ) {
-            <button
-              (click)="goToPage(i)"
-              [class]="
-                i === currentPage
-                  ? 'relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                  : 'relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-              "
-            >
-              {{ i + 1 }}
-            </button>
-          }
-          @if (
-            totalPages > 7 &&
-            ((i === 1 && currentPage > 2) || (i === totalPages - 2 && currentPage < totalPages - 3))
-          ) {
-            <span
-              class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0"
-            >
-              ...
-            </span>
-          }
-        }
-
-        <button
-          (click)="nextPage()"
-          [disabled]="isLastPage"
-          class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span class="sr-only">Próxima</span>
-          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fill-rule="evenodd"
-              d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </button>
-      </nav>
-    </div>
-  </div>
+  </nav>
 </div>

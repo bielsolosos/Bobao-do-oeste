@@ -1,0 +1,265 @@
+<app-ui-page-header
+  eyebrow="Configuração"
+  [title]="isEditMode ? 'Editar monitor' : 'Novo monitor'"
+  subtitle="Defina o que buscar, com que frequência e como a IA deve avaliar os anúncios."
+/>
+
+<div class="max-w-4xl">
+  <app-ui-card [noPadding]="true">
+    @if (isLoading()) {
+      <app-ui-state-panel variant="loading" title="Carregando dados do monitor..." />
+    } @else if (loadError()) {
+      <app-ui-state-panel
+        variant="error"
+        title="Não foi possível carregar este monitor"
+        message="O formulário foi bloqueado para evitar sobrescrever dados com valores padrão."
+        (retry)="loadMonitor(monitorId!)"
+      />
+      <div class="flex justify-center pb-6">
+        <app-ui-button variant="outline" (onClick)="cancel()">Voltar para a lista</app-ui-button>
+      </div>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="space-y-8 px-5 py-6 sm:px-6">
+          <!-- INFORMAÇÕES GERAIS -->
+          <section>
+            <h2 class="mb-4 border-b border-brand-950/10 pb-2 text-sm font-semibold uppercase tracking-wider text-brand-950/70">
+              Informações gerais
+            </h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <app-ui-form-field
+                fieldId="monitor-name"
+                label="Nome da busca"
+                [required]="true"
+                [hint]="''"
+                [error]="isInvalid('name') ? 'Informe um nome para o monitor.' : ''"
+              >
+                <input
+                  id="monitor-name"
+                  formControlName="name"
+                  type="text"
+                  maxlength="150"
+                  [attr.aria-invalid]="isInvalid('name')"
+                  [attr.aria-describedby]="isInvalid('name') ? 'monitor-name-error' : null"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                  placeholder="Ex: MacBooks M1 por até R$ 4.000"
+                />
+              </app-ui-form-field>
+
+              <app-ui-form-field fieldId="monitor-vendor" label="Marketplace" [required]="true">
+                <select
+                  id="monitor-vendor"
+                  formControlName="vendor"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                >
+                  <option value="OLX">OLX</option>
+                  <option value="MERCADO_LIVRE" disabled>Mercado Livre (em breve)</option>
+                </select>
+              </app-ui-form-field>
+            </div>
+
+            <div class="mt-4">
+              <app-ui-form-field fieldId="monitor-description" label="Descrição">
+                <textarea
+                  id="monitor-description"
+                  formControlName="description"
+                  rows="2"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                  placeholder="Opcional. Uma nota sobre o objetivo desta busca."
+                ></textarea>
+              </app-ui-form-field>
+            </div>
+          </section>
+
+          <!-- REGRAS DE COLETA -->
+          <section>
+            <h2 class="mb-4 border-b border-brand-950/10 pb-2 text-sm font-semibold uppercase tracking-wider text-brand-950/70">
+              Regras de coleta
+            </h2>
+
+            <div>
+              <span class="mb-1 block text-sm font-medium text-brand-950">
+                Palavras-chave <span class="text-red-600" aria-hidden="true">*</span>
+              </span>
+              <div class="flex flex-wrap gap-2">
+                @for (keyword of keywords(); track keyword) {
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-amber/15 px-3 py-1 text-sm text-brand-950">
+                    {{ keyword }}
+                    <button
+                      type="button"
+                      (click)="removeKeyword(keyword)"
+                      class="rounded-full text-brand-950/50 hover:text-red-600"
+                    >
+                      <span class="sr-only">Remover {{ keyword }}</span>
+                      <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                }
+              </div>
+
+              <div class="mt-2 flex gap-2">
+                <input
+                  id="monitor-keyword-input"
+                  [value]="keywordInput()"
+                  (input)="onKeywordInput($event)"
+                  (keydown)="onKeywordKeydown($event)"
+                  type="text"
+                  class="flex-1 rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                  placeholder="Digite uma palavra-chave e pressione Enter"
+                />
+                <app-ui-button type="button" variant="secondary" (onClick)="addKeyword()">Adicionar</app-ui-button>
+              </div>
+              <p class="mt-1 text-xs text-brand-950/50">Cada palavra-chave é buscada independentemente.</p>
+              @if (keywords().length === 0) {
+                <p class="mt-1 text-xs font-medium text-red-600" role="alert">Adicione ao menos uma palavra-chave.</p>
+              }
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <app-ui-form-field fieldId="monitor-frequency" label="Frequência de busca" [required]="true">
+                <select
+                  id="monitor-frequency"
+                  formControlName="frequency"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                >
+                  @for (frequency of frequencies; track frequency.value) {
+                    <option [value]="frequency.value">{{ frequency.label }}</option>
+                  }
+                </select>
+              </app-ui-form-field>
+
+              <div class="grid grid-cols-2 gap-3">
+                <app-ui-form-field fieldId="monitor-min-price" label="Preço mínimo (R$)">
+                  <input
+                    id="monitor-min-price"
+                    formControlName="minPrice"
+                    type="number"
+                    min="0"
+                    class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                    placeholder="0"
+                  />
+                </app-ui-form-field>
+                <app-ui-form-field
+                  fieldId="monitor-max-price"
+                  label="Preço máximo (R$)"
+                  [error]="form.errors?.['priceRange'] ? 'Deve ser maior que o mínimo.' : ''"
+                >
+                  <input
+                    id="monitor-max-price"
+                    formControlName="maxPrice"
+                    type="number"
+                    min="0"
+                    class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                    placeholder="Sem limite"
+                  />
+                </app-ui-form-field>
+              </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <app-ui-form-field fieldId="monitor-state" label="Estado (UF)">
+                <input
+                  id="monitor-state"
+                  formControlName="stateFilter"
+                  type="text"
+                  maxlength="2"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 uppercase text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                  placeholder="Ex: SP"
+                />
+              </app-ui-form-field>
+              <app-ui-form-field fieldId="monitor-region" label="Região ou cidade">
+                <input
+                  id="monitor-region"
+                  formControlName="regionFilter"
+                  type="text"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                  placeholder="Ex: Campinas"
+                />
+              </app-ui-form-field>
+            </div>
+
+            <label class="mt-4 inline-flex items-center gap-2 text-sm text-brand-950/80">
+              <input
+                type="checkbox"
+                formControlName="requireDelivery"
+                class="h-4 w-4 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong"
+              />
+              Exigir anúncios com entrega disponível
+            </label>
+          </section>
+
+          <!-- INTELIGÊNCIA ARTIFICIAL -->
+          <section>
+            <h2 class="mb-4 border-b border-brand-950/10 pb-2 text-sm font-semibold uppercase tracking-wider text-brand-950/70">
+              Inteligência artificial
+            </h2>
+
+            <app-ui-form-field
+              fieldId="monitor-analysis-type"
+              label="Estratégia de análise"
+              [required]="true"
+              hint="A análise com Gemini consome créditos e adiciona latência a cada lote de anúncios."
+            >
+              <select
+                id="monitor-analysis-type"
+                formControlName="analysisType"
+                class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+              >
+                <option value="NONE">Desabilitada (coleta bruta)</option>
+                <option value="SIMPLE">Prompt personalizado (Gemini)</option>
+                <option value="NOTEBOOK" disabled>Extrator de notebooks (em breve)</option>
+              </select>
+            </app-ui-form-field>
+
+            @if (analysisTypeCtrl.value === 'SIMPLE') {
+              <div class="mt-4 rounded-lg border border-cyan-200 bg-cyan-50/60 p-4" formGroupName="simpleFields">
+                <app-ui-form-field
+                  fieldId="monitor-simple-prompt"
+                  label="Regras da análise"
+                  hint="Descreva critérios de aprovação, exclusões e prioridades."
+                >
+                  <textarea
+                    id="monitor-simple-prompt"
+                    formControlName="prompt"
+                    rows="4"
+                    class="w-full rounded-lg border border-cyan-200 bg-surface px-3 py-2.5 font-mono text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-radar"
+                    placeholder="Ex: Classifique como alta relevância quando tiver 16GB ou mais. Descarte anúncios com tela trincada."
+                  ></textarea>
+                </app-ui-form-field>
+              </div>
+            }
+
+            @if (analysisTypeCtrl.value === 'NONE') {
+              <div class="mt-4 rounded-lg border border-brand-950/10 bg-brand-950/[0.02] p-4 text-sm text-brand-950/60">
+                Os anúncios serão coletados sem avaliação semântica da IA.
+              </div>
+            }
+          </section>
+
+          <!-- RESUMO -->
+          <section class="rounded-lg border border-brand-950/10 bg-brand-950/[0.02] p-4">
+            <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-950/50">Resumo da busca</h2>
+            <p class="text-sm text-brand-950/70">
+              {{ keywords().length }} palavra(s) em
+              <strong>{{ form.get('vendor')?.value === 'OLX' ? 'OLX' : 'Mercado Livre' }}</strong>,
+              com frequência
+              <strong>{{ form.get('frequency')?.value }}</strong>.
+            </p>
+            @if (form.errors?.['priceRange']) {
+              <p class="mt-1 text-sm font-medium text-red-600">Corrija a faixa de preço antes de salvar.</p>
+            }
+          </section>
+        </div>
+
+        <div class="flex flex-col-reverse justify-end gap-3 border-t border-brand-950/10 bg-brand-950/[0.02] px-5 py-4 sm:flex-row sm:px-6">
+          <app-ui-button type="button" variant="outline" (onClick)="cancel()">Cancelar</app-ui-button>
+          <app-ui-button type="submit" variant="primary" [loading]="isSaving()" [disabled]="isSaving()">
+            {{ isEditMode ? 'Salvar alterações' : 'Criar monitor' }}
+          </app-ui-button>
+        </div>
+      </form>
+    }
+  </app-ui-card>
+</div>

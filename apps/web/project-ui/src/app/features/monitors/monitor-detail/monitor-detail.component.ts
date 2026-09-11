@@ -1,51 +1,64 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { AiLogService } from '../../../core/services/ai-log.service';
-import { ProductMonitorResponse } from "../../../core/models/monitor.model";
-import { ScrapedListingResponse } from "../../../core/models/listing.model";;
+import { ProductMonitorResponse } from '../../../core/models/monitor.model';
+import { ScrapedListingResponse, MatchTier } from '../../../core/models/listing.model';
 import { AiAnalysisLogResponse } from '../../../core/models/ai-log.model';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
 import { UiTabsComponent, TabItem } from '../../../shared/components/ui-tabs/ui-tabs.component';
 import { UiPaginationComponent } from '../../../shared/components/ui-pagination/ui-pagination.component';
-
+import { UiStatePanelComponent } from '../../../shared/components/ui-state-panel/ui-state-panel.component';
+import { UiButtonComponent } from '../../../shared/components/ui-button/ui-button.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
+
+type LoadState = 'loading' | 'error' | 'ready';
 
 @Component({
   selector: 'app-monitor-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, DatePipe, UiCardComponent, UiBadgeComponent, UiTabsComponent, UiPaginationComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    UiCardComponent,
+    UiBadgeComponent,
+    UiTabsComponent,
+    UiPaginationComponent,
+    UiStatePanelComponent,
+    UiButtonComponent,
+  ],
   templateUrl: './monitor-detail.component.html',
-  styles: [`
-    .animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-  `]
 })
 export class MonitorDetailComponent implements OnInit {
   private monitorService = inject(MonitorService);
   private aiLogService = inject(AiLogService);
   private route = inject(ActivatedRoute);
+  public router = inject(Router);
   private toast = inject(UiToastService);
 
-  monitorId: string = '';
+  monitorId = '';
   monitor = signal<ProductMonitorResponse | null>(null);
-  
-  listings = signal<ScrapedListingResponse[]>([]);
-  isLoadingListings = signal(false);
+  monitorState = signal<LoadState>('loading');
 
-  // Pagination Listings
-  currentPage = signal<number>(0);
-  totalPages = signal<number>(0);
-  totalElements = signal<number>(0);
-  currentSort = signal<string>('lastSeenAt,desc');
-  pageSize = signal<number>(50);
+  listings = signal<ScrapedListingResponse[]>([]);
+  listingsState = signal<LoadState>('loading');
+  brokenImages = signal<Set<string>>(new Set());
 
   aiLogs = signal<AiAnalysisLogResponse[]>([]);
-  isLoadingAiLogs = signal(false);
+  aiLogsState = signal<LoadState>('loading');
 
-  activeTabId: string = 'listings';
+  // Filtros de anúncios (client-side)
+  listingKeyword = signal('');
+  listingTier = signal<MatchTier | ''>('');
+  deliveryOnly = signal(false);
+  currentSort = signal('lastSeenAt,desc');
+
+  page = signal(0);
+  pageSize = signal(24);
+
+  activeTabId = 'listings';
 
   hasAiAnalysis = computed(() => {
     const m = this.monitor();
@@ -54,20 +67,68 @@ export class MonitorDetailComponent implements OnInit {
 
   visibleTabs = computed<TabItem[]>(() => {
     const tabs: TabItem[] = [
-      { id: 'listings', label: 'Anúncios Capturados', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>' }
+      {
+        id: 'listings',
+        label: 'Anúncios capturados',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>',
+      },
     ];
-    
     if (this.hasAiAnalysis()) {
-      tabs.push({ id: 'ai-logs', label: 'Logs de IA', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>' });
+      tabs.push({
+        id: 'ai-logs',
+        label: 'Logs de IA',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>',
+      });
     }
-    
-    tabs.push({ id: 'config', label: 'Configurações RAW', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>' });
-    
+    tabs.push({
+      id: 'config',
+      label: 'Configuração',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>',
+    });
     return tabs;
+  });
+
+  filteredListings = computed(() => {
+    const kw = this.listingKeyword().trim().toLowerCase();
+    const tier = this.listingTier();
+    const deliveryOnly = this.deliveryOnly();
+
+    let result = this.listings().filter((item) => {
+      if (kw && !item.title.toLowerCase().includes(kw)) return false;
+      if (tier && item.matchTier !== tier) return false;
+      if (deliveryOnly && !item.hasDelivery) return false;
+      return true;
+    });
+
+    switch (this.currentSort()) {
+      case 'matchScore,desc':
+        result = [...result].sort((a, b) => Number(b.matchScore) - Number(a.matchScore));
+        break;
+      case 'currentPrice,asc':
+        result = [...result].sort((a, b) => a.currentPrice - b.currentPrice);
+        break;
+      case 'currentPrice,desc':
+        result = [...result].sort((a, b) => b.currentPrice - a.currentPrice);
+        break;
+      default:
+        result = [...result].sort(
+          (a, b) => new Date(b.lastSeenAt ?? 0).getTime() - new Date(a.lastSeenAt ?? 0).getTime(),
+        );
+    }
+    return result;
+  });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredListings().length / this.pageSize())));
+  pagedListings = computed(() => {
+    const start = this.page() * this.pageSize();
+    return this.filteredListings().slice(start, start + this.pageSize());
   });
 
   ngOnInit() {
     this.monitorId = this.route.snapshot.paramMap.get('id') || '';
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab) this.activeTabId = tab;
+
     if (this.monitorId) {
       this.loadMonitorInfo();
       this.loadListings();
@@ -75,89 +136,123 @@ export class MonitorDetailComponent implements OnInit {
   }
 
   loadMonitorInfo() {
+    this.monitorState.set('loading');
     this.monitorService.getMonitorById(this.monitorId).subscribe({
       next: (m) => {
         this.monitor.set(m);
+        this.monitorState.set('ready');
       },
-      error: (err) => {
-        console.error(err);
-        this.toast.error('Erro', 'Falha ao carregar informações do monitor.');
-      }
+      error: () => this.monitorState.set('error'),
     });
   }
 
-  loadListings(page: number = this.currentPage()) {
-    this.isLoadingListings.set(true);
-    this.monitorService.getMonitorListings(this.monitorId, page, this.pageSize(), this.currentSort()).subscribe({
-      next: (res: any) => {
-        this.listings.set(res.content);
-        this.currentPage.set(res.number);
-        this.totalPages.set(res.totalPages);
-        this.totalElements.set(res.totalElements);
-        this.isLoadingListings.set(false);
+  loadListings() {
+    this.listingsState.set('loading');
+    this.monitorService.getMonitorListings(this.monitorId, 0, 200).subscribe({
+      next: (res) => {
+        this.listings.set(res.content ?? []);
+        this.page.set(0);
+        this.listingsState.set('ready');
       },
-      error: (err) => {
-        console.error(err);
-        this.isLoadingListings.set(false);
-      }
+      error: () => this.listingsState.set('error'),
     });
-  }
-
-  onPageSizeChange(size: number) {
-    this.pageSize.set(size);
-    this.loadListings(0);
-  }
-
-  onSortChange(event: Event) {
-    const value = (event.target as HTMLSelectElement).value;
-    this.currentSort.set(value);
-    this.loadListings(0);
-  }
-
-  onPageChange(page: number) {
-    this.loadListings(page);
   }
 
   loadAiLogs() {
-    this.isLoadingAiLogs.set(true);
+    this.aiLogsState.set('loading');
     this.aiLogService.getMonitorAiLogs(this.monitorId, 0, 50).subscribe({
-      next: (res: any) => {
-        this.aiLogs.set(res.content);
-        this.isLoadingAiLogs.set(false);
-      }
+      next: (res) => {
+        this.aiLogs.set(res.content ?? []);
+        this.aiLogsState.set('ready');
+      },
+      error: () => this.aiLogsState.set('error'),
     });
   }
 
   onTabChange(tabId: string) {
     this.activeTabId = tabId;
-    if (tabId === 'listings' && this.listings().length === 0) this.loadListings();
-    if (tabId === 'ai-logs' && this.aiLogs().length === 0 && this.hasAiAnalysis()) this.loadAiLogs();
-  }
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tabId },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
 
-  getTierBadge(tier: string): any {
-    switch(tier) {
-      case 'HIGH': return 'high';
-      case 'MEDIUM': return 'medium';
-      case 'LOW': return 'low';
-      default: return 'neutral';
+    if (tabId === 'ai-logs' && this.aiLogsState() !== 'ready' && this.hasAiAnalysis()) {
+      this.loadAiLogs();
     }
   }
 
-  getTierLabel(tier: string): string {
+  onListingKeyword(event: Event) {
+    this.listingKeyword.set((event.target as HTMLInputElement).value);
+    this.page.set(0);
+  }
+
+  onListingTier(event: Event) {
+    this.listingTier.set((event.target as HTMLSelectElement).value as MatchTier | '');
+    this.page.set(0);
+  }
+
+  onDelivery(event: Event) {
+    this.deliveryOnly.set((event.target as HTMLInputElement).checked);
+    this.page.set(0);
+  }
+
+  onSortChange(event: Event) {
+    this.currentSort.set((event.target as HTMLSelectElement).value);
+    this.page.set(0);
+  }
+
+  onPageChange(page: number) {
+    this.page.set(page);
+  }
+
+  onPageSizeChange(size: number) {
+    this.pageSize.set(size);
+    this.page.set(0);
+  }
+
+  onImageError(id: string) {
+    this.brokenImages.update((set) => new Set(set).add(id));
+  }
+
+  isImageBroken(id: string): boolean {
+    return this.brokenImages().has(id);
+  }
+
+  getTierBadge(tier: MatchTier): 'high' | 'medium' | 'low' | 'neutral' {
     switch (tier) {
-      case 'HIGH': return 'Alta Relevância';
-      case 'MEDIUM': return 'Média Relevância';
-      case 'LOW': return 'Baixa Relevância';
-      default: return 'Sem Match';
+      case 'HIGH':
+        return 'high';
+      case 'MEDIUM':
+        return 'medium';
+      case 'LOW':
+        return 'low';
+      default:
+        return 'neutral';
     }
   }
 
-  formatJson(obj: any): string {
-    if (!obj || Object.keys(obj).length === 0) return 'Nenhuma regra específica cadastrada.';
-    const cleanObj = { ...obj };
-    delete cleanObj.minPrice;
-    delete cleanObj.maxPrice;
-    
-    return JSON.stringify(cleanObj, null, 2);
+  getTierLabel(tier: MatchTier): string {
+    switch (tier) {
+      case 'HIGH':
+        return 'Alta relevância';
+      case 'MEDIUM':
+        return 'Média relevância';
+      case 'LOW':
+        return 'Baixa relevância';
+      default:
+        return 'Sem análise';
+    }
+  }
+
+  formatJson(obj: unknown): string {
+    if (!obj || (typeof obj === 'object' && Object.keys(obj as object).length === 0)) {
+      return 'Nenhuma regra específica cadastrada.';
+    }
+    const clean = { ...(obj as Record<string, unknown>) };
+    delete clean['minPrice'];
+    delete clean['maxPrice'];
+    return JSON.stringify(clean, null, 2);
   }
 }

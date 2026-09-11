@@ -2,11 +2,11 @@
   <img src="docs/gemini-svg.svg" alt="Emblema do Marketplace Intelligence Ecosystem" width="132">
 </p>
 
-<h1 align="center">Marketplace Intelligence Ecosystem</h1>
+<h1 align="center">Bobão do Oeste</h1>
 
 <p align="center">
-  <strong>Um caçador inteligente de oportunidades em marketplaces.</strong><br>
-  Scraping resiliente, monitoramento recorrente e análise de hardware usado com inteligência artificial.
+  <strong>Marketplace Intelligence Ecosystem</strong><br>
+  Um caçador inteligente de oportunidades em marketplaces, com scraping resiliente, monitoramento recorrente e análise de hardware usado por inteligência artificial.
 </p>
 
 <p align="center">

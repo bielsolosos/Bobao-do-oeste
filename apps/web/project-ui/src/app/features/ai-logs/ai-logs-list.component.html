@@ -1,228 +1,161 @@
-<div class="mb-6 flex justify-between items-end">
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Auditoria & Logs de Chamadas da IA</h1>
-    <p class="text-sm text-gray-500 mt-1">
-      Histórico detalhado de prompts, respostas do Gemini, latência e consumo.
-    </p>
-  </div>
+<app-ui-page-header
+  eyebrow="Operação"
+  title="Auditoria de IA"
+  subtitle="Prompts, respostas, latência e falhas das chamadas ao Gemini."
+>
   <button
+    type="button"
     (click)="loadLogs()"
-    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+    class="inline-flex items-center gap-2 rounded-lg border border-brand-950/20 bg-surface px-4 py-2 text-sm font-medium text-brand-950 transition-colors hover:bg-brand-950/5"
   >
-    <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-      ></path>
+    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
     Atualizar
   </button>
-</div>
+</app-ui-page-header>
+
+<app-ui-card [noPadding]="true" extraClasses="mb-4">
+  <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+    <div class="sm:col-span-2">
+      <label for="ai-keyword" class="sr-only">Buscar por monitor ou modelo</label>
+      <input
+        id="ai-keyword"
+        type="search"
+        [value]="keyword()"
+        (input)="onKeyword($event)"
+        placeholder="Buscar por monitor ou modelo"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      />
+    </div>
+    <div>
+      <label for="ai-status" class="sr-only">Status</label>
+      <select
+        id="ai-status"
+        [value]="statusFilter()"
+        (change)="onStatus($event)"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      >
+        <option value="all">Todos os status</option>
+        <option value="SUCCESS">Sucesso</option>
+        <option value="ERROR">Erro</option>
+      </select>
+    </div>
+  </div>
+</app-ui-card>
 
 <app-ui-card [noPadding]="true">
-  @if (isLoading()) {
-    <div class="p-12 text-center text-gray-500">Carregando histórico de IA...</div>
-  }
+  @switch (state()) {
+    @case ('loading') {
+      <app-ui-state-panel variant="loading" title="Carregando histórico de IA..." />
+    }
+    @case ('error') {
+      <app-ui-state-panel
+        variant="error"
+        title="Não foi possível carregar a auditoria"
+        message="Verifique a conexão e tente novamente."
+        (retry)="loadLogs()"
+      />
+    }
+    @default {
+      @if (paged().length === 0) {
+        <app-ui-state-panel variant="empty" title="Nenhum registro de chamada de IA encontrado" />
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-brand-950/10">
+            <thead class="bg-brand-950/[0.02]">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Status</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Monitor</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Modelo</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Lote / desempenho</th>
+                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-brand-950/50">Ações</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-brand-950/5">
+              @for (log of paged(); track log.id) {
+                <tr class="transition-colors hover:bg-brand-950/[0.02]">
+                  <td class="px-6 py-4">
+                    <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">{{ log.status }}</app-ui-badge>
+                  </td>
+                  <td class="px-6 py-4">
+                    <a
+                      [routerLink]="['/monitors', log.productMonitorId]"
+                      class="text-sm font-medium text-brand-950 hover:text-brand-amber-strong"
+                    >
+                      {{ log.productMonitorName || 'Geral' }}
+                    </a>
+                    <p class="mt-1 text-xs text-brand-950/50">{{ log.createdAt | date: 'short' }}</p>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="rounded border border-brand-950/10 bg-brand-950/[0.03] px-2 py-0.5 font-mono text-xs text-brand-950/70">
+                      {{ log.modelName }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <p class="text-sm text-brand-950"><strong>{{ log.itemsCount }}</strong> anúncios avaliados</p>
+                    <p class="mt-1 text-xs text-brand-950/50">Latência: {{ formatDuration(log.durationMs) }}</p>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button
+                      type="button"
+                      (click)="openDetailModal(log)"
+                      class="rounded-lg bg-cyan-50 px-3 py-1.5 text-sm font-semibold text-radar transition-colors hover:bg-cyan-100"
+                    >
+                      Ver payload
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
 
-  @if (!isLoading() && logs().length === 0) {
-    <div class="p-12 text-center text-gray-500">
-      Nenhum registro de chamada de IA encontrado até o momento.
-    </div>
-  }
-
-  @if (!isLoading() && logs().length > 0) {
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Status
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Monitor
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Modelo
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Lote / Desempenho
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          @for (log of logs(); track log) {
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
-                  {{ log.status }}
-                </app-ui-badge>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <a
-                  [routerLink]="['/monitors', log.productMonitorId]"
-                  class="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
-                >
-                  {{ log.productMonitorName || 'Geral' }}
-                </a>
-                <div class="text-xs text-gray-500 mt-1">{{ log.createdAt | date: 'short' }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs font-mono text-slate-700"
-                >
-                  {{ log.modelName }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">
-                  <span class="font-bold">{{ log.itemsCount }}</span> anúncios avaliados
-                </div>
-                <div class="text-xs text-gray-500 mt-1">
-                  Latência: {{ formatDuration(log.durationMs) }}
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  (click)="openDetailModal(log)"
-                  class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors font-semibold"
-                >
-                  Ver Payload
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-  @if (!isLoading() && logs().length > 0) {
-    <app-ui-pagination
-      [currentPage]="currentPage()"
-      [totalPages]="totalPages()"
-      [totalElements]="totalElements()"
-      [pageSize]="pageSize()"
-      (pageChange)="onPageChange($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-    ></app-ui-pagination>
+        @if (filtered().length > pageSize()) {
+          <app-ui-pagination
+            [currentPage]="page()"
+            [totalPages]="totalPages()"
+            [totalElements]="filtered().length"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="[15, 30, 50]"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
+        }
+      }
+    }
   }
 </app-ui-card>
 
-<!-- Modal de Detalhes -->
-@if (selectedLog()) {
-  <div class="relative z-[100]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div
-      class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-      (click)="closeDetailModal()"
-    ></div>
-    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div
-          class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl"
-        >
-          <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-200">
-            <div class="flex justify-between items-start">
-              <div>
-                <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
-                  Detalhes da Execução de IA
-                </h3>
-                <p class="text-sm text-gray-500 mt-1">
-                  Modelo: <span class="font-mono text-xs">{{ selectedLog()?.modelName }}</span> |
-                  Latência: {{ formatDuration(selectedLog()?.durationMs) }}
-                </p>
-              </div>
-              <button
-                (click)="closeDetailModal()"
-                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
-              >
-                <span class="sr-only">Close</span>
-                <svg
-                  class="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="bg-gray-50 px-4 py-5 sm:p-6 space-y-6 overflow-y-auto max-h-[60vh]">
-            @if (selectedLog()?.errorMessage) {
-              <div class="rounded-md bg-red-50 p-4 border border-red-200">
-                <div class="flex">
-                  <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div class="ml-3">
-                    <h3 class="text-sm font-medium text-red-800">Falha na execução</h3>
-                    <div class="mt-2 text-sm text-red-700">
-                      <p>{{ selectedLog()?.errorMessage }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 mb-2">System Prompt</h4>
-              <pre
-                class="bg-slate-900 text-slate-300 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 whitespace-pre-wrap"
-                >{{ selectedLog()?.systemPrompt }}</pre>
-            </div>
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 mb-2">User Prompt (Lote de Itens)</h4>
-              <pre
-                class="bg-slate-900 text-emerald-400 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 whitespace-pre-wrap"
-                >{{ selectedLog()?.userPrompt }}</pre>
-            </div>
-            @if (selectedLog()?.rawResponse) {
-              <div>
-                <h4 class="text-sm font-semibold text-gray-900 mb-2">Resposta Raw / JSON</h4>
-                <pre
-                  class="bg-slate-900 text-amber-300 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-96 whitespace-pre-wrap"
-                  >{{ formatJson(selectedLog()?.rawResponse) }}</pre>
-              </div>
-            }
-          </div>
-          <div
-            class="bg-white px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-200"
-          >
-            <button
-              type="button"
-              (click)="closeDetailModal()"
-              class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
+<app-ui-dialog
+  [open]="!!selectedLog()"
+  title="Detalhes da execução de IA"
+  [subtitle]="'Modelo: ' + (selectedLog()?.modelName || '') + ' · Latência: ' + formatDuration(selectedLog()?.durationMs)"
+  panelClass="sm:max-w-4xl"
+  (closed)="closeDetailModal()"
+>
+  <div class="max-h-[65vh] space-y-5 overflow-y-auto">
+    @if (selectedLog()?.errorMessage) {
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4" role="alert">
+        <h3 class="text-sm font-semibold text-red-800">Falha na execução</h3>
+        <p class="mt-1 text-sm text-red-700">{{ selectedLog()?.errorMessage }}</p>
       </div>
-    </div>
+    }
+
+    <app-ui-code-panel label="System prompt" [content]="selectedLog()?.systemPrompt || ''" />
+    <app-ui-code-panel label="User prompt (lote de itens)" [content]="selectedLog()?.userPrompt || ''" />
+    @if (selectedLog()?.rawResponse) {
+      <app-ui-code-panel label="Resposta raw / JSON" [content]="formatJson(selectedLog()?.rawResponse)" />
+    }
   </div>
-}
+
+  <div class="mt-5 flex justify-end">
+    <button
+      type="button"
+      (click)="closeDetailModal()"
+      class="rounded-lg border border-brand-950/20 bg-surface px-4 py-2 text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-950/5"
+    >
+      Fechar
+    </button>
+  </div>
+</app-ui-dialog>

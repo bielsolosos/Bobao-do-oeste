@@ -8,10 +8,25 @@ Este documento transforma a auditoria visual da SPA em um plano de implementaç�
 - [x] Aplicação dos assets no README raiz.
 - [x] Uso do emblema SVG como favicon da SPA.
 - [x] Correção inicial de idioma, título, descrição e cor de tema do documento HTML.
-- [ ] Definição final do nome público da aplicação.
-- [ ] Criação dos tokens e componentes do design system.
-- [ ] Redesign das telas e dos fluxos.
-- [ ] Validação de acessibilidade e regressão visual.
+- [x] Definição final do nome público da aplicação (**Bobão do Oeste**).
+- [x] Criação dos tokens e componentes do design system (tokens em `styles.css` e primitives compartilhados).
+- [x] Redesign das telas e dos fluxos (login, dashboard, oportunidades, monitores, eventos e auditoria).
+- [x] Testes unitários dos componentes compartilhados e execução na CI.
+- [ ] Validação de acessibilidade automatizada (axe) e regressão visual.
+- [ ] Paginação e filtros no servidor para as listagens globais.
+
+### Decisões confirmadas
+
+1. Nome público: **Bobão do Oeste**, com o descritor "Monitor inteligente de oportunidades".
+2. A imagem do caçador armado fica restrita ao README; no produto usa-se a cena do robô analisando a GPU.
+3. Eventos e Auditoria de IA são visíveis apenas para `ROLE_ADMIN`.
+4. Dark mode fica para uma fase posterior.
+
+### Limitações conhecidas desta entrega
+
+- Os endpoints de listagem global não aceitam filtros no backend; os filtros de Oportunidades, Monitores, Eventos e Auditoria são aplicados no cliente sobre um lote carregado (até 200 registros).
+- A conversão dos JPGs para AVIF/WebP e os recortes responsivos ainda não foram feitos; o login usa um JPEG redimensionado em tempo de build local.
+- Não há testes E2E, de axe ou de regressão visual nesta etapa.
 
 ## 1. Diagnóstico atual
 
@@ -489,9 +504,9 @@ O redesign pode ser considerado concluído quando:
 - O frontend possui testes de componentes, E2E e acessibilidade na CI.
 - Assets raster são entregues em formatos e tamanhos responsivos.
 
-## 9. Decisões pendentes
+## 9. Decisões originais (resolvidas)
 
-Antes de iniciar a implementação ampla, é necessário confirmar:
+As respostas estão consolidadas em "Decisões confirmadas", no topo deste documento. Registro original das perguntas:
 
 1. O nome público será `Bobão do Oeste` ou `Marketplace Intelligence`?
 2. A imagem do caçador armado pode aparecer no produto ou ficará restrita ao README?

@@ -1,3 +1,93 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+/*
+ * Design tokens - Bobão do Oeste
+ * Fonte da verdade para cores, tipografia e formas da SPA.
+ */
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Bitter', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Marca */
+  --color-brand-950: #0f0e0d;
+  --color-brand-900: #191715;
+  --color-brand-800: #262320;
+  --color-brand-700: #3a352f;
+  --color-brand-600: #4a3423;
+  --color-brand-leather: #4a3423;
+  --color-brand-amber: #f59e0b;
+  --color-brand-amber-strong: #d97706;
+  --color-brand-brass: #d4a373;
+  --color-radar: #0891b2;
+
+  /* Superfícies */
+  --color-canvas: #f7f4ee;
+  --color-surface: #fffdf8;
+  --color-ink: #1c1917;
+
+  /* Radius */
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+
+  /* Sombras */
+  --shadow-card: 0 1px 2px 0 rgb(28 25 23 / 0.06), 0 1px 3px 0 rgb(28 25 23 / 0.05);
+  --shadow-pop: 0 10px 25px -5px rgb(15 14 13 / 0.2), 0 8px 10px -6px rgb(15 14 13 / 0.15);
+
+  /* Movimento */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-amber-strong);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-amber);
+    color: var(--color-brand-950);
+  }
+}
+
+@layer components {
+  .page-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand-amber-strong;
+  }
+
+  .surface-card {
+    @apply bg-surface rounded-xl border border-brand-950/10 shadow-[var(--shadow-card)];
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

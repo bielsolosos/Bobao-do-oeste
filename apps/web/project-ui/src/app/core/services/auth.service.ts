@@ -21,13 +21,12 @@ export class AuthService {
   currentUser = signal<UserResponse | null>(null);
 
   constructor() {
-    // Apenas se tiver token na subida a gente carrega o usuário.
     if (this.hasToken()) {
       this.loadMe().subscribe();
     }
   }
 
-  login(credentials: any): Observable<LoginResponse> {
+  login(credentials: unknown, redirectTo: string = '/'): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
       tap(response => {
         if (response.token) {
@@ -36,9 +35,9 @@ export class AuthService {
             localStorage.setItem('refresh_token', response.refreshToken);
           }
           this.isAuthenticated.set(true);
-          
+
           this.loadMe().subscribe(() => {
-            this.router.navigate(['/']);
+            this.router.navigateByUrl(redirectTo);
           });
         }
       })
@@ -52,8 +51,8 @@ export class AuthService {
       }),
       catchError(err => {
         console.error('Erro ao carregar usuário (F5 / me):', err);
-        // ATENCAO: REMOVI O LOGOUT DAQUI! Se o interceptor detectar 401, ELE vai fazer o logout sozinho.
-        // Fazer aqui também criava um comportamento onde qualquer falha de rede deslogava a pessoa ao dar F5.
+        // O interceptor trata 401/403. Não deslogamos aqui para não derrubar o usuário
+        // em falhas transitórias de rede ao recarregar a página.
         return of(null);
       })
     );
@@ -73,5 +72,14 @@ export class AuthService {
 
   hasToken(): boolean {
     return !!localStorage.getItem('jwt_token');
+  }
+
+  hasRole(role: string): boolean {
+    const user = this.currentUser();
+    return !!user?.roles?.includes(role);
+  }
+
+  isAdmin(): boolean {
+    return this.hasRole('ROLE_ADMIN');
   }
 }
