@@ -1,5 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
 
 @Component({
   selector: 'app-ui-button',
@@ -9,25 +11,20 @@ import { CommonModule } from '@angular/common';
     <button
       [type]="type"
       [disabled]="disabled || loading"
-      (click)="clicked.emit($event)"
+      [attr.aria-busy]="loading ? 'true' : null"
+      (click)="emitClick($event)"
       [ngClass]="getButtonClasses()"
-      class="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      class="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     >
       @if (loading) {
         <svg
-          class="animate-spin -ml-1 mr-2 h-4 w-4"
+          class="mr-2 h-4 w-4 animate-spin"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path
             class="opacity-75"
             fill="currentColor"
@@ -42,59 +39,39 @@ import { CommonModule } from '@angular/common';
 })
 export class UiButtonComponent {
   @Input() type: 'button' | 'submit' | 'reset' = 'button';
-  @Input() variant: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost' = 'primary';
+  @Input() variant: ButtonVariant = 'primary';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Input() loading: boolean = false;
   @Input() disabled: boolean = false;
   @Input() fullWidth: boolean = false;
 
   @Output() clicked = new EventEmitter<Event>();
+  @Output() onClick = new EventEmitter<Event>();
+
+  emitClick(event: Event) {
+    this.clicked.emit(event);
+    this.onClick.emit(event);
+  }
 
   getButtonClasses(): string {
-    let classes = '';
+    const sizes: Record<string, string> = {
+      sm: 'px-3 py-1.5 text-xs ',
+      md: 'min-h-10 px-4 py-2 text-sm ',
+      lg: 'min-h-11 px-6 py-3 text-base ',
+    };
 
-    // Size
-    switch (this.size) {
-      case 'sm':
-        classes += 'px-3 py-1.5 text-xs ';
-        break;
-      case 'md':
-        classes += 'px-4 py-2 text-sm ';
-        break;
-      case 'lg':
-        classes += 'px-6 py-3 text-base ';
-        break;
-    }
+    const variants: Record<ButtonVariant, string> = {
+      primary:
+        'bg-brand-amber-strong text-brand-950 hover:bg-brand-amber focus-visible:outline-brand-amber-strong border border-transparent',
+      secondary:
+        'bg-brand-950/5 text-brand-950 hover:bg-brand-950/10 focus-visible:outline-brand-700 border border-transparent',
+      danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600 border border-transparent',
+      outline:
+        'bg-surface text-brand-950 border border-brand-950/20 hover:bg-brand-950/5 focus-visible:outline-brand-700',
+      ghost:
+        'bg-transparent text-brand-950/70 hover:bg-brand-950/5 hover:text-brand-950 focus-visible:outline-brand-700 border border-transparent',
+    };
 
-    // Width
-    if (this.fullWidth) {
-      classes += 'w-full ';
-    }
-
-    // Variant
-    switch (this.variant) {
-      case 'primary':
-        classes +=
-          'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 border border-transparent';
-        break;
-      case 'secondary':
-        classes +=
-          'bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-500 border border-transparent';
-        break;
-      case 'danger':
-        classes +=
-          'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 border border-transparent';
-        break;
-      case 'outline':
-        classes +=
-          'bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-500';
-        break;
-      case 'ghost':
-        classes +=
-          'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500 border border-transparent';
-        break;
-    }
-
-    return classes;
+    return (sizes[this.size] ?? sizes['md']) + (this.fullWidth ? 'w-full ' : '') + variants[this.variant];
   }
 }

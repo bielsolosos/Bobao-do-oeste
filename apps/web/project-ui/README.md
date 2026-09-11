@@ -1,59 +1,59 @@
-# ProjectUi
+# Bobão do Oeste — SPA
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.6.
+Interface web do Marketplace Intelligence Ecosystem. Um painel Angular para monitorar anúncios, revisar oportunidades priorizadas pela IA e operar a infraestrutura de scraping.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- Angular 22 com componentes standalone e signals.
+- TypeScript 6, RxJS e Angular Router.
+- Tailwind CSS 4 com tokens próprios em `src/styles.css`.
+- Vitest para testes unitários.
+- Nginx para servir o build estático.
 
-```bash
-ng serve
-```
+## Pré-requisitos
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Node.js 24 e npm 11.
+- BI Engine em execução para dados reais (padrão `http://localhost:8080/api/v1`).
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Desenvolvimento
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+A aplicação estará em `http://localhost:4200`. A URL da API pode ser sobrescrita em runtime por `assets/env.js` ou pela variável `API_URL` no container.
 
-To build the project run:
+## Estrutura
+
+```text
+src/app
+├── core           Modelos, services, guards e interceptors
+├── features       Login, dashboard, oportunidades, monitores, eventos e IA
+├── layout         Shell autenticado com sidebar e navegação móvel
+└── shared         Design system e componentes reutilizáveis
+```
+
+## Identidade
+
+A marca combina hardware, inteligência artificial e a metáfora de um caçador de oportunidades. O emblema vetorial fica em `public/assets/brand/marketplace-intelligence-mark.svg` e é usado como favicon e símbolo da interface.
+
+## Testes e build
 
 ```bash
-ng build
+npm test
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Acessibilidade
 
-## Running unit tests
+- Formulários com labels associados e mensagens de erro acessíveis.
+- Dialogs com focus trap, fechamento por Escape e restauração de foco.
+- Navegação por teclado no menu, tabs e paginação.
+- `prefers-reduced-motion` respeitado.
+- Locale `pt-BR` para datas e moeda.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Documentação
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [Plano de identidade visual e redesign](../../docs/UI_UX_REDESIGN_PLAN.md)
+- [README raiz](../../README.md)

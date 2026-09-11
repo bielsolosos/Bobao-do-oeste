@@ -7,20 +7,19 @@ describe('App', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [provideRouter([])],
-    })
-      .compileComponents();
+    }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('should create the app shell', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render the application outlet', async () => {
+  it('should expose the global toast and confirm containers', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    await fixture.whenStable();
+    fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('router-outlet')).toBeTruthy();
+    expect(compiled.querySelector('app-ui-toast-container')).toBeTruthy();
+    expect(compiled.querySelector('app-ui-confirm-dialog')).toBeTruthy();
   });
 });

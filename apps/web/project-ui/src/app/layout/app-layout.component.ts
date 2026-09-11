@@ -1,359 +1,273 @@
-import { Component, inject } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
+
+interface NavItem {
+  label: string;
+  shortLabel: string;
+  path: string;
+  icon: string;
+  adminOnly?: boolean;
+}
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterModule],
+  imports: [CommonModule, RouterModule],
   template: `
-    <!-- MAIN WRAPPER (Flex-col para mobile, Flex-row para desktop) -->
-    <div class="h-screen w-full bg-slate-50 flex flex-col md:flex-row overflow-hidden">
-      <!-- SIDEBAR (Apenas visível em telas md ou maiores) -->
+    <div class="flex h-[100dvh] w-full flex-col overflow-hidden bg-canvas md:flex-row">
       <aside
-        class="hidden md:flex w-64 bg-slate-900 text-white flex-col shadow-xl z-[var(--z-nav)] flex-shrink-0 h-full"
+        class="z-[var(--z-nav)] hidden h-full w-64 flex-shrink-0 flex-col bg-brand-900 text-white shadow-xl md:flex"
+        aria-label="Navegação lateral"
       >
-        <div class="h-16 flex items-center px-6 border-b border-slate-800">
-          <div
-            class="h-8 w-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20"
-          >
-            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          </div>
-          <span
-            class="ml-3 text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-white"
-            >Bobão do Oeste</span
-          >
-        </div>
+        <a
+          routerLink="/dashboard"
+          class="flex h-16 items-center gap-3 border-b border-white/10 px-5 transition-colors hover:bg-white/5"
+        >
+          <img
+            src="assets/brand/marketplace-intelligence-mark.svg"
+            alt=""
+            class="h-9 w-9"
+            aria-hidden="true"
+          />
+          <span class="min-w-0">
+            <span class="block truncate font-display text-base font-bold leading-tight text-white">Bobão do Oeste</span>
+            <span class="block truncate text-[11px] text-brand-brass">Monitor de oportunidades</span>
+          </span>
+        </a>
 
-        <nav class="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-          <!-- Home -->
-          <a
-            routerLink="/dashboard"
-            routerLinkActive="bg-blue-600/10 text-blue-400 border-l-4 border-blue-500"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
-          >
-            <svg
-              class="mr-3 h-5 w-5 flex-shrink-0 group-hover:text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-              />
-            </svg>
-            Dashboard
-          </a>
-
-          <!-- Monitores / Buscas -->
-          <a
-            routerLink="/monitors"
-            routerLinkActive="bg-blue-600/10 text-blue-400 border-l-4 border-blue-500"
-            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group mt-2"
-          >
-            <svg
-              class="mr-3 h-5 w-5 flex-shrink-0 group-hover:text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            Monitores Inteligentes
-          </a>
-
-          <!-- Infraestrutura -->
-          <div class="pt-6 pb-2">
-            <p class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Sistema
-            </p>
+        <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+          <div>
+            <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">Produto</p>
+            @for (item of productNav; track item.path) {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="bg-white/10 text-white border-brand-amber"
+                [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
+                class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                <span class="mr-3 h-5 w-5 flex-shrink-0" [innerHTML]="item.icon" aria-hidden="true"></span>
+                {{ item.label }}
+              </a>
+            }
           </div>
 
-          <a
-            routerLink="/events"
-            routerLinkActive="bg-blue-600/10 text-blue-400 border-l-4 border-blue-500"
-            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
-          >
-            <svg
-              class="mr-3 h-5 w-5 flex-shrink-0 group-hover:text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            Eventos & Webhooks
-          </a>
-
-          <a
-            routerLink="/ai-logs"
-            routerLinkActive="bg-blue-600/10 text-blue-400 border-l-4 border-blue-500"
-            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
-          >
-            <svg
-              class="mr-3 h-5 w-5 flex-shrink-0 group-hover:text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            Auditoria IA
-          </a>
+          @if (isAdmin()) {
+            <div>
+              <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">Operação</p>
+              @for (item of operationNav; track item.path) {
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="bg-white/10 text-white border-brand-amber"
+                  class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  <span class="mr-3 h-5 w-5 flex-shrink-0" [innerHTML]="item.icon" aria-hidden="true"></span>
+                  {{ item.label }}
+                </a>
+              }
+            </div>
+          }
         </nav>
       </aside>
 
-      <!-- ÁREA DE CONTEÚDO -->
-      <div class="flex-1 flex flex-col min-w-0 min-h-0 relative h-full">
-        <!-- TOPBAR UNIVERSAL (Mobile e Desktop) -->
+      <div class="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <header
-          class="bg-white border-b border-gray-200 h-16 flex-shrink-0 px-4 md:px-6 flex items-center justify-between z-10 shadow-sm relative"
+          class="z-10 flex h-16 flex-shrink-0 items-center justify-between border-b border-brand-950/10 bg-surface px-4 shadow-sm md:px-6"
         >
-          <!-- MOBILE LOGO -->
-          <div class="flex md:hidden items-center">
-            <div
-              class="h-8 w-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center mr-2"
-            >
-              <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
+          <div class="flex min-w-0 items-center gap-3">
+            <img
+              src="assets/brand/marketplace-intelligence-mark.svg"
+              alt=""
+              class="h-8 w-8 md:hidden"
+              aria-hidden="true"
+            />
+            <div class="min-w-0">
+              <p class="truncate font-display text-sm font-semibold text-brand-950 md:text-base">
+                {{ pageTitle() }}
+              </p>
+              <p class="hidden truncate text-xs text-brand-950/50 sm:block">{{ pageSubtitle() }}</p>
             </div>
-             <h2 class="text-lg font-bold text-gray-800 tracking-tight">Bobão do Oeste</h2>
           </div>
 
-          <!-- DESKTOP TITLE -->
-          <div class="hidden md:flex items-center">
-            <span class="text-gray-500 text-sm font-medium">Dashboard Administrativo</span>
-          </div>
-
-          <!-- USER DROPDOWN (Direita) -->
-          <div class="flex items-center">
-            <div class="relative group cursor-pointer">
-              <div
-                class="flex items-center gap-2 lg:gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+          <div class="relative">
+            <button
+              type="button"
+              (click)="toggleMenu($event)"
+              [attr.aria-expanded]="menuOpen()"
+              aria-haspopup="true"
+              class="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-brand-950/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <span class="hidden flex-col text-right sm:flex">
+                <span class="text-sm font-medium leading-tight text-brand-950">
+                  {{ authService.currentUser()?.username || 'Usuário' }}
+                </span>
+                <span class="text-xs text-brand-950/50">{{ primaryRoleLabel() }}</span>
+              </span>
+              <span
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-amber/20 font-bold text-brand-amber-strong"
               >
-                <div class="flex flex-col text-right hidden sm:flex">
-                  <span class="text-sm font-medium text-gray-900 leading-tight">
-                    {{ authService.currentUser()?.username || 'Administrador' }}
-                  </span>
-                  <span class="text-xs text-gray-500 font-mono">{{ getPrimaryRole() }}</span>
-                </div>
-                <div
-                  class="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border border-blue-200 shadow-sm"
-                >
-                  {{ (authService.currentUser()?.username || 'A').charAt(0).toUpperCase() }}
-                </div>
-              </div>
+                {{ (authService.currentUser()?.username || 'A').charAt(0).toUpperCase() }}
+              </span>
+            </button>
 
-              <!-- Menu flutuante -->
+            @if (menuOpen()) {
               <div
-                class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block group-focus-within:block z-[var(--z-nav)]"
+                class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-brand-950/10 bg-surface py-1 shadow-[var(--shadow-pop)]"
+                role="menu"
               >
-                <div class="px-4 py-2 border-b border-gray-100 sm:hidden">
-                  <p class="text-sm font-medium text-gray-900 truncate">
+                <div class="border-b border-brand-950/10 px-4 py-2">
+                  <p class="truncate text-sm font-medium text-brand-950">
                     {{ authService.currentUser()?.username }}
                   </p>
-                  <p class="text-xs text-gray-500 truncate">{{ getPrimaryRole() }}</p>
+                  <p class="truncate text-xs text-brand-950/50">
+                    {{ authService.currentUser()?.email || primaryRoleLabel() }}
+                  </p>
                 </div>
                 <button
                   type="button"
+                  role="menuitem"
                   (click)="logout()"
-                  class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  class="block w-full px-4 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                 >
-                  Sair do Sistema
+                  Sair do sistema
                 </button>
               </div>
-            </div>
+            }
           </div>
         </header>
 
-        <!-- MAIN SCROLLABLE CONTENT (Padding bottom extra apenas no mobile para não sobrepor a Bottom Nav) -->
-        <main class="flex-1 overflow-y-auto bg-slate-50 p-4 pb-24 md:pb-8 md:p-6 lg:p-8 relative">
+        <main class="flex-1 overflow-y-auto bg-canvas p-4 pb-28 md:p-6 md:pb-8 lg:p-8">
           <router-outlet></router-outlet>
         </main>
       </div>
 
-      <!-- BOTTOM NAVIGATION BAR (Apenas visível em telas mobile) -->
       <nav
-        class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-between z-[var(--z-nav)] h-[68px] px-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+        class="safe-bottom fixed bottom-0 left-0 right-0 z-50 flex items-stretch border-t border-brand-950/10 bg-surface px-1 shadow-[0_-2px_10px_rgba(15,14,13,0.06)] md:hidden"
+        aria-label="Navegação principal"
       >
-        <!-- Dashboard -->
-        <a
-          routerLink="/dashboard"
-          routerLinkActive="text-blue-600"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="flex-1 flex flex-col items-center justify-center h-full text-gray-500 hover:text-blue-600 transition-colors"
-        >
-          <svg
-            class="h-6 w-6 mb-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            [class.text-blue-600]="isRouteActive('/dashboard')"
+        @for (item of mobileNav(); track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="text-brand-amber-strong"
+            [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
+            class="flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-brand-950/50 transition-colors"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-            />
-          </svg>
-          <span
-            class="text-[10px] font-medium"
-            [class.text-blue-600]="isRouteActive('/dashboard')"
-            [class.font-bold]="isRouteActive('/dashboard')"
-            >Painel</span
-          >
-        </a>
-
-        <!-- Monitores -->
-        <a
-          routerLink="/monitors"
-          routerLinkActive="text-blue-600"
-          class="flex-1 flex flex-col items-center justify-center h-full text-gray-500 hover:text-blue-600 transition-colors"
-        >
-          <svg
-            class="h-6 w-6 mb-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            [class.text-blue-600]="isRouteActive('/monitors')"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <span
-            class="text-[10px] font-medium"
-            [class.text-blue-600]="isRouteActive('/monitors')"
-            [class.font-bold]="isRouteActive('/monitors')"
-            >Buscas</span
-          >
-        </a>
-
-        <!-- Eventos -->
-        <a
-          routerLink="/events"
-          routerLinkActive="text-blue-600"
-          class="flex-1 flex flex-col items-center justify-center h-full text-gray-500 hover:text-blue-600 transition-colors"
-        >
-          <svg
-            class="h-6 w-6 mb-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            [class.text-blue-600]="isRouteActive('/events')"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
-          <span
-            class="text-[10px] font-medium"
-            [class.text-blue-600]="isRouteActive('/events')"
-            [class.font-bold]="isRouteActive('/events')"
-            >Eventos</span
-          >
-        </a>
-
-        <!-- IA Logs -->
-        <a
-          routerLink="/ai-logs"
-          routerLinkActive="text-blue-600"
-          class="flex-1 flex flex-col items-center justify-center h-full text-gray-500 hover:text-blue-600 transition-colors"
-        >
-          <svg
-            class="h-6 w-6 mb-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            [class.text-blue-600]="isRouteActive('/ai-logs')"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
-          </svg>
-          <span
-            class="text-[10px] font-medium"
-            [class.text-blue-600]="isRouteActive('/ai-logs')"
-            [class.font-bold]="isRouteActive('/ai-logs')"
-            >IA</span
-          >
-        </a>
+            <span class="h-6 w-6" [innerHTML]="item.icon" aria-hidden="true"></span>
+            <span class="text-[11px] font-medium">{{ item.shortLabel }}</span>
+          </a>
+        }
       </nav>
     </div>
   `,
-  styles: [
-    `
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #334155;
-        border-radius: 20px;
-      }
-    `,
-  ],
 })
 export class AppLayoutComponent {
   authService = inject(AuthService);
+  private router = inject(Router);
+
+  menuOpen = signal(false);
+
+  readonly productNav: NavItem[] = [
+    {
+      label: 'Visão geral',
+      shortLabel: 'Visão',
+      path: '/dashboard',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>',
+    },
+    {
+      label: 'Oportunidades',
+      shortLabel: 'Ofertas',
+      path: '/opportunities',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>',
+    },
+    {
+      label: 'Monitores',
+      shortLabel: 'Monitores',
+      path: '/monitors',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>',
+    },
+  ];
+
+  readonly operationNav: NavItem[] = [
+    {
+      label: 'Eventos e webhooks',
+      shortLabel: 'Eventos',
+      path: '/events',
+      adminOnly: true,
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+    },
+    {
+      label: 'Auditoria de IA',
+      shortLabel: 'IA',
+      path: '/ai-logs',
+      adminOnly: true,
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>',
+    },
+  ];
+
+  isAdmin = computed(() => this.authService.isAdmin());
+
+  mobileNav = computed<NavItem[]>(() => {
+    const nav: NavItem[] = [...this.productNav];
+    if (this.isAdmin()) {
+      nav.push(this.operationNav[0]);
+      nav.push(this.operationNav[1]);
+    }
+    return nav;
+  });
+
+  private url = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  pageTitle = computed(() => {
+    const url = this.url();
+    if (url.startsWith('/opportunities')) return 'Oportunidades';
+    if (url.startsWith('/monitors/new')) return 'Novo monitor';
+    if (url.startsWith('/monitors/edit')) return 'Editar monitor';
+    if (url.startsWith('/monitors/')) return 'Detalhe do monitor';
+    if (url.startsWith('/monitors')) return 'Monitores';
+    if (url.startsWith('/events')) return 'Eventos e webhooks';
+    if (url.startsWith('/ai-logs')) return 'Auditoria de IA';
+    return 'Visão geral';
+  });
+
+  pageSubtitle = computed(() => {
+    if (this.pageTitle() === 'Visão geral') return 'Resumo da sua operação de caça a oportunidades';
+    return 'Bobão do Oeste · Monitor inteligente de oportunidades';
+  });
+
+  primaryRoleLabel(): string {
+    const roles = this.authService.currentUser()?.roles ?? [];
+    if (roles.includes('ROLE_ADMIN')) return 'Administrador';
+    if (roles.length > 0) return roles[0].replace('ROLE_', '');
+    return 'Usuário';
+  }
+
+  toggleMenu(event: MouseEvent) {
+    event.stopPropagation();
+    this.menuOpen.update((open) => !open);
+  }
+
+  @HostListener('document:click')
+  closeMenu() {
+    this.menuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.menuOpen.set(false);
+  }
 
   logout() {
+    this.menuOpen.set(false);
     this.authService.logout();
-  }
-
-  isRouteActive(routePath: string): boolean {
-    return window.location.pathname.startsWith(routePath);
-  }
-
-  getPrimaryRole(): string {
-    const user = this.authService.currentUser();
-    if (user && user.roles && user.roles.length > 0) {
-      return user.roles[0].replace('ROLE_', '');
-    }
-    return 'SYSTEM';
   }
 }

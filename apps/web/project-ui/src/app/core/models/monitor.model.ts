@@ -1,21 +1,26 @@
 export type Vendor = 'OLX' | 'MERCADO_LIVRE';
 export type AnalysisType = 'NONE' | 'SIMPLE' | 'NOTEBOOK';
-export type ScrapingFrequency = 
-  | 'EVERY_MINUTE' 
-  | 'EVERY_5_MINUTES' 
-  | 'EVERY_30_MINUTES' 
-  | 'HOURLY' 
-  | 'EVERY_6_HOURS' 
-  | 'DAILY' 
-  | 'TWICE_DAILY' 
-  | 'WEEKLY' 
+export type ScrapingFrequency =
+  | 'EVERY_MINUTE'
+  | 'EVERY_5_MINUTES'
+  | 'EVERY_30_MINUTES'
+  | 'HOURLY'
+  | 'EVERY_6_HOURS'
+  | 'DAILY'
+  | 'TWICE_DAILY'
+  | 'WEEKLY'
   | 'MANUAL';
 
 export interface MonitorSearchQueryResponse {
   id: string;
-  keyword: string;
+  queryTerm: string;
   minPrice?: number;
   maxPrice?: number;
+  stateFilter?: string;
+  regionFilter?: string;
+  requireDelivery?: boolean;
+  maxPages?: number;
+  active?: boolean;
 }
 
 export interface SimpleAnalysisFields {

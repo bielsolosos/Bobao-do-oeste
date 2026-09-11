@@ -1,16 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ProductMonitorResponse } from '../../../core/models/monitor.model';
+import { ProductMonitorResponse, ScrapingFrequency, Vendor, AnalysisType } from '../../../core/models/monitor.model';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiConfirmService } from '../../../shared/components/ui-confirm/ui-confirm.service';
-import { UiEmptyStateComponent } from '../../../shared/components/ui-empty-state/ui-empty-state.component';
-import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
 import { UiPaginationComponent } from '../../../shared/components/ui-pagination/ui-pagination.component';
-import { UiSkeletonComponent } from '../../../shared/components/ui-skeleton/ui-skeleton.component';
+import { UiStatePanelComponent } from '../../../shared/components/ui-state-panel/ui-state-panel.component';
+import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
+import { UiIconButtonComponent } from '../../../shared/components/ui-icon-button/ui-icon-button.component';
+import { UiButtonComponent } from '../../../shared/components/ui-button/ui-button.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
+
+type ListState = 'loading' | 'error' | 'ready';
 
 @Component({
   selector: 'app-monitor-list',
@@ -20,99 +23,151 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
     RouterModule,
     UiCardComponent,
     UiBadgeComponent,
-    UiEmptyStateComponent,
-    UiPageHeaderComponent,
     UiPaginationComponent,
-    UiSkeletonComponent,
+    UiStatePanelComponent,
+    UiPageHeaderComponent,
+    UiIconButtonComponent,
+    UiButtonComponent,
   ],
   templateUrl: './monitor-list.component.html',
 })
 export class MonitorListComponent implements OnInit {
   private monitorService = inject(MonitorService);
   private toast = inject(UiToastService);
-  private confirm = inject(UiConfirmService);
+  private confirmService = inject(UiConfirmService);
 
+  state = signal<ListState>('loading');
   monitors = signal<ProductMonitorResponse[]>([]);
-  isLoading = signal<boolean>(true);
+  busyId = signal<string | null>(null);
 
-  // Variáveis de paginação
-  currentPage = signal<number>(0);
-  totalPages = signal<number>(0);
-  totalElements = signal<number>(0);
-  pageSize = signal<number>(10);
+  page = signal(0);
+  pageSize = signal(10);
+  totalElements = signal(0);
+  totalPages = signal(0);
+
+  hasResults = computed(
+    () => this.state() === 'ready' && this.monitors().length > 0,
+  );
+  isEmpty = computed(
+    () => this.state() === 'ready' && this.monitors().length === 0,
+  );
 
   ngOnInit() {
     this.loadMonitors();
   }
 
-  loadMonitors(page: number = this.currentPage()) {
-    this.isLoading.set(true);
-    this.monitorService.getMonitors(page, this.pageSize()).subscribe({
-      next: (res) => {
-        this.monitors.set(res.content);
-        this.currentPage.set(res.number);
-        this.totalPages.set(res.totalPages);
-        this.totalElements.set(res.totalElements);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.toast.error('Erro', 'Não foi possível carregar a lista de monitores.');
-        this.isLoading.set(false);
-      },
-    });
+  loadMonitors() {
+    this.state.set('loading');
+    this.monitorService
+      .getMonitors(this.page(), this.pageSize())
+      .subscribe({
+        next: (res) => {
+          this.monitors.set(res.content ?? []);
+          this.totalElements.set(res.totalElements ?? 0);
+          this.totalPages.set(res.totalPages ?? 0);
+          this.page.set(res.number ?? 0);
+          this.state.set('ready');
+        },
+        error: () => this.state.set('error'),
+      });
+  }
+
+  retry() {
+    this.loadMonitors();
+  }
+
+  onPageChange(page: number) {
+    this.page.set(page);
+    this.loadMonitors();
   }
 
   onPageSizeChange(size: number) {
     this.pageSize.set(size);
-    this.loadMonitors(0);
+    this.page.set(0);
+    this.loadMonitors();
   }
 
-  onPageChange(page: number) {
-    this.loadMonitors(page);
-  }
-
-  deactivate(id: string) {
-    this.monitorService.deactivateMonitor(id).subscribe({
+  deactivate(monitor: ProductMonitorResponse) {
+    this.busyId.set(monitor.id);
+    this.monitorService.deactivateMonitor(monitor.id).subscribe({
       next: () => {
-        this.toast.success('Pausado', 'O monitor foi pausado com sucesso.');
+        this.toast.success('Pausado', `O monitor "${monitor.name}" foi pausado.`);
+        this.busyId.set(null);
         this.loadMonitors();
       },
-      error: (err) => {
-        console.error('Erro de request PATCH deactivate:', err);
-        this.toast.error('Erro', 'Falha ao pausar monitor.');
+      error: () => {
+        this.toast.error('Erro', 'Falha ao pausar o monitor.');
+        this.busyId.set(null);
       },
     });
   }
 
-  activate(id: string) {
-    this.monitorService.activateMonitor(id).subscribe({
+  activate(monitor: ProductMonitorResponse) {
+    this.busyId.set(monitor.id);
+    this.monitorService.activateMonitor(monitor.id).subscribe({
       next: () => {
-        this.toast.success('Retomado', 'O monitor foi reativado e voltará a buscar.');
+        this.toast.success('Retomado', `O monitor "${monitor.name}" voltará a buscar.`);
+        this.busyId.set(null);
         this.loadMonitors();
       },
-      error: (err) => {
-        console.error('Erro de request PATCH activate:', err);
-        this.toast.error('Erro', 'Falha ao ativar monitor.');
+      error: () => {
+        this.toast.error('Erro', 'Falha ao reativar o monitor.');
+        this.busyId.set(null);
       },
     });
   }
 
-  async deleteMonitor(id: string, name: string) {
-    const confirmed = await this.confirm.confirm({
-      title: 'Excluir monitor?',
-      message: `O monitor "${name}" e seu histórico de anúncios serão excluídos. Essa ação não pode ser desfeita.`,
-      confirmText: 'Excluir monitor',
+  async deleteMonitor(monitor: ProductMonitorResponse) {
+    const confirmed = await this.confirmService.confirm({
+      title: 'Excluir monitor',
+      message: `Deseja realmente excluir "${monitor.name}"? Esta ação é irreversível.`,
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
       isDestructive: true,
     });
-
     if (!confirmed) return;
 
-    this.monitorService.deleteMonitor(id).subscribe({
+    this.busyId.set(monitor.id);
+    this.monitorService.deleteMonitor(monitor.id).subscribe({
       next: () => {
-        this.toast.success('Monitor excluído', 'O monitor foi removido com sucesso.');
+        this.toast.success('Excluído', 'Monitor excluído com sucesso.');
+        this.busyId.set(null);
         this.loadMonitors();
       },
-      error: () => this.toast.error('Erro', 'Falha ao excluir monitor.'),
+      error: () => {
+        this.toast.error('Erro', 'Falha ao excluir o monitor.');
+        this.busyId.set(null);
+      },
     });
+  }
+
+  vendorLabel(vendor: Vendor): string {
+    return vendor === 'OLX' ? 'OLX' : 'Mercado Livre';
+  }
+
+  analysisLabel(type: AnalysisType): string {
+    switch (type) {
+      case 'SIMPLE':
+        return 'IA simples';
+      case 'NOTEBOOK':
+        return 'IA para notebooks';
+      default:
+        return 'Sem IA';
+    }
+  }
+
+  frequencyLabel(frequency: ScrapingFrequency): string {
+    const labels: Record<ScrapingFrequency, string> = {
+      EVERY_MINUTE: 'A cada minuto',
+      EVERY_5_MINUTES: 'A cada 5 min',
+      EVERY_30_MINUTES: 'A cada 30 min',
+      HOURLY: 'A cada hora',
+      EVERY_6_HOURS: 'A cada 6 horas',
+      DAILY: 'Diário',
+      TWICE_DAILY: '2x ao dia',
+      WEEKLY: 'Semanal',
+      MANUAL: 'Manual',
+    };
+    return labels[frequency] ?? frequency;
   }
 }

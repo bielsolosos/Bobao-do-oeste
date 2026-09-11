@@ -6,35 +6,47 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div
-      class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+    <section
+      class="overflow-hidden rounded-xl border border-brand-950/10 bg-surface shadow-[var(--shadow-card)]"
       [ngClass]="extraClasses"
     >
-      <!-- Header -->
-      @if (title || subtitle) {
-        <div
-          class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
+      @if (title || subtitle || hasHeaderAction) {
+        <header
+          class="flex flex-wrap items-center justify-between gap-3 border-b border-brand-950/10 bg-brand-950/[0.02] px-5 py-4 sm:px-6"
         >
           <div>
-            <h3 class="text-lg font-semibold text-gray-800">{{ title }}</h3>
+            @if (title) {
+              <h3 class="text-base font-semibold text-brand-950">{{ title }}</h3>
+            }
             @if (subtitle) {
-              <p class="text-sm text-gray-500 mt-1">{{ subtitle }}</p>
+              <p class="mt-0.5 text-sm text-brand-950/60">{{ subtitle }}</p>
             }
           </div>
-        </div>
+          @if (hasHeaderAction) {
+            <div>
+              <ng-content select="[card-action]"></ng-content>
+            </div>
+          }
+        </header>
       }
 
-      <!-- Body -->
-      <div [ngClass]="noPadding ? '' : 'p-6'">
+      <div [ngClass]="noPadding ? '' : 'p-5 sm:p-6'">
         <ng-content></ng-content>
       </div>
 
-    </div>
+      @if (hasFooter) {
+        <footer class="border-t border-brand-950/10 bg-brand-950/[0.02] px-5 py-4 sm:px-6">
+          <ng-content select="[card-footer]"></ng-content>
+        </footer>
+      }
+    </section>
   `,
 })
 export class UiCardComponent {
   @Input() title?: string;
   @Input() subtitle?: string;
   @Input() noPadding: boolean = false;
+  @Input() hasHeaderAction: boolean = false;
+  @Input() hasFooter: boolean = false;
   @Input() extraClasses: string = '';
 }

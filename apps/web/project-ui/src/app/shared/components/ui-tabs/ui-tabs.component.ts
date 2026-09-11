@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface TabItem {
@@ -15,8 +15,10 @@ export interface TabItem {
   template: `
     <div>
       <div class="sm:hidden">
+        <label class="sr-only" for="ui-tabs-select">Selecionar seção</label>
         <select
-          class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+          id="ui-tabs-select"
+          class="block w-full rounded-lg border border-brand-950/20 bg-surface py-2.5 pl-3 pr-10 text-base text-brand-950 focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong sm:text-sm"
           [value]="activeTabId"
           (change)="onSelectNative($event)"
         >
@@ -25,32 +27,43 @@ export interface TabItem {
           }
         </select>
       </div>
+
       <div class="hidden sm:block">
-        <div class="border-b border-gray-200">
-          <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <div class="border-b border-brand-950/10">
+          <nav
+            class="-mb-px flex gap-6 overflow-x-auto"
+            role="tablist"
+            aria-label="Seções"
+          >
             @for (tab of tabs; track tab.id) {
               <button
                 type="button"
+                role="tab"
+                [id]="'tab-' + tab.id"
+                [attr.aria-selected]="activeTabId === tab.id"
+                [attr.aria-controls]="'panel-' + tab.id"
+                [attr.tabindex]="activeTabId === tab.id ? 0 : -1"
                 (click)="selectTab(tab.id)"
+                (keydown)="onKeydown($event, tab.id)"
                 [ngClass]="
                   activeTabId === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-brand-amber-strong text-brand-amber-strong'
+                    : 'border-transparent text-brand-950/60 hover:border-brand-950/20 hover:text-brand-950'
                 "
-                class="whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2"
+                class="flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3.5 text-sm font-medium transition-colors"
               >
                 @if (tab.icon) {
-                  <span [innerHTML]="tab.icon" class="w-5 h-5"></span>
+                  <span [innerHTML]="tab.icon" class="h-5 w-5" aria-hidden="true"></span>
                 }
                 {{ tab.label }}
                 @if (tab.badge !== undefined) {
                   <span
                     [ngClass]="
                       activeTabId === tab.id
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-900'
+                        ? 'bg-brand-amber/20 text-brand-amber-strong'
+                        : 'bg-brand-950/10 text-brand-950/70'
                     "
-                    class="hidden ml-2 rounded-full py-0.5 px-2.5 text-xs font-medium md:inline-block"
+                    class="ml-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
                   >
                     {{ tab.badge }}
                   </span>
@@ -73,7 +86,30 @@ export class UiTabsComponent {
   }
 
   onSelectNative(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.selectTab(select.value);
+    this.selectTab((event.target as HTMLSelectElement).value);
+  }
+
+  onKeydown(event: KeyboardEvent, currentId: string) {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+
+    const index = this.tabs.findIndex((t) => t.id === currentId);
+    if (index < 0) return;
+
+    let nextIndex = index;
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % this.tabs.length;
+    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + this.tabs.length) % this.tabs.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = this.tabs.length - 1;
+
+    const next = this.tabs[nextIndex];
+    if (!next) return;
+    this.selectTab(next.id);
+
+    queueMicrotask(() => {
+      const el = document.getElementById('tab-' + next.id);
+      el?.focus();
+    });
   }
 }

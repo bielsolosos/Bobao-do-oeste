@@ -1,29 +1,29 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, computed, signal } from '@angular/core';
 
 @Component({
   selector: 'app-ui-skeleton',
   standalone: true,
   template: `
-    @if (variant === 'table') {
-      <div class="divide-y divide-slate-100" aria-label="Carregando" aria-busy="true">
-        @for (row of rowsArray; track $index) {
+    @if (variant() === 'table') {
+      <div class="divide-y divide-brand-950/10" role="status" aria-busy="true" aria-label="Carregando">
+        @for (row of rowsArray(); track $index) {
           <div class="flex items-center gap-4 px-6 py-5">
-            <div class="h-10 w-10 shrink-0 animate-pulse rounded-lg bg-slate-200"></div>
+            <div class="h-10 w-10 shrink-0 animate-pulse rounded-lg bg-brand-950/10"></div>
             <div class="min-w-0 flex-1 space-y-2">
-              <div class="h-3 w-2/5 animate-pulse rounded bg-slate-200"></div>
-              <div class="h-2.5 w-1/4 animate-pulse rounded bg-slate-100"></div>
+              <div class="h-3 w-2/5 animate-pulse rounded bg-brand-950/10"></div>
+              <div class="h-2.5 w-1/4 animate-pulse rounded bg-brand-950/5"></div>
             </div>
-            <div class="hidden h-3 w-20 animate-pulse rounded bg-slate-200 sm:block"></div>
-            <div class="h-8 w-24 animate-pulse rounded bg-slate-100"></div>
+            <div class="hidden h-3 w-20 animate-pulse rounded bg-brand-950/10 sm:block"></div>
+            <div class="h-8 w-24 animate-pulse rounded bg-brand-950/5"></div>
           </div>
         }
       </div>
     } @else {
-      <div class="space-y-3" aria-label="Carregando" aria-busy="true">
-        @for (row of rowsArray; track $index) {
+      <div class="animate-pulse space-y-2" role="status" aria-busy="true" aria-label="Carregando">
+        @for (line of rowsArray(); track $index) {
           <div
-            class="h-4 w-full animate-pulse rounded bg-slate-200"
-            [class.w-3\/4]="$index % 2 === 0"
+            class="h-3 rounded-full bg-brand-950/10"
+            [class]="$last && rowsArray().length > 1 ? 'w-2/3' : 'w-full'"
           ></div>
         }
       </div>
@@ -31,10 +31,20 @@ import { Component, Input } from '@angular/core';
   `,
 })
 export class UiSkeletonComponent {
-  @Input() variant: 'table' | 'lines' = 'lines';
-  @Input() rows = 5;
+  private readonly variantInput = signal<'table' | 'lines'>('lines');
+  private readonly linesInput = signal(1);
 
-  get rowsArray(): number[] {
-    return Array.from({ length: this.rows }, (_, index) => index);
+  @Input() set variant(v: 'table' | 'lines') {
+    this.variantInput.set(v ?? 'lines');
   }
+  @Input() set rows(value: number) {
+    this.linesInput.set(value ?? 1);
+  }
+  @Input() set lines(value: number) {
+    this.linesInput.set(value ?? 1);
+  }
+
+  readonly variant = this.variantInput.asReadonly();
+
+  rowsArray = computed(() => Array.from({ length: this.linesInput() }));
 }

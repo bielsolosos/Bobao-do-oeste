@@ -1,21 +1,46 @@
 @import 'tailwindcss';
 
+/*
+ * Design tokens - Bobão do Oeste
+ * Fonte da verdade para cores, tipografia, formas, controle e camadas.
+ */
 @theme {
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* Tipografia */
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Bitter', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
-  --radius-control: 0.625rem;
-  --radius-card: 0.875rem;
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
+  /* Marca */
+  --color-brand-950: #0f0e0d;
+  --color-brand-900: #191715;
+  --color-brand-800: #262320;
+  --color-brand-700: #3a352f;
+  --color-brand-600: #4a3423;
+  --color-brand-leather: #4a3423;
+  --color-brand-amber: #f59e0b;
+  --color-brand-amber-strong: #d97706;
+  --color-brand-brass: #d4a373;
+  --color-radar: #0891b2;
+
+  /* Superfícies */
+  --color-canvas: #f7f4ee;
+  --color-surface: #fffdf8;
+  --color-ink: #1c1917;
+
+  /* Radius */
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+
+  /* Sombras */
+  --shadow-card: 0 1px 2px 0 rgb(28 25 23 / 0.06), 0 1px 3px 0 rgb(28 25 23 / 0.05);
+  --shadow-pop: 0 10px 25px -5px rgb(15 14 13 / 0.2), 0 8px 10px -6px rgb(15 14 13 / 0.15);
+
+  /* Movimento */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Camadas (z-index) */
   --z-nav: 20;
   --z-overlay: 100;
   --z-toast: 200;
@@ -24,8 +49,8 @@
 :root {
   color-scheme: light;
   font-family: var(--font-sans);
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
 * {
@@ -34,15 +59,26 @@
 
 html {
   min-width: 320px;
-  background: #f8fafc;
+  background: var(--color-canvas);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #f8fafc;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
 }
 
 button,
@@ -54,24 +90,24 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-brand-600);
+  outline: 2px solid var(--color-brand-amber-strong);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--color-brand-100);
-  color: var(--color-brand-900);
+  background-color: var(--color-brand-amber);
+  color: var(--color-brand-950);
 }
 
-/* Shared native controls. The component owns behavior; these classes own the visual contract. */
+/* Controles nativos compartilhados. O componente é dono do comportamento; estas classes mantêm o contrato visual. */
 .ui-input,
 .ui-select,
 .ui-textarea {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-brand-950 / 0.2);
   border-radius: var(--radius-control);
-  background: #fff;
-  color: #0f172a;
+  background: var(--color-surface);
+  color: var(--color-ink);
   font-size: 0.875rem;
   line-height: 1.25rem;
   transition: border-color 150ms ease, box-shadow 150ms ease;
@@ -91,20 +127,20 @@ textarea {
 
 .ui-input::placeholder,
 .ui-textarea::placeholder {
-  color: #94a3b8;
+  color: rgb(28 25 23 / 0.45);
 }
 
 .ui-input:hover,
 .ui-select:hover,
 .ui-textarea:hover {
-  border-color: #94a3b8;
+  border-color: rgb(28 25 23 / 0.35);
 }
 
 .ui-input:focus,
 .ui-select:focus,
 .ui-textarea:focus {
-  border-color: var(--color-brand-600);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.14);
+  border-color: var(--color-brand-amber-strong);
+  box-shadow: 0 0 0 3px rgb(217 119 6 / 0.18);
   outline: none;
 }
 
@@ -118,8 +154,8 @@ textarea {
 .ui-select:disabled,
 .ui-textarea:disabled {
   cursor: not-allowed;
-  background: #f1f5f9;
-  color: #64748b;
+  background: rgb(28 25 23 / 0.05);
+  color: rgb(28 25 23 / 0.55);
 }
 
 .app-scrollbar::-webkit-scrollbar {
@@ -133,11 +169,32 @@ textarea {
 
 .app-scrollbar::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: #cbd5e1;
+  background: rgb(28 25 23 / 0.2);
 }
 
 .app-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgb(28 25 23 / 0.35);
+}
+
+@layer components {
+  .page-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--color-brand-amber-strong);
+  }
+
+  .surface-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    border: 1px solid rgb(15 14 13 / 0.1);
+    box-shadow: var(--shadow-card);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

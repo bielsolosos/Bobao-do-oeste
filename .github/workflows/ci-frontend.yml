@@ -44,6 +44,9 @@ jobs:
     - name: Unit tests
       run: npm test -- --watch=false
 
+    - name: Run unit tests
+      run: npm test -- --watch=false
+
     - name: Build Application
       run: npm run build --configuration=production
 

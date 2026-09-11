@@ -1,96 +1,123 @@
 <app-ui-page-header
-  title="Infraestrutura: webhooks"
-  subtitle="Monitoramento dos eventos assíncronos recebidos do motor de scraping."
+  eyebrow="Operação"
+  title="Eventos e webhooks"
+  subtitle="Histórico de eventos assíncronos enviados pelo motor de scraping."
 >
-  <app-ui-button (clicked)="loadEvents()" variant="secondary">
-    <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-      ></path>
-    </svg>
-    Atualizar
-  </app-ui-button>
+  <app-ui-button variant="secondary" (clicked)="loadEvents()">Atualizar</app-ui-button>
 </app-ui-page-header>
 
-<app-ui-card [noPadding]="true">
-  @if (isLoading()) {
-    <app-ui-skeleton variant="table" [rows]="6"></app-ui-skeleton>
-  }
-
-  @if (!isLoading() && events().length === 0) {
-    <app-ui-empty-state
-      title="Nenhum evento recebido"
-      message="Os eventos enviados pelo scraper aparecerão aqui quando uma execução for concluída."
-    ></app-ui-empty-state>
-  }
-
-  @if (!isLoading() && events().length > 0) {
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Recebido Em
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Job ID / Request ID
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Tipo (Vendor)
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Status do Ingest
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          @for (e of events(); track e.id) {
-            <tr class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                {{ e.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-xs font-mono text-gray-800">{{ e.jobId || 'N/A' }}</div>
-                <div class="text-[10px] text-gray-500 mt-1">Req: {{ e.requestId || '-' }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {{ e.eventType }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <app-ui-badge [variant]="getStatusVariant(e.status)">
-                  {{ e.status }}
-                </app-ui-badge>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+<app-ui-card [noPadding]="true" extraClasses="mb-4">
+  <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+    <div class="sm:col-span-2">
+      <label for="evt-keyword" class="sr-only">Buscar por Job ID, Request ID ou tipo</label>
+      <input
+        id="evt-keyword"
+        type="search"
+        [value]="keyword()"
+        (input)="onKeyword($event)"
+        placeholder="Buscar por Job ID, Request ID ou tipo"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      />
     </div>
-  }
-  @if (!isLoading() && events().length > 0) {
-    <app-ui-pagination
-      [currentPage]="currentPage()"
-      [totalPages]="totalPages()"
-      [totalElements]="totalElements()"
-      [pageSize]="pageSize()"
-      (pageChange)="onPageChange($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-    >
-    </app-ui-pagination>
+    <div>
+      <label for="evt-status" class="sr-only">Status</label>
+      <select
+        id="evt-status"
+        [value]="statusFilter()"
+        (change)="onStatus($event)"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      >
+        <option value="">Todos os status</option>
+        <option value="PROCESSED">Processados</option>
+        <option value="RECEIVED">Recebidos</option>
+        <option value="PROCESSING">Processando</option>
+        <option value="PENDING">Pendentes</option>
+        <option value="FAILED">Falharam</option>
+        <option value="DUPLICATE">Duplicados</option>
+      </select>
+    </div>
+  </div>
+</app-ui-card>
+
+<app-ui-card [noPadding]="true">
+  @switch (state()) {
+    @case ('loading') {
+      <app-ui-state-panel variant="loading" title="Carregando histórico de eventos..." />
+    }
+    @case ('error') {
+      <app-ui-state-panel
+        variant="error"
+        title="Não foi possível carregar os eventos"
+        message="Verifique a conexão e tente novamente."
+        (retry)="loadEvents()"
+      />
+    }
+    @default {
+      @if (paged().length === 0) {
+        <app-ui-state-panel
+          variant="empty"
+          title="Nenhum evento encontrado"
+          message="Os eventos enviados pelo scraper aparecerão aqui quando uma execução for concluída."
+        />
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-brand-950/10">
+            <thead class="bg-brand-950/[0.02]">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Recebido em</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Job / Request</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Tipo</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-brand-950/5">
+              @for (event of paged(); track event.id) {
+                <tr class="transition-colors hover:bg-brand-950/[0.02]">
+                  <td class="px-6 py-4 text-sm font-medium text-brand-950">
+                    {{ event.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <button
+                      type="button"
+                      (click)="copy(event.jobId, 'Job ID')"
+                      class="block font-mono text-xs text-brand-950 hover:text-brand-amber-strong"
+                      title="Copiar Job ID"
+                    >
+                      {{ event.jobId || 'N/A' }}
+                    </button>
+                    <button
+                      type="button"
+                      (click)="copy(event.requestId, 'Request ID')"
+                      class="mt-1 block font-mono text-xs text-brand-950/50 hover:text-brand-amber-strong"
+                      title="Copiar Request ID"
+                    >
+                      Req: {{ event.requestId || '-' }}
+                    </button>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-brand-950/70">
+                    {{ event.eventType }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <app-ui-badge [variant]="getStatusVariant(event.status)">{{ statusLabel(event.status) }}</app-ui-badge>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (filtered().length > pageSize()) {
+          <app-ui-pagination
+            [currentPage]="page()"
+            [totalPages]="totalPages()"
+            [totalElements]="filtered().length"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="[25, 50, 100]"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
+        }
+      }
+    }
   }
 </app-ui-card>

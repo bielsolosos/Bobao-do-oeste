@@ -1,143 +1,122 @@
 <app-ui-page-header
-  title="Monitores de produtos"
-  subtitle="Gerencie suas buscas automatizadas nos marketplaces."
+  eyebrow="Catálogo"
+  title="Monitores"
+  subtitle="Regras ativas que varrem marketplaces em busca de oportunidades."
 >
   <a
     routerLink="/monitors/new"
-    class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline-brand-600"
+    class="inline-flex items-center gap-2 rounded-lg bg-brand-amber-strong px-4 py-2 text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-amber"
   >
-    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
     </svg>
     Novo monitor
   </a>
 </app-ui-page-header>
 
-<app-ui-card [noPadding]="true">
-  @if (isLoading()) {
-    <app-ui-skeleton variant="table" [rows]="5"></app-ui-skeleton>
-  }
-
-  @if (!isLoading() && monitors().length === 0) {
-    <app-ui-empty-state
-      title="Nenhum monitor configurado"
-      message="Crie seu primeiro monitor para começar a acompanhar anúncios automaticamente."
-    >
-      <a
-        routerLink="/monitors/new"
-        class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
-      >
-        Criar primeiro monitor
-      </a>
-    </app-ui-empty-state>
-  }
-
-  @if (!isLoading() && monitors().length > 0) {
-    <div class="app-scrollbar overflow-x-auto">
-      <table class="min-w-[760px] w-full divide-y divide-slate-200">
-        <thead class="bg-slate-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Monitor</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Agendamento</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Última busca</th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Ações</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 bg-white">
-          @for (m of monitors(); track m.id) {
-            <tr class="transition hover:bg-slate-50/80">
-              <td class="px-6 py-4">
-                <div class="text-sm font-semibold text-slate-900">{{ m.name }}</div>
-                <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                  <span class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px]">{{ m.targetVendor }}</span>
-                  <span>{{ m.analysisType === 'NONE' ? 'Coleta bruta' : 'Análise ' + m.analysisType }}</span>
-                </div>
-              </td>
-              <td class="whitespace-nowrap px-6 py-4">
-                <app-ui-badge [variant]="m.active ? 'success' : 'neutral'">
-                  {{ m.active ? 'Buscando' : 'Pausado' }}
-                </app-ui-badge>
-              </td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{{ m.frequency }}</td>
-              <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                @if (m.lastScrapedAt) {
-                  {{ m.lastScrapedAt | date: 'dd/MM/yyyy HH:mm' }}
-                } @else {
-                  <span class="italic text-slate-400">Nunca coletado</span>
-                }
-              </td>
-              <td class="whitespace-nowrap px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-1.5">
-                  <a
-                    [routerLink]="['/monitors', m.id]"
-                    class="rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
-                  >
-                    Resultados
-                  </a>
-                  <a
-                    [routerLink]="['/monitors/edit', m.id]"
-                    class="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                    [attr.aria-label]="'Editar ' + m.name"
-                    [attr.title]="'Editar ' + m.name"
-                  >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m16.862 3.487 3.651 3.651M5 20h4l10.5-10.5a2.121 2.121 0 0 0-3-3L6 17v3Z" />
-                    </svg>
-                  </a>
-                  @if (m.active) {
-                    <button
-                      type="button"
-                      (click)="deactivate(m.id)"
-                      class="rounded-lg p-2 text-amber-600 transition hover:bg-amber-50 hover:text-amber-800"
-                      [attr.aria-label]="'Pausar ' + m.name"
-                      [attr.title]="'Pausar monitor'"
-                    >
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 4H6v16h4V4Zm8 0h-4v16h4V4Z" />
-                      </svg>
-                    </button>
-                  } @else {
-                    <button
-                      type="button"
-                      (click)="activate(m.id)"
-                      class="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-800"
-                      [attr.aria-label]="'Retomar ' + m.name"
-                      title="Retomar monitor"
-                    >
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m8 5 11 7-11 7V5Z" />
-                      </svg>
-                    </button>
-                  }
-                  <button
-                    type="button"
-                    (click)="deleteMonitor(m.id, m.name)"
-                    class="rounded-lg p-2 text-red-500 transition hover:bg-red-50 hover:text-red-700"
-                    [attr.aria-label]="'Excluir ' + m.name"
-                    title="Excluir monitor"
-                  >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m6 7 .8 12.1A2 2 0 0 0 8.8 21h6.4a2 2 0 0 0 2-1.9L18 7M4 7h16M9 7V4h6v3" />
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+@switch (state()) {
+  @case ('loading') {
+    <div class="surface-card overflow-hidden">
+      <app-ui-skeleton variant="table" [rows]="6"></app-ui-skeleton>
     </div>
   }
-
-  @if (!isLoading() && monitors().length > 0) {
-    <app-ui-pagination
-      [currentPage]="currentPage()"
-      [totalPages]="totalPages()"
-      [totalElements]="totalElements()"
-      [pageSize]="pageSize()"
-      (pageChange)="onPageChange($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-    ></app-ui-pagination>
+  @case ('error') {
+    <app-ui-state-panel
+      variant="error"
+      title="Não foi possível carregar os monitores"
+      message="Verifique sua conexão ou tente novamente em alguns instantes."
+      (retry)="retry()"
+    ></app-ui-state-panel>
   }
-</app-ui-card>
+  @case ('ready') {
+    @if (isEmpty()) {
+      <app-ui-state-panel
+        variant="empty"
+        title="Nenhum monitor ainda"
+        message="Crie seu primeiro monitor inteligente e comece a receber oportunidades."
+      >
+        <a
+          routerLink="/monitors/new"
+          class="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-amber-strong px-4 py-2 text-sm font-semibold text-brand-950 hover:bg-brand-amber"
+        >
+          Criar monitor
+        </a>
+      </app-ui-state-panel>
+    } @else {
+      <div class="space-y-3">
+        @for (monitor of monitors(); track monitor.id) {
+          <article class="surface-card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <a
+                  [routerLink]="['/monitors', monitor.id]"
+                  class="truncate font-display text-base font-semibold text-brand-950 hover:underline"
+                >
+                  {{ monitor.name }}
+                </a>
+                <app-ui-badge [variant]="monitor.active ? 'success' : 'neutral'">
+                  {{ monitor.active ? 'Ativo' : 'Pausado' }}
+                </app-ui-badge>
+                <app-ui-badge variant="brand">{{ vendorLabel(monitor.targetVendor) }}</app-ui-badge>
+                <app-ui-badge variant="info">{{ analysisLabel(monitor.analysisType) }}</app-ui-badge>
+              </div>
+
+              <p class="mt-1 line-clamp-2 text-sm text-brand-950/60">
+                {{ monitor.description || 'Sem descrição.' }}
+              </p>
+
+              <dl class="mt-3 grid grid-cols-1 gap-2 text-xs text-brand-950/60 sm:grid-cols-3">
+                <div>
+                  <dt class="font-semibold uppercase tracking-wider text-brand-950/40">Frequência</dt>
+                  <dd class="text-brand-950/80">{{ frequencyLabel(monitor.frequency) }}</dd>
+                </div>
+                <div>
+                  <dt class="font-semibold uppercase tracking-wider text-brand-950/40">Palavras-chave</dt>
+                  <dd class="text-brand-950/80">
+                    {{ monitor.searchQueries.length }} configurada(s)
+                  </dd>
+                </div>
+                <div>
+                  <dt class="font-semibold uppercase tracking-wider text-brand-950/40">Última raspagem</dt>
+                  <dd class="text-brand-950/80">
+                    {{ monitor.lastScrapedAt ? (monitor.lastScrapedAt | date: 'dd/MM/yyyy HH:mm') : 'Nunca' }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+              @if (monitor.active) {
+                <app-ui-button variant="secondary" (clicked)="deactivate(monitor)" [loading]="busyId() === monitor.id">
+                  Pausar
+                </app-ui-button>
+              } @else {
+                <app-ui-button (clicked)="activate(monitor)" [loading]="busyId() === monitor.id">
+                  Retomar
+                </app-ui-button>
+              }
+              <a
+                [routerLink]="['/monitors', monitor.id]"
+                class="rounded-lg border border-brand-950/20 px-3 py-2 text-sm font-medium text-brand-950/80 hover:bg-brand-950/5"
+              >
+                Detalhes
+              </a>
+              <app-ui-button variant="ghost" (clicked)="deleteMonitor(monitor)" [loading]="busyId() === monitor.id">
+                Excluir
+              </app-ui-button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <app-ui-pagination
+        [currentPage]="page()"
+        [totalPages]="totalPages()"
+        [totalElements]="totalElements()"
+        [pageSize]="pageSize()"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-ui-pagination>
+    }
+  }
+}

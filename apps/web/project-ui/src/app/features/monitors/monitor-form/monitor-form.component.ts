@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -7,7 +7,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
 import {
   AnalysisType,
@@ -19,276 +19,34 @@ import { UiButtonComponent } from '../../../shared/components/ui-button/ui-butto
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiFormFieldComponent } from '../../../shared/components/ui-form-field/ui-form-field.component';
 import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
+import { UiStatePanelComponent } from '../../../shared/components/ui-state-panel/ui-state-panel.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
+import { ComponentWithPendingChanges } from '../../../core/guards/pending-changes.guard';
 
-const priceRangeValidator = (control: AbstractControl): ValidationErrors | null => {
-  const min = control.get('minPrice')?.value;
-  const max = control.get('maxPrice')?.value;
-  if (min == null || max == null || min === '' || max === '') return null;
-  return Number(min) <= Number(max) ? null : { priceRange: true };
-};
+function priceRangeValidator(group: AbstractControl): ValidationErrors | null {
+  const min = group.get('minPrice')?.value;
+  const max = group.get('maxPrice')?.value;
+  if (min != null && max != null && Number(min) > Number(max)) {
+    return { priceRange: true };
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-monitor-form',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     UiButtonComponent,
     UiCardComponent,
     UiFormFieldComponent,
     UiPageHeaderComponent,
+    UiStatePanelComponent,
   ],
-  template: `
-    <app-ui-page-header
-      [title]="isEditMode ? 'Editar monitor' : 'Novo monitor'"
-      subtitle="Configure os parâmetros da sua busca e análise de IA."
-    ></app-ui-page-header>
-
-    <div class="max-w-4xl">
-      <app-ui-card [noPadding]="true">
-        <!-- Estado de Carregamento para Edição -->
-        @if (isLoading()) {
-          <div class="p-12 text-center">
-            <svg
-              class="animate-spin mx-auto h-8 w-8 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              ></path>
-            </svg>
-            <p class="mt-4 text-sm text-gray-500">Carregando dados do monitor...</p>
-          </div>
-        }
-
-        @if (!isLoading()) {
-          <form [formGroup]="form" (ngSubmit)="onSubmit()">
-            @if (submitted() && form.invalid) {
-              <div class="mx-6 mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-                Revise os campos destacados antes de salvar o monitor.
-              </div>
-            }
-            <div class="px-6 py-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Seção Básica -->
-                <div class="md:col-span-2">
-                  <h3
-                    class="text-sm font-semibold text-gray-900 uppercase tracking-wider border-b pb-2 mb-4"
-                  >
-                    Informações Gerais
-                  </h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <app-ui-form-field
-                      label="Nome da busca"
-                      forId="monitor-name"
-                      [required]="true"
-                      [error]="fieldError('name')"
-                    >
-                      <input
-                        id="monitor-name"
-                        formControlName="name"
-                        type="text"
-                        class="ui-input"
-                        placeholder="Ex: Macbooks M1 baratos"
-                      />
-                    </app-ui-form-field>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Plataforma Alvo <span class="text-red-500">*</span></label
-                      >
-                      <select
-                        formControlName="vendor"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      >
-                        <option value="MERCADO_LIVRE">Mercado Livre</option>
-                        <option value="OLX">OLX</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                    <textarea
-                      formControlName="description"
-                      rows="2"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      placeholder="Opcional. Breve nota sobre a busca."
-                    ></textarea>
-                  </div>
-                </div>
-                <!-- Seção de Coleta -->
-                <div class="md:col-span-2 mt-2">
-                  <h3
-                    class="text-sm font-semibold text-gray-900 uppercase tracking-wider border-b pb-2 mb-4"
-                  >
-                    Regras de Coleta
-                  </h3>
-                  <div class="grid grid-cols-1 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Palavras-chave (separadas por vírgula)
-                        <span class="text-red-500">*</span></label
-                      >
-                      <input
-                        formControlName="searchKeywords"
-                        type="text"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono text-sm bg-white"
-                        placeholder="macbook air m1, macbook m1 8gb, macbook pro m1"
-                      />
-                      <p class="text-xs text-gray-500 mt-1">
-                        Cada palavra será buscada independentemente.
-                      </p>
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Frequência de Busca <span class="text-red-500">*</span></label
-                      >
-                      <select
-                        formControlName="frequency"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      >
-                        @for (frequency of frequencies; track frequency.value) {
-                          <option [value]="frequency.value">{{ frequency.label }}</option>
-                        }
-                      </select>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Preço Mínimo (R$)</label
-                      >
-                      <input
-                        formControlName="minPrice"
-                        type="number"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Preço Máximo (R$)</label
-                      >
-                      <input
-                        formControlName="maxPrice"
-                        type="number"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-                        placeholder="99999"
-                      />
-                      @if (priceRangeError) {
-                        <p class="col-span-2 mt-1 text-xs font-medium text-red-600">{{ priceRangeError }}</p>
-                      }
-                    </div>
-                  </div>
-                </div>
-                <!-- Seção de IA -->
-                <div class="md:col-span-2 mt-2">
-                  <h3
-                    class="text-sm font-semibold text-gray-900 uppercase tracking-wider border-b pb-2 mb-4"
-                  >
-                    Inteligência Artificial & Filtros
-                  </h3>
-                  <div class="grid grid-cols-1 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1"
-                        >Estratégia de Análise (Gemini) <span class="text-red-500">*</span></label
-                      >
-                      <select
-                        formControlName="analysisType"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      >
-                        <option value="NONE">Desabilitada (Coleta Bruta)</option>
-                        <option value="SIMPLE">Prompt Personalizado Simples</option>
-                        <option value="NOTEBOOK">Extrator Especializado: Notebooks</option>
-                      </select>
-                    </div>
-                    <!-- Campos Dinâmicos: SIMPLE -->
-                    @if (analysisTypeCtrl.value === 'SIMPLE') {
-                      <div
-                        class="bg-blue-50/50 p-4 rounded-md border border-blue-100"
-                        formGroupName="simpleFields"
-                      >
-                        <label class="block text-sm font-medium text-blue-900 mb-1"
-                          >System Prompt / Regras de Negócio</label
-                        >
-                        <textarea
-                          formControlName="prompt"
-                          class="w-full px-3 py-2 border border-blue-200 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono text-sm bg-white"
-                          rows="4"
-                          placeholder="Ex: Descarte qualquer anúncio que diga 'com defeito' ou 'tela trincada'. Você deve classificar como HIGH se for 16GB."
-                        ></textarea>
-                      </div>
-                    }
-                    <!-- Campos Dinâmicos: NOTEBOOK -->
-                    @if (analysisTypeCtrl.value === 'NOTEBOOK') {
-                      <div
-                        class="bg-purple-50/50 p-4 rounded-md border border-purple-100 grid grid-cols-2 gap-4"
-                        formGroupName="notebookFields"
-                      >
-                        <div>
-                          <label class="block text-sm font-medium text-purple-900 mb-1"
-                            >Memória RAM Mínima (GB)</label
-                          >
-                          <input
-                            formControlName="minimumRamGb"
-                            type="number"
-                            class="w-full px-3 py-2 border border-purple-200 rounded-md focus:ring-purple-500 focus:border-purple-500 bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-purple-900 mb-1"
-                            >GPU Dedicada Obrigatória?</label
-                          >
-                          <select
-                            formControlName="needsDedicatedGpu"
-                            class="w-full px-3 py-2 border border-purple-200 rounded-md focus:ring-purple-500 focus:border-purple-500 bg-white"
-                          >
-                            <option [ngValue]="null">Não Importa</option>
-                            <option [ngValue]="true">Sim, exigir placa de vídeo</option>
-                            <option [ngValue]="false">Não precisa</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="bg-gray-50 px-6 py-4 border-t flex justify-end gap-3 rounded-b-xl">
-              <app-ui-button
-                type="button"
-                variant="outline"
-                (clicked)="router.navigate(['/monitors'])"
-              >
-                Cancelar
-              </app-ui-button>
-              <app-ui-button
-                type="submit"
-                variant="primary"
-                [loading]="isSaving()"
-                [disabled]="form.invalid || isLoading()"
-              >
-                {{ isEditMode ? 'Salvar Alterações' : 'Criar Monitor' }}
-              </app-ui-button>
-            </div>
-          </form>
-        }
-      </app-ui-card>
-    </div>
-  `,
+  templateUrl: './monitor-form.component.html',
 })
-export class MonitorFormComponent implements OnInit {
+export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges {
   private fb = inject(FormBuilder);
   private monitorService = inject(MonitorService);
   public router = inject(Router);
@@ -297,61 +55,61 @@ export class MonitorFormComponent implements OnInit {
 
   isSaving = signal(false);
   isLoading = signal(false);
-  submitted = signal(false);
+  loadError = signal(false);
   isEditMode = false;
   monitorId: string | null = null;
 
-  readonly frequencies = [
-    { value: 'EVERY_MINUTE', label: 'A cada 1 minuto' },
+  keywords = signal<string[]>([]);
+  keywordInput = signal('');
+
+  readonly frequencies: { value: ScrapingFrequency; label: string }[] = [
+    { value: 'EVERY_MINUTE', label: 'A cada 1 minuto (agressivo)' },
     { value: 'EVERY_5_MINUTES', label: 'A cada 5 minutos' },
     { value: 'EVERY_30_MINUTES', label: 'A cada 30 minutos' },
-    { value: 'HOURLY', label: 'Uma vez por hora' },
+    { value: 'HOURLY', label: 'A cada hora' },
     { value: 'EVERY_6_HOURS', label: 'A cada 6 horas' },
-    { value: 'TWICE_DAILY', label: 'Duas vezes por dia' },
-    { value: 'DAILY', label: 'Uma vez por dia' },
-    { value: 'WEEKLY', label: 'Uma vez por semana' },
+    { value: 'DAILY', label: 'Uma vez ao dia' },
+    { value: 'TWICE_DAILY', label: 'Duas vezes ao dia' },
+    { value: 'WEEKLY', label: 'Semanal' },
     { value: 'MANUAL', label: 'Somente manual' },
-  ] as const;
+  ];
 
-  form = this.fb.group({
-    name: ['', Validators.required],
-    description: [''],
-    vendor: ['MERCADO_LIVRE', Validators.required],
-    frequency: ['EVERY_30_MINUTES', Validators.required],
-    searchKeywords: ['', Validators.required],
-    minPrice: [null as number | null],
-    maxPrice: [null as number | null],
-    analysisType: ['NONE' as AnalysisType, Validators.required],
-    simpleFields: this.fb.group({
-      prompt: [''],
-    }),
-    notebookFields: this.fb.group({
-      minimumRamGb: [8],
-      needsDedicatedGpu: [null as boolean | null],
-    }),
-  }, { validators: priceRangeValidator });
+  form = this.fb.group(
+    {
+      name: ['', [Validators.required, Validators.maxLength(150)]],
+      description: [''],
+      vendor: ['OLX' as Vendor, Validators.required],
+      frequency: ['EVERY_30_MINUTES' as ScrapingFrequency, Validators.required],
+      minPrice: [null as number | null, [Validators.min(0)]],
+      maxPrice: [null as number | null, [Validators.min(0)]],
+      stateFilter: [''],
+      regionFilter: [''],
+      requireDelivery: [false],
+      analysisType: ['NONE' as AnalysisType, Validators.required],
+      simpleFields: this.fb.group({
+        prompt: [''],
+      }),
+      notebookFields: this.fb.group({
+        minimumRamGb: [8],
+        needsDedicatedGpu: [null as boolean | null],
+      }),
+    },
+    { validators: priceRangeValidator },
+  );
 
   get analysisTypeCtrl() {
     return this.form.get('analysisType')!;
   }
 
-  fieldError(name: string): string {
-    const control = this.form.get(name);
-    if (!control || (!control.touched && !this.submitted()) || !control.errors) return '';
-    if (control.hasError('required')) return 'Este campo é obrigatório.';
-    return 'Verifique este campo.';
-  }
-
-  get priceRangeError(): string {
-    if (!this.form.hasError('priceRange') || (!this.submitted() && !this.form.get('maxPrice')?.touched)) {
-      return '';
+  formError = computed(() => {
+    if (this.form.errors?.['priceRange']) {
+      return 'O preço mínimo não pode ser maior que o preço máximo.';
     }
-    return 'O preço máximo deve ser maior ou igual ao mínimo.';
-  }
-
-  hasUnsavedChanges(): boolean {
-    return this.form.dirty && !this.isSaving();
-  }
+    if (this.keywords().length === 0) {
+      return 'Adicione ao menos uma palavra-chave.';
+    }
+    return '';
+  });
 
   ngOnInit() {
     this.monitorId = this.route.snapshot.paramMap.get('id');
@@ -361,78 +119,101 @@ export class MonitorFormComponent implements OnInit {
     }
   }
 
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.isSaving();
+  }
+
   loadMonitor(id: string) {
     this.isLoading.set(true);
+    this.loadError.set(false);
 
     this.monitorService.getMonitorById(id).subscribe({
       next: (m) => {
-        try {
-          let keywords = '';
-          if (m.searchQueries && Array.isArray(m.searchQueries)) {
-            keywords = m.searchQueries
-              .map((q) => q?.keyword)
-              .filter((k) => !!k)
-              .join(', ');
-          }
+        const keywords = (m.searchQueries ?? [])
+          .map((q) => q?.queryTerm)
+          .filter((k): k is string => !!k);
+        this.keywords.set(keywords);
 
-          let minPrice = null;
-          let maxPrice = null;
-          if (m.searchQueries && m.searchQueries.length > 0) {
-            minPrice = m.searchQueries[0]?.minPrice ?? null;
-            maxPrice = m.searchQueries[0]?.maxPrice ?? null;
-          }
+        const first = m.searchQueries?.[0];
+        this.form.patchValue({
+          name: m.name ?? '',
+          description: m.description ?? '',
+          vendor: m.targetVendor ?? 'OLX',
+          frequency: m.frequency ?? 'EVERY_30_MINUTES',
+          minPrice: first?.minPrice ?? null,
+          maxPrice: first?.maxPrice ?? null,
+          stateFilter: first?.stateFilter ?? '',
+          regionFilter: first?.regionFilter ?? '',
+          requireDelivery: first?.requireDelivery ?? false,
+          analysisType: m.analysisType ?? 'NONE',
+        });
 
-          this.form.patchValue({
-            name: m.name || '',
-            description: m.description || '',
-            vendor: m.targetVendor || 'MERCADO_LIVRE',
-            frequency: m.frequency || 'EVERY_30_MINUTES',
-            searchKeywords: keywords,
-            analysisType: m.analysisType || 'NONE',
-            minPrice: minPrice,
-            maxPrice: maxPrice,
-          });
-
-          // Preenche campos dinâmicos se existirem
-          if (m.analysisType === 'SIMPLE' && m.expectedSpecs) {
+        if (m.expectedSpecs) {
+          if (m.analysisType === 'SIMPLE') {
             this.form.get('simpleFields')?.patchValue({
-              prompt: m.expectedSpecs.prompt || '',
+              prompt: m.expectedSpecs.prompt ?? '',
             });
-          } else if (m.analysisType === 'NOTEBOOK' && m.expectedSpecs) {
+          } else if (m.analysisType === 'NOTEBOOK') {
             this.form.get('notebookFields')?.patchValue({
-               minimumRamGb: m.expectedSpecs.minimumRamGb ?? 8,
+              minimumRamGb: m.expectedSpecs.minimumRamGb ?? 8,
               needsDedicatedGpu:
                 m.expectedSpecs.needsDedicatedGpu !== undefined
                   ? m.expectedSpecs.needsDedicatedGpu
                   : null,
             });
           }
-
-          this.isLoading.set(false);
-        } catch (err) {
-          console.error('Erro fatal ao processar JSON do Monitor:', err);
-          this.isLoading.set(false);
-          this.toast.error('Erro interno', 'Houve um erro ao processar os dados deste monitor.');
         }
-      },
-      error: (err) => {
-        console.error('Falha na API GET Monitor:', err);
+
+        this.form.markAsPristine();
         this.isLoading.set(false);
-        this.toast.error('Erro de Conexão', 'Não foi possível buscar este monitor no servidor.');
-        // Para debug local mais facil, desativamos o redirect na falha, pra tela nao "piscar".
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.loadError.set(true);
       },
     });
   }
 
+  retryLoad() {
+    if (this.monitorId) this.loadMonitor(this.monitorId);
+  }
+
+  addKeyword() {
+    const value = this.keywordInput().trim();
+    if (!value) return;
+    if (!this.keywords().some((k) => k.toLowerCase() === value.toLowerCase())) {
+      this.keywords.update((list) => [...list, value]);
+      this.form.markAsDirty();
+    }
+    this.keywordInput.set('');
+  }
+
+  onKeywordInput(event: Event) {
+    this.keywordInput.set((event.target as HTMLInputElement).value);
+  }
+
+  onKeywordKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      this.addKeyword();
+    }
+  }
+
+  removeKeyword(keyword: string) {
+    this.keywords.update((list) => list.filter((k) => k !== keyword));
+    this.form.markAsDirty();
+  }
+
   onSubmit() {
-    this.submitted.set(true);
-    if (this.form.invalid) {
-      this.toast.warning('Atenção', 'Preencha todos os campos obrigatórios.');
+    this.form.markAllAsTouched();
+
+    if (this.form.invalid || this.keywords().length === 0) {
+      this.toast.warning('Atenção', this.formError() || 'Revise os campos destacados.');
       return;
     }
 
     this.isSaving.set(true);
-    const v = this.form.value;
+    const v = this.form.getRawValue();
 
     let analysisTypeFields: ProductMonitorRequest['analysisTypeFields'];
     if (v.analysisType === 'SIMPLE') {
@@ -444,11 +225,6 @@ export class MonitorFormComponent implements OnInit {
       };
     }
 
-    const keywordsArray = ((v.searchKeywords as string) || '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
     const payload: ProductMonitorRequest = {
       name: v.name!,
       description: v.description || undefined,
@@ -456,9 +232,12 @@ export class MonitorFormComponent implements OnInit {
       frequency: v.frequency as ScrapingFrequency,
       analysisType: v.analysisType as AnalysisType,
       analysisTypeFields,
-      searchKeywords: keywordsArray,
+      searchKeywords: this.keywords(),
       minPrice: v.minPrice ?? undefined,
       maxPrice: v.maxPrice ?? undefined,
+      stateFilter: v.stateFilter || undefined,
+      regionFilter: v.regionFilter || undefined,
+      requireDelivery: v.requireDelivery ?? false,
     };
 
     const request$ = this.isEditMode
@@ -467,17 +246,23 @@ export class MonitorFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        this.toast.success(
-          'Sucesso',
-          `Monitor ${this.isEditMode ? 'atualizado' : 'criado'} com sucesso!`,
-        );
+        this.form.markAsPristine();
+        this.toast.success('Sucesso', `Monitor ${this.isEditMode ? 'atualizado' : 'criado'} com sucesso!`);
         this.router.navigate(['/monitors']);
       },
       error: (err) => {
         this.toast.error('Erro ao salvar', err.error?.message || 'Ocorreu um erro inesperado.');
-        console.error(err);
         this.isSaving.set(false);
       },
     });
+  }
+
+  cancel() {
+    this.router.navigate(['/monitors']);
+  }
+
+  isInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched);
   }
 }

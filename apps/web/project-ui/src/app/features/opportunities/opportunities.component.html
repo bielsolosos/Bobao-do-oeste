@@ -1,0 +1,241 @@
+<app-ui-page-header
+  eyebrow="Caça de oportunidades"
+  title="Oportunidades"
+  subtitle="Todos os anúncios capturados pelos seus monitores, priorizados por relevância."
+>
+  <button
+    type="button"
+    (click)="load()"
+    class="inline-flex items-center gap-2 rounded-lg border border-brand-950/20 bg-surface px-4 py-2 text-sm font-medium text-brand-950 transition-colors hover:bg-brand-950/5"
+  >
+    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+    Atualizar
+  </button>
+</app-ui-page-header>
+
+<app-ui-card [noPadding]="true" extraClasses="mb-4">
+  <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="lg:col-span-2">
+      <label for="opp-keyword" class="sr-only">Buscar anúncio</label>
+      <input
+        id="opp-keyword"
+        type="search"
+        [value]="keyword()"
+        (input)="onKeyword($event)"
+        placeholder="Buscar por título ou descrição"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      />
+    </div>
+
+    <div>
+      <label for="opp-vendor" class="sr-only">Marketplace</label>
+      <select
+        id="opp-vendor"
+        [value]="vendor()"
+        (change)="onVendor($event)"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      >
+        <option value="">Todos os marketplaces</option>
+        <option value="OLX">OLX</option>
+        <option value="MERCADO_LIVRE">Mercado Livre</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="opp-tier" class="sr-only">Relevância</label>
+      <select
+        id="opp-tier"
+        [value]="tier()"
+        (change)="onTier($event)"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      >
+        <option value="">Qualquer relevância</option>
+        <option value="HIGH">Alta</option>
+        <option value="MEDIUM">Média</option>
+        <option value="LOW">Baixa</option>
+        <option value="NONE">Sem análise</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label for="opp-min" class="sr-only">Preço mínimo</label>
+        <input
+          id="opp-min"
+          type="number"
+          min="0"
+          [value]="minPrice() ?? ''"
+          (input)="onMinPrice($event)"
+          placeholder="Preço mín."
+          class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+        />
+      </div>
+      <div>
+        <label for="opp-max" class="sr-only">Preço máximo</label>
+        <input
+          id="opp-max"
+          type="number"
+          min="0"
+          [value]="maxPrice() ?? ''"
+          (input)="onMaxPrice($event)"
+          placeholder="Preço máx."
+          class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+        />
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4 lg:col-span-2">
+      <label class="inline-flex items-center gap-2 text-sm text-brand-950/70">
+        <input
+          type="checkbox"
+          [checked]="deliveryOnly()"
+          (change)="onDelivery($event)"
+          class="h-4 w-4 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong"
+        />
+        Somente com entrega
+      </label>
+
+      <div class="ml-auto flex items-center gap-2">
+        <label for="opp-sort" class="text-sm text-brand-950/60">Ordenar:</label>
+        <select
+          id="opp-sort"
+          [value]="sort()"
+          (change)="onSort($event)"
+          class="rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+        >
+          <option value="recent">Mais recentes</option>
+          <option value="score">Maior relevância</option>
+          <option value="priceAsc">Menor preço</option>
+          <option value="priceDesc">Maior preço</option>
+        </select>
+      </div>
+    </div>
+
+    @if (hasFilters()) {
+      <div class="lg:col-span-4">
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="text-sm font-medium text-brand-amber-strong hover:underline"
+        >
+          Limpar filtros
+        </button>
+      </div>
+    }
+  </div>
+</app-ui-card>
+
+@switch (state()) {
+  @case ('loading') {
+    <app-ui-card [noPadding]="true">
+      <app-ui-state-panel variant="loading" title="Buscando anúncios..." />
+    </app-ui-card>
+  }
+  @case ('error') {
+    <app-ui-card [noPadding]="true">
+      <app-ui-state-panel
+        variant="error"
+        title="Não foi possível carregar as oportunidades"
+        message="Verifique a conexão com o servidor e tente novamente."
+        (retry)="load()"
+      />
+    </app-ui-card>
+  }
+  @default {
+    @if (paged().length === 0) {
+      <app-ui-card [noPadding]="true">
+        <app-ui-state-panel
+          variant="empty"
+          [title]="hasFilters() ? 'Nenhum resultado para estes filtros' : 'Nenhuma oportunidade capturada ainda'"
+          [message]="
+            hasFilters()
+              ? 'Ajuste ou limpe os filtros para ver mais anúncios.'
+              : 'Crie um monitor para começar a rastrear o mercado.'
+          "
+        />
+      </app-ui-card>
+    } @else {
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        @for (item of paged(); track item.id) {
+          <article class="flex flex-col overflow-hidden rounded-xl border border-brand-950/10 bg-surface shadow-[var(--shadow-card)]">
+            <div class="aspect-video w-full overflow-hidden bg-brand-950/5">
+              @if (item.images && item.images.length > 0) {
+                <img
+                  [src]="item.images[0]"
+                  [alt]="item.title"
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                />
+              } @else {
+                <div class="flex h-full w-full items-center justify-center text-brand-950/25" aria-hidden="true">
+                  <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              }
+            </div>
+
+            <div class="flex flex-1 flex-col gap-3 p-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <app-ui-badge variant="neutral">{{ vendorLabel(item.vendor) }}</app-ui-badge>
+                <app-ui-badge [variant]="tierVariant(item.matchTier)">
+                  {{ tierLabel(item.matchTier) }}
+                </app-ui-badge>
+                @if (item.hasDelivery) {
+                  <app-ui-badge variant="success">Entrega</app-ui-badge>
+                }
+              </div>
+
+              <a
+                [href]="item.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="line-clamp-2 text-sm font-semibold text-brand-950 hover:text-brand-amber-strong"
+              >
+                {{ item.title }}
+                <span class="sr-only">(abre em nova aba)</span>
+              </a>
+
+              @if (item.extractedSpecs?.summary) {
+                <p class="line-clamp-2 text-xs leading-relaxed text-brand-950/60">
+                  {{ item.extractedSpecs?.summary }}
+                </p>
+              }
+
+              <div class="mt-auto flex items-end justify-between gap-2 pt-2">
+                <div>
+                  <p class="text-lg font-bold text-brand-950">{{ formatPrice(item.currentPrice) }}</p>
+                  @if (item.originalPrice && item.originalPrice > item.currentPrice) {
+                    <p class="text-xs text-brand-950/40 line-through">
+                      {{ formatPrice(item.originalPrice) }}
+                    </p>
+                  }
+                </div>
+                <div class="text-right text-xs text-brand-950/50">
+                  @if (item.city || item.state) {
+                    <p>{{ item.city || '-' }} / {{ item.state || '-' }}</p>
+                  }
+                  <p>{{ item.lastSeenAt | date: 'dd/MM HH:mm' }}</p>
+                </div>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (filtered().length > pageSize()) {
+        <app-ui-pagination
+          [currentPage]="page()"
+          [totalPages]="totalPages()"
+          [totalElements]="filtered().length"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="[12, 24, 48]"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        />
+      }
+    }
+  }
+}

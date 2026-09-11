@@ -1,393 +1,351 @@
-<div class="mb-6 flex items-center justify-between">
-  <div>
-    <div class="flex items-center gap-3">
-      <h1 class="text-2xl font-bold text-gray-900">
-        {{ monitor()?.name || 'Carregando Monitor...' }}
-      </h1>
-      @if (monitor()) {
-        <app-ui-badge [variant]="monitor()?.active ? 'success' : 'neutral'">
-          {{ monitor()?.active ? 'Buscando' : 'Pausado' }}
-        </app-ui-badge>
-      }
-    </div>
-    <p class="text-sm text-gray-500 mt-2 font-mono flex items-center gap-4">
-      <span
-        >Plataforma: <b>{{ monitor()?.targetVendor }}</b></span
-      >
-      <span
-        >IA:
-        <b>{{ monitor()?.analysisType === 'NONE' ? 'Sem IA' : monitor()?.analysisType }}</b></span
-      >
-      <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-        Última busca:
-        <b>{{
-          monitor()?.lastScrapedAt
-            ? (monitor()?.lastScrapedAt | date: 'dd/MM/yyyy HH:mm')
-            : 'Nunca coletado'
-        }}</b>
-      </span>
-    </p>
-  </div>
-  <div class="flex gap-2">
-    <a
-      routerLink="/monitors"
-      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-    >
-      Voltar
-    </a>
-    @if (monitor()) {
-      <a
-        [routerLink]="['/monitors/edit', monitor()?.id]"
-        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-      >
-        Editar Configurações
-      </a>
-    }
-  </div>
-</div>
-
-<!-- Tabs Dinâmicas (Inteligentes) -->
-<app-ui-tabs
-  [tabs]="visibleTabs()"
-  [activeTabId]="activeTabId"
-  (tabChange)="onTabChange($event)"
-  class="mb-6"
+<app-ui-page-header
+  eyebrow="Catálogo"
+  title="Detalhe do monitor"
+  subtitle="Acompanhe as oportunidades capturadas e a configuração da regra."
 >
-</app-ui-tabs>
+  <app-ui-button variant="outline" (clicked)="router.navigate(['/monitors'])">Voltar</app-ui-button>
+  @if (monitor()) {
+    <app-ui-button (clicked)="router.navigate(['/monitors/edit', monitor()?.id])">
+      Editar configuração
+    </app-ui-button>
+  }
+</app-ui-page-header>
 
-<!-- ABA 1: Anúncios -->
+@if (monitor(); as m) {
+  <div class="surface-card mb-6 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        <h2 class="font-display text-xl font-bold text-brand-950">{{ m.name }}</h2>
+        <app-ui-badge [variant]="m.active ? 'success' : 'neutral'">
+          {{ m.active ? 'Buscando' : 'Pausado' }}
+        </app-ui-badge>
+        <app-ui-badge variant="brand">{{ m.targetVendor }}</app-ui-badge>
+        @if (m.analysisType !== 'NONE') {
+          <app-ui-badge variant="info">IA {{ m.analysisType }}</app-ui-badge>
+        }
+      </div>
+      <p class="mt-2 text-sm text-brand-950/60">
+        Última busca:
+        <strong class="text-brand-950">
+          {{ m.lastScrapedAt ? (m.lastScrapedAt | date: 'dd/MM/yyyy HH:mm') : 'Nunca coletado' }}
+        </strong>
+      </p>
+    </div>
+  </div>
+}
+
+@if (monitorState() === 'error') {
+  <app-ui-card extraClasses="mb-6" [noPadding]="true">
+    <app-ui-state-panel
+      variant="error"
+      title="Não foi possível carregar este monitor"
+      message="Verifique a conexão e tente novamente."
+      (retry)="loadMonitorInfo()"
+    />
+  </app-ui-card>
+}
+
+<app-ui-tabs [tabs]="visibleTabs()" [activeTabId]="activeTabId" (tabChange)="onTabChange($event)" class="mb-6"></app-ui-tabs>
+
 @if (activeTabId === 'listings') {
-  <div class="space-y-4 animate-fade-in">
-    <app-ui-card [noPadding]="true">
-      @if (isLoadingListings()) {
-        <div class="p-12 text-center text-gray-500">Buscando anúncios...</div>
+  <app-ui-card [noPadding]="true">
+    @switch (listingsState()) {
+      @case ('loading') {
+        <app-ui-state-panel variant="loading" title="Buscando anúncios..." />
       }
-      @if (!isLoadingListings() && listings().length === 0) {
-        <div class="p-12 text-center text-gray-500">
-          Nenhum anúncio encontrado para este monitor ainda.
-        </div>
+      @case ('error') {
+        <app-ui-state-panel
+          variant="error"
+          title="Não foi possível carregar os anúncios"
+          message="Tente novamente em instantes."
+          (retry)="loadListings()"
+        />
       }
-      @if (listings().length > 0) {
-        <div
-          class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"
-        >
-       <div class="text-sm text-gray-500">Total: {{ totalElements() }} anúncios</div>
-          <div class="flex items-center space-x-2">
-            <label for="sortListings" class="text-sm text-gray-600">Ordenar por:</label>
-            <select
-              id="sortListings"
-              [value]="currentSort()"
-              (change)="onSortChange($event)"
-              class="block w-full rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 bg-white"
-              [disabled]="isLoadingListings()"
-            >
-              <option value="lastSeenAt,desc">Mais Recentes</option>
-              @if (hasAiAnalysis()) {
-                <option value="matchScore,desc">Maior Relevância (IA)</option>
-              }
-              <option value="currentPrice,asc">Menor Preço</option>
-              <option value="currentPrice,desc">Maior Preço</option>
-            </select>
-          </div>
-        </div>
-      }
-      @if (!isLoadingListings() && listings().length > 0) {
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      @default {
+        @if (listings().length === 0) {
+          <app-ui-state-panel
+            variant="empty"
+            title="Nenhum anúncio encontrado ainda"
+            message="Assim que a primeira coleta rodar, os resultados aparecerão aqui."
+          />
+        } @else {
+          <div class="grid grid-cols-1 gap-3 border-b border-brand-950/10 p-4 sm:grid-cols-4">
+            <div class="sm:col-span-2">
+              <label for="detail-keyword" class="sr-only">Buscar anúncio</label>
+              <input
+                id="detail-keyword"
+                type="search"
+                [value]="listingKeyword()"
+                (input)="onListingKeyword($event)"
+                placeholder="Buscar por título"
+                class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+              />
+            </div>
+            @if (hasAiAnalysis()) {
+              <div>
+                <label for="detail-tier" class="sr-only">Relevância</label>
+                <select
+                  id="detail-tier"
+                  [value]="listingTier()"
+                  (change)="onListingTier($event)"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
                 >
-                  Produto
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Preço
-                </th>
-                <!-- Coluna de IA Oculta se análise for NONE -->
+                  <option value="">Qualquer relevância</option>
+                  <option value="HIGH">Alta</option>
+                  <option value="MEDIUM">Média</option>
+                  <option value="LOW">Baixa</option>
+                  <option value="NONE">Sem análise</option>
+                </select>
+              </div>
+            }
+            <div>
+              <label for="detail-sort" class="sr-only">Ordenar</label>
+              <select
+                id="detail-sort"
+                [value]="currentSort()"
+                (change)="onSortChange($event)"
+                class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+              >
+                <option value="lastSeenAt,desc">Mais recentes</option>
                 @if (hasAiAnalysis()) {
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Match IA
-                  </th>
+                  <option value="matchScore,desc">Maior relevância</option>
                 }
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Local/Data
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-               @for (item of listings(); track item.id) {
-                <tr>
-                  <td class="px-6 py-4">
-                    <div class="flex items-start gap-4">
-                      <div
-                        class="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-md overflow-hidden border border-gray-200"
-                      >
-                        @if (item.images && item.images.length > 0) {
-                           <img [src]="item.images[0]" loading="lazy" [alt]="item.title" class="h-full w-full object-cover" />
-                        }
-                        @if (!item.images || item.images.length === 0) {
-                          <div class="h-full w-full flex items-center justify-center text-gray-400">
-                            <svg
-                              class="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              ></path>
-                            </svg>
-                          </div>
-                        }
-                      </div>
-                      <div>
-                        <a
-                          [href]="item.url"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                          class="text-sm font-medium text-blue-600 hover:underline line-clamp-2"
-                        >
-                          {{ item.title }}
-                        </a>
-                        @if (hasAiAnalysis() && item.extractedSpecs?.summary) {
-                          <div
-                            class="mt-1 text-xs text-gray-500 italic bg-gray-50 p-2 rounded border border-gray-100"
-                          >
-                            {{ item.extractedSpecs.summary }}
-                          </div>
-                        }
-                        @if (item.hasDelivery) {
-                          <span
-                            class="inline-flex mt-1 items-center gap-1 text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded"
-                          >
-                            🚚 Entrega Disponível
-                          </span>
-                        }
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-bold text-gray-900">
-                      {{ item.currentPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
-                    </div>
-                    @if (item.originalPrice && item.originalPrice > item.currentPrice) {
-                      <div class="text-xs text-gray-400 line-through">
-                        {{ item.originalPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
-                      </div>
+                <option value="currentPrice,asc">Menor preço</option>
+                <option value="currentPrice,desc">Maior preço</option>
+              </select>
+            </div>
+            <div class="sm:col-span-4">
+              <label class="inline-flex items-center gap-2 text-sm text-brand-950/70">
+                <input
+                  type="checkbox"
+                  [checked]="deliveryOnly()"
+                  (change)="onDelivery($event)"
+                  class="h-4 w-4 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong"
+                />
+                Somente com entrega
+              </label>
+            </div>
+          </div>
+
+          @if (pagedListings().length === 0) {
+            <app-ui-state-panel
+              variant="empty"
+              title="Nenhum anúncio para estes filtros"
+              message="Ajuste os filtros para ver mais resultados."
+            />
+          } @else {
+            <div class="hidden overflow-x-auto md:block">
+              <table class="min-w-full divide-y divide-brand-950/10">
+                <thead class="bg-brand-950/[0.02]">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Produto</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Preço</th>
+                    @if (hasAiAnalysis()) {
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Relevância</th>
                     }
-                  </td>
-                  <!-- Match IA Oculto se NONE -->
-                  @if (hasAiAnalysis()) {
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <app-ui-badge [variant]="getTierBadge(item.matchTier)">
-                        {{ getTierLabel(item.matchTier) }}
-                      </app-ui-badge>
-                      @if (item.matchScore > 0) {
-                        <div class="text-[10px] text-gray-500 mt-1">
-                          Score: {{ item.matchScore }}%
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Local / data</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-950/5">
+                  @for (item of pagedListings(); track item.id) {
+                    <tr class="transition-colors hover:bg-brand-950/[0.02]">
+                      <td class="px-6 py-4">
+                        <div class="flex items-start gap-4">
+                          <div class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-brand-950/10 bg-brand-950/5">
+                            @if (item.images && item.images.length > 0 && !isImageBroken(item.id)) {
+                              <img
+                                [src]="item.images[0]"
+                                [alt]="item.title"
+                                loading="lazy"
+                                (error)="onImageError(item.id)"
+                                class="h-full w-full object-cover"
+                              />
+                            } @else {
+                              <div class="flex h-full w-full items-center justify-center text-brand-950/25" aria-hidden="true">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          <div class="min-w-0">
+                            <a
+                              [href]="item.url"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="line-clamp-2 text-sm font-medium text-brand-950 hover:text-brand-amber-strong"
+                            >
+                              {{ item.title }}
+                              <span class="sr-only">(abre em nova aba)</span>
+                            </a>
+                            @if (hasAiAnalysis() && item.extractedSpecs?.summary) {
+                              <p class="mt-1 line-clamp-2 rounded border border-brand-950/10 bg-brand-950/[0.02] p-2 text-xs italic text-brand-950/60">
+                                {{ item.extractedSpecs?.summary }}
+                              </p>
+                            }
+                            @if (item.hasDelivery) {
+                              <app-ui-badge variant="success" size="xs" rounded="md">Entrega disponível</app-ui-badge>
+                            }
+                            @if (hasAiAnalysis()) {
+                              <button
+                                type="button"
+                                (click)="openListingAiLogs(item)"
+                                class="mt-1 text-[11px] font-semibold text-radar hover:underline"
+                              >
+                                Ver dossiê de IA →
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <p class="text-sm font-bold text-brand-950">{{ item.currentPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}</p>
+                        @if (item.originalPrice && item.originalPrice > item.currentPrice) {
+                          <p class="text-xs text-brand-950/40 line-through">
+                            {{ item.originalPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                          </p>
+                        }
+                      </td>
+                      @if (hasAiAnalysis()) {
+                        <td class="px-6 py-4">
+                          <app-ui-badge [variant]="getTierBadge(item.matchTier)">
+                            {{ getTierLabel(item.matchTier) }}
+                          </app-ui-badge>
+                          @if (item.matchScore > 0) {
+                            <p class="mt-1 text-[10px] text-brand-950/50">Score: {{ item.matchScore }}%</p>
+                          }
+                        </td>
+                      }
+                      <td class="px-6 py-4 text-xs text-brand-950/60">
+                        @if (item.location) { <p class="font-medium text-brand-950">{{ item.location }}</p> }
+                        <p>{{ item.lastSeenAt ? (item.lastSeenAt | date: 'dd/MM HH:mm') : '—' }}</p>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <ul class="divide-y divide-brand-950/5 md:hidden">
+              @for (item of pagedListings(); track item.id) {
+                <li class="p-4">
+                  <div class="flex items-start gap-3">
+                    <div class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-brand-950/10 bg-brand-950/5">
+                      @if (item.images && item.images.length > 0 && !isImageBroken(item.id)) {
+                        <img [src]="item.images[0]" [alt]="item.title" (error)="onImageError(item.id)" class="h-full w-full object-cover" />
+                      } @else {
+                        <div class="flex h-full w-full items-center justify-center text-brand-950/25" aria-hidden="true">
+                          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
                         </div>
                       }
-                      <button type="button" (click)="openListingAiLogs(item.id)" class="text-[11px] text-blue-600 underline mt-2 flex hover:text-blue-800 font-medium cursor-pointer">
-                        Dossiê da IA
-                      </button>
-                    </td>
-                  }
-                  <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                    <div>{{ item.city || 'Desconhecido' }} ({{ item.state || '-' }})</div>
-                    <div class="mt-0.5">{{ item.lastSeenAt | date: 'dd/MM HH:mm' }}</div>
-                  </td>
-                </tr>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <a [href]="item.url" target="_blank" rel="noopener noreferrer" class="line-clamp-2 text-sm font-medium text-brand-950">
+                        {{ item.title }}
+                      </a>
+                      <p class="mt-1 text-sm font-bold text-brand-950">{{ item.currentPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}</p>
+                      @if (hasAiAnalysis()) {
+                        <app-ui-badge [variant]="getTierBadge(item.matchTier)" size="xs">
+                          {{ getTierLabel(item.matchTier) }}
+                        </app-ui-badge>
+                      }
+                      @if (hasAiAnalysis()) {
+                        <button type="button" (click)="openListingAiLogs(item)" class="mt-1 text-[11px] font-semibold text-radar hover:underline">
+                          Ver dossiê de IA →
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </li>
               }
-            </tbody>
-          </table>
-        </div>
+            </ul>
+          }
+
+          <app-ui-pagination
+            [currentPage]="page()"
+            [totalPages]="pagedTotalPages()"
+            [totalElements]="pagedTotalElements()"
+            [pageSize]="pageSize()"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
+        }
       }
-      @if (!isLoadingListings() && listings().length > 0) {
-        <app-ui-pagination
-          [currentPage]="currentPage()"
-          [totalPages]="totalPages()"
-          [totalElements]="totalElements()"
-          [pageSize]="pageSize()"
-          (pageChange)="onPageChange($event)"
-          (pageSizeChange)="onPageSizeChange($event)"
-        ></app-ui-pagination>
-      }
-    </app-ui-card>
-  </div>
+    }
+  </app-ui-card>
 }
 
-<!-- ABA 2: Logs IA (Dinâmica) -->
 @if (activeTabId === 'ai-logs' && hasAiAnalysis()) {
-  <div class="space-y-4 animate-fade-in">
-    <app-ui-card [noPadding]="true">
-      @if (isLoadingAiLogs()) {
-        <div class="p-12 text-center text-gray-500">Buscando histórico da IA...</div>
+  <app-ui-card title="Histórico de análises" subtitle="Chamadas do Gemini para este monitor.">
+    @switch (aiLogsState()) {
+      @case ('loading') {
+        <app-ui-state-panel variant="loading" title="Carregando logs..." />
       }
-      @if (!isLoadingAiLogs() && aiLogs().length === 0) {
-        <div class="p-12 text-center text-gray-500">
-          Nenhuma análise de IA rodou para este monitor ainda.
-        </div>
+      @case ('error') {
+        <app-ui-state-panel variant="error" title="Não foi possível carregar os logs" (retry)="loadAiLogs()" />
       }
-      @if (!isLoadingAiLogs() && aiLogs().length > 0) {
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Data
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Itens Analisados
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Tokens
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Duração
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-               @for (log of aiLogs(); track log.id) {
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
-                      {{ log.status }}
-                    </app-ui-badge>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ log.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    {{ log.itemsCount }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                    {{ log.totalTokens ? log.totalTokens : '-' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ log.durationMs ? log.durationMs + 'ms' : '-' }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </app-ui-card>
-  </div>
-}
-
-<!-- ABA 3: Configurações -->
-@if (activeTabId === 'config') {
-  <div class="space-y-4 animate-fade-in">
-    <app-ui-card title="Detalhes Estruturais">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
-            Palavras-chave Atuais
-          </h4>
-          <div class="flex flex-wrap gap-2">
-            @for (q of monitor()?.searchQueries; track q.id) {
-              <span
-                class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200"
-              >
-                {{ q.keyword }}
-              </span>
+      @default {
+        @if (aiLogs().length === 0) {
+          <app-ui-state-panel variant="empty" title="Nenhuma análise registrada" message="Aguarde a próxima coleta para ver o histórico." />
+        } @else {
+          <ul class="divide-y divide-brand-950/5">
+            @for (log of aiLogs(); track log.id) {
+              <li class="py-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-sm font-semibold text-brand-950">{{ log.listingTitle || 'Anúncio ' + log.listingId }}</p>
+                  <app-ui-badge [variant]="getTierBadge(log.matchTier)">{{ getTierLabel(log.matchTier) }}</app-ui-badge>
+                </div>
+                <p class="mt-1 text-xs text-brand-950/50">
+                  {{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }} · Score {{ log.matchScore }}%
+                  @if (log.tokensUsed) { · {{ log.tokensUsed }} tokens }
+                </p>
+                @if (log.reasoning) {
+                  <p class="mt-2 line-clamp-3 text-sm text-brand-950/70">{{ log.reasoning }}</p>
+                }
+              </li>
             }
-          </div>
-          <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mt-6 mb-2">
-            Filtros de Preço
-          </h4>
-          <p class="text-sm text-gray-700 font-mono">
-            Min: {{ monitor()?.expectedSpecs?.minPrice || 'Sem limite' }} | Máx:
-            {{ monitor()?.expectedSpecs?.maxPrice || 'Sem limite' }}
-          </p>
-        </div>
-        @if (hasAiAnalysis()) {
-          <div>
-            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
-              Regras da Inteligência Artificial ({{ monitor()?.analysisType }})
-            </h4>
-            <pre
-              class="bg-slate-900 text-emerald-400 p-4 rounded-md text-xs font-mono overflow-auto max-h-48 shadow-inner"
-              >{{ formatJson(monitor()?.expectedSpecs) }}</pre>
-          </div>
+          </ul>
         }
-        @if (!hasAiAnalysis()) {
-          <div>
-            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
-              Inteligência Artificial
-            </h4>
-            <div
-              class="p-4 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-500 italic"
-            >
-              Este monitor realiza apenas coleta bruta sem passar por análise semântica da IA.
-            </div>
-          </div>
-        }
-      </div>
-    </app-ui-card>
-  </div>
+      }
+    }
+  </app-ui-card>
 }
 
-<!-- MODAL DOSSIÊ DA IA -->
-<app-ui-modal
+@if (activeTabId === 'config') {
+  <app-ui-card title="Configuração" subtitle="JSON bruto do payload do monitor.">
+    <app-ui-code-panel [value]="formatJson(monitor())"></app-ui-code-panel>
+  </app-ui-card>
+}
+
+<app-ui-dialog
   [open]="isListingAiLogsModalOpen()"
-  title="Dossiê e histórico da análise de IA"
-  subtitle="Detalhes das etapas e do consumo desta análise."
-  size="lg"
+  [title]="'Dossiê de IA'"
+  [subtitle]="selectedListingTitle()"
+  panelClass="sm:max-w-2xl"
   (closed)="closeListingAiLogs()"
 >
-      <div class="space-y-6">
-        @if (isLoadingListingLogs()) {
-          <div class="text-center p-8 text-gray-500">Buscando pensamento da IA...</div>
-        } @else if (selectedListingLogs().length === 0) {
-          <div class="text-center p-8 text-gray-500">Nenhum log de IA encontrado para este item.</div>
-        } @else {
-          @for (log of selectedListingLogs(); track log.id) {
-            <div class="border rounded-md p-4 bg-gray-50">
-              <div class="flex justify-between items-start mb-2">
-                <div>
-                  <span class="font-semibold text-sm text-blue-800 bg-blue-100 px-2 py-1 rounded">
-                    Passo {{ $index + 1 }}
-                  </span>
-                  <span class="ml-2 text-xs text-gray-500 font-mono">{{ log.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
-                </div>
-                <div class="text-xs bg-gray-200 px-2 py-1 rounded font-mono text-gray-700">
-                  <span class="font-bold">Tokens Gastos:</span> {{ log.totalTokens || 'N/A' }} 
-                  <span class="text-gray-500">(P: {{ log.promptTokens || '-' }} | C: {{ log.generationTokens || '-' }})</span>
-                </div>
-              </div>
-              
-              <div class="mt-4">
-                <h4 class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Pensamento da IA (Raw Response)</h4>
-                <div class="bg-gray-900 p-4 rounded text-sm text-green-400 whitespace-pre-wrap font-mono overflow-x-auto shadow-inner">{{ log.rawResponse }}</div>
-              </div>
-            </div>
+  @if (isLoadingListingLogs()) {
+    <app-ui-state-panel variant="loading" title="Carregando dossiê..." />
+  } @else if (selectedListingLogs().length === 0) {
+    <app-ui-state-panel variant="empty" title="Nenhuma análise registrada" message="Este anúncio ainda não foi analisado pela IA." />
+  } @else {
+    <ul class="space-y-4">
+      @for (log of selectedListingLogs(); track log.id) {
+        <li class="rounded-lg border border-brand-950/10 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-brand-950">{{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+            <app-ui-badge [variant]="getTierBadge(log.matchTier)">{{ getTierLabel(log.matchTier) }}</app-ui-badge>
+          </div>
+          @if (log.reasoning) {
+            <p class="mt-2 text-sm text-brand-950/80">{{ log.reasoning }}</p>
           }
-        }
-      </div>
-</app-ui-modal>
+          @if (log.extractedSpecs) {
+            <app-ui-code-panel class="mt-3" [value]="formatJson(log.extractedSpecs)"></app-ui-code-panel>
+          }
+        </li>
+      }
+    </ul>
+  }
+</app-ui-dialog>

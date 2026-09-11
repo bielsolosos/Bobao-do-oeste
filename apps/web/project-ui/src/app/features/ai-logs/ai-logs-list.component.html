@@ -1,181 +1,161 @@
 <app-ui-page-header
-  title="Auditoria e logs da IA"
-  subtitle="Histórico de prompts, respostas do Gemini, latência e consumo."
+  eyebrow="Operação"
+  title="Auditoria de IA"
+  subtitle="Histórico das chamadas do Gemini para classificar anúncios."
 >
-  <button
-    type="button"
-    (click)="loadLogs()"
-    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-  >
-    <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-      ></path>
-    </svg>
-    Atualizar
-  </button>
+  <app-ui-button variant="secondary" (clicked)="loadLogs()">Atualizar</app-ui-button>
 </app-ui-page-header>
 
-<app-ui-card [noPadding]="true">
-  @if (isLoading()) {
-    <app-ui-skeleton variant="table" [rows]="6"></app-ui-skeleton>
-  }
-
-  @if (!isLoading() && logs().length === 0) {
-    <app-ui-empty-state
-      title="Nenhum log de IA encontrado"
-      message="As análises realizadas pelos seus monitores aparecerão aqui."
-    ></app-ui-empty-state>
-  }
-
-  @if (!isLoading() && logs().length > 0) {
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Status
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Monitor
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Modelo
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Lote / Desempenho
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          @for (log of logs(); track log.id) {
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
-                  {{ log.status }}
-                </app-ui-badge>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <a
-                  [routerLink]="['/monitors', log.productMonitorId]"
-                  class="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
-                >
-                  {{ log.productMonitorName || 'Geral' }}
-                </a>
-                <div class="text-xs text-gray-500 mt-1">{{ log.createdAt | date: 'short' }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs font-mono text-slate-700"
-                >
-                  {{ log.modelName }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">
-                  <span class="font-bold">{{ log.itemsCount }}</span> anúncios avaliados
-                </div>
-                <div class="text-xs text-gray-500 mt-1">
-                  Latência: {{ formatDuration(log.durationMs) }}
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  type="button"
-                  (click)="openDetailModal(log)"
-                  class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors font-semibold"
-                >
-                  Ver Payload
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+<app-ui-card [noPadding]="true" extraClasses="mb-4">
+  <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+    <div class="sm:col-span-2">
+      <label for="ailog-keyword" class="sr-only">Buscar por monitor, modelo ou vendor</label>
+      <input
+        id="ailog-keyword"
+        type="search"
+        [value]="keyword()"
+        (input)="onKeyword($event)"
+        placeholder="Buscar por monitor, modelo ou vendor"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      />
     </div>
-  }
-  @if (!isLoading() && logs().length > 0) {
-    <app-ui-pagination
-      [currentPage]="currentPage()"
-      [totalPages]="totalPages()"
-      [totalElements]="totalElements()"
-      [pageSize]="pageSize()"
-      (pageChange)="onPageChange($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-    ></app-ui-pagination>
+    <div>
+      <label for="ailog-status" class="sr-only">Status</label>
+      <select
+        id="ailog-status"
+        [value]="statusFilter()"
+        (change)="onStatus($event)"
+        class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+      >
+        <option value="all">Todos</option>
+        <option value="SUCCESS">Sucesso</option>
+        <option value="ERROR">Erro</option>
+      </select>
+    </div>
+  </div>
+</app-ui-card>
+
+<app-ui-card [noPadding]="true">
+  @switch (state()) {
+    @case ('loading') {
+      <app-ui-state-panel variant="loading" title="Carregando logs de auditoria..." />
+    }
+    @case ('error') {
+      <app-ui-state-panel
+        variant="error"
+        title="Não foi possível carregar os logs"
+        message="Tente novamente em alguns instantes."
+        (retry)="loadLogs()"
+      />
+    }
+    @default {
+      @if (paged().length === 0) {
+        <app-ui-state-panel
+          variant="empty"
+          title="Nenhum log de IA encontrado"
+          message="Conforme a IA classifica os anúncios, o histórico aparece aqui."
+        />
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-brand-950/10">
+            <thead class="bg-brand-950/[0.02]">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Quando</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Monitor</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Modelo / vendor</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Tokens (p/g/total)</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Duração</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Status</th>
+                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-brand-950/50">Detalhes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-brand-950/5">
+              @for (log of paged(); track log.id) {
+                <tr class="transition-colors hover:bg-brand-950/[0.02]">
+                  <td class="px-6 py-4 text-sm text-brand-950/80">{{ log.createdAt | date: 'dd/MM HH:mm:ss' }}</td>
+                  <td class="px-6 py-4 text-sm font-medium text-brand-950">{{ log.productMonitorName || '—' }}</td>
+                  <td class="px-6 py-4 text-sm text-brand-950/80">{{ log.modelName }} <span class="text-xs text-brand-950/50">· {{ log.vendor }}</span></td>
+                  <td class="px-6 py-4 text-xs font-mono text-brand-950/80">
+                    {{ log.promptTokens ?? '—' }} / {{ log.generationTokens ?? '—' }} / <strong class="text-brand-950">{{ log.totalTokens ?? '—' }}</strong>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-brand-950/80">{{ formatDuration(log.durationMs) }}</td>
+                  <td class="px-6 py-4">
+                    <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
+                      {{ log.status === 'SUCCESS' ? 'Sucesso' : 'Erro' }}
+                    </app-ui-badge>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <app-ui-button variant="ghost" size="sm" (clicked)="openDetailModal(log)">Ver</app-ui-button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (filtered().length > pageSize()) {
+          <app-ui-pagination
+            [currentPage]="page()"
+            [totalPages]="totalPages()"
+            [totalElements]="filtered().length"
+            [pageSize]="pageSize()"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
+        }
+      }
+    }
   }
 </app-ui-card>
 
-<!-- Modal de Detalhes -->
-<app-ui-modal
-  [open]="selectedLog() !== null"
-  title="Detalhes da execução de IA"
-  [subtitle]="'Modelo: ' + (selectedLog()?.modelName || '-') + ' | Latência: ' + formatDuration(selectedLog()?.durationMs)"
-  size="lg"
+<app-ui-dialog
+  [open]="!!selectedLog()"
+  [title]="'Detalhes da chamada de IA'"
+  [subtitle]="selectedLog()?.productMonitorName || ''"
+  panelClass="sm:max-w-3xl"
   (closed)="closeDetailModal()"
 >
-          <div class="space-y-6">
-            @if (selectedLog()?.errorMessage) {
-              <div class="rounded-md bg-red-50 p-4 border border-red-200">
-                <div class="flex">
-                  <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div class="ml-3">
-                    <h3 class="text-sm font-medium text-red-800">Falha na execução</h3>
-                    <div class="mt-2 text-sm text-red-700">
-                      <p>{{ selectedLog()?.errorMessage }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 mb-2">System Prompt</h4>
-              <pre
-                class="bg-slate-900 text-slate-300 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 whitespace-pre-wrap"
-                >{{ selectedLog()?.systemPrompt }}</pre>
-            </div>
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 mb-2">User Prompt (Lote de Itens)</h4>
-              <pre
-                class="bg-slate-900 text-emerald-400 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 whitespace-pre-wrap"
-                >{{ selectedLog()?.userPrompt }}</pre>
-            </div>
-            @if (selectedLog()?.rawResponse) {
-              <div>
-                <h4 class="text-sm font-semibold text-gray-900 mb-2">Resposta Raw / JSON</h4>
-                <pre
-                  class="bg-slate-900 text-amber-300 p-4 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed max-h-96 whitespace-pre-wrap"
-                  >{{ formatJson(selectedLog()?.rawResponse) }}</pre>
-              </div>
-            }
-          </div>
-</app-ui-modal>
+  @if (selectedLog(); as log) {
+    <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Modelo</dt>
+        <dd class="text-brand-950">{{ log.modelName }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Vendor</dt>
+        <dd class="text-brand-950">{{ log.vendor }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Itens analisados</dt>
+        <dd class="text-brand-950">{{ log.itemsCount }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Duração</dt>
+        <dd class="text-brand-950">{{ formatDuration(log.durationMs) }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Tokens</dt>
+        <dd class="text-brand-950">prompt {{ log.promptTokens ?? '—' }} · geração {{ log.generationTokens ?? '—' }} · total {{ log.totalTokens ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Quando</dt>
+        <dd class="text-brand-950">{{ log.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+      </div>
+    </dl>
+
+    @if (log.status === 'ERROR' && log.errorMessage) {
+      <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+        {{ log.errorMessage }}
+      </div>
+    }
+
+    <h3 class="mt-6 text-sm font-semibold text-brand-950">System prompt</h3>
+    <app-ui-code-panel class="mt-2" [value]="log.systemPrompt || '(vazio)'"></app-ui-code-panel>
+
+    <h3 class="mt-6 text-sm font-semibold text-brand-950">User prompt</h3>
+    <app-ui-code-panel class="mt-2" [value]="log.userPrompt || '(vazio)'"></app-ui-code-panel>
+
+    <h3 class="mt-6 text-sm font-semibold text-brand-950">Resposta do modelo</h3>
+    <app-ui-code-panel class="mt-2" [value]="formatJson(log.rawResponse) || '(vazio)'"></app-ui-code-panel>
+  }
+</app-ui-dialog>
