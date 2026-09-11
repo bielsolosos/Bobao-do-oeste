@@ -46,11 +46,11 @@ export class UiButtonComponent {
   @Input() fullWidth: boolean = false;
 
   @Output() clicked = new EventEmitter<Event>();
-  @Output() onClick = new EventEmitter<Event>();
+  @Output() pressed = new EventEmitter<Event>();
 
   emitClick(event: Event) {
     this.clicked.emit(event);
-    this.onClick.emit(event);
+    this.pressed.emit(event);
   }
 
   getButtonClasses(): string {

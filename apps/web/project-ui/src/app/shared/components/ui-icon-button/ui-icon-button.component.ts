@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
       [attr.aria-label]="label"
       [title]="label"
       [disabled]="disabled"
-      (click)="onClick.emit($event)"
+      (click)="clicked.emit($event)"
       [ngClass]="toneClasses()"
       class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40"
     >
@@ -24,7 +24,7 @@ export class UiIconButtonComponent {
   @Input() tone: 'neutral' | 'danger' | 'warning' | 'success' = 'neutral';
   @Input() disabled = false;
 
-  @Output() onClick = new EventEmitter<Event>();
+  @Output() clicked = new EventEmitter<Event>();
 
   toneClasses(): string {
     switch (this.tone) {

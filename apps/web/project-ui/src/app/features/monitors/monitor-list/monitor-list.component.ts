@@ -4,13 +4,12 @@ import { RouterModule } from '@angular/router';
 import { ProductMonitorResponse, ScrapingFrequency, Vendor, AnalysisType } from '../../../core/models/monitor.model';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
-import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiConfirmService } from '../../../shared/components/ui-confirm/ui-confirm.service';
 import { UiPaginationComponent } from '../../../shared/components/ui-pagination/ui-pagination.component';
 import { UiStatePanelComponent } from '../../../shared/components/ui-state-panel/ui-state-panel.component';
 import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
-import { UiIconButtonComponent } from '../../../shared/components/ui-icon-button/ui-icon-button.component';
 import { UiButtonComponent } from '../../../shared/components/ui-button/ui-button.component';
+import { UiSkeletonComponent } from '../../../shared/components/ui-skeleton/ui-skeleton.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
 
 type ListState = 'loading' | 'error' | 'ready';
@@ -21,13 +20,12 @@ type ListState = 'loading' | 'error' | 'ready';
   imports: [
     CommonModule,
     RouterModule,
-    UiCardComponent,
     UiBadgeComponent,
     UiPaginationComponent,
     UiStatePanelComponent,
     UiPageHeaderComponent,
-    UiIconButtonComponent,
     UiButtonComponent,
+    UiSkeletonComponent,
   ],
   templateUrl: './monitor-list.component.html',
 })

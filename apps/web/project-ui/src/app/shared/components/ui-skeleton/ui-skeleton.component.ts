@@ -1,10 +1,10 @@
-import { Component, Input, computed, signal } from '@angular/core';
+import { Component, Input, computed } from '@angular/core';
 
 @Component({
   selector: 'app-ui-skeleton',
   standalone: true,
   template: `
-    @if (variant() === 'table') {
+    @if (variant === 'table') {
       <div class="divide-y divide-brand-950/10" role="status" aria-busy="true" aria-label="Carregando">
         @for (row of rowsArray(); track $index) {
           <div class="flex items-center gap-4 px-6 py-5">
@@ -31,20 +31,12 @@ import { Component, Input, computed, signal } from '@angular/core';
   `,
 })
 export class UiSkeletonComponent {
-  private readonly variantInput = signal<'table' | 'lines'>('lines');
-  private readonly linesInput = signal(1);
+  @Input() variant: 'table' | 'lines' = 'lines';
+  @Input() rows: number = 5;
+  @Input() lines: number = 1;
 
-  @Input() set variant(v: 'table' | 'lines') {
-    this.variantInput.set(v ?? 'lines');
-  }
-  @Input() set rows(value: number) {
-    this.linesInput.set(value ?? 1);
-  }
-  @Input() set lines(value: number) {
-    this.linesInput.set(value ?? 1);
-  }
-
-  readonly variant = this.variantInput.asReadonly();
-
-  rowsArray = computed(() => Array.from({ length: this.linesInput() }));
+  rowsArray = computed(() => {
+    const n = Math.max(1, this.variant === 'table' ? this.rows : this.lines);
+    return Array.from({ length: n });
+  });
 }

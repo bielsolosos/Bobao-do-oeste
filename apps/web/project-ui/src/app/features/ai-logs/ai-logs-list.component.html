@@ -150,12 +150,12 @@
     }
 
     <h3 class="mt-6 text-sm font-semibold text-brand-950">System prompt</h3>
-    <app-ui-code-panel class="mt-2" [value]="log.systemPrompt || '(vazio)'"></app-ui-code-panel>
+    <app-ui-code-panel class="mt-2" label="System prompt" [content]="log.systemPrompt || '(vazio)'"></app-ui-code-panel>
 
     <h3 class="mt-6 text-sm font-semibold text-brand-950">User prompt</h3>
-    <app-ui-code-panel class="mt-2" [value]="log.userPrompt || '(vazio)'"></app-ui-code-panel>
+    <app-ui-code-panel class="mt-2" label="User prompt" [content]="log.userPrompt || '(vazio)'"></app-ui-code-panel>
 
     <h3 class="mt-6 text-sm font-semibold text-brand-950">Resposta do modelo</h3>
-    <app-ui-code-panel class="mt-2" [value]="formatJson(log.rawResponse) || '(vazio)'"></app-ui-code-panel>
+    <app-ui-code-panel class="mt-2" label="Resposta" [content]="formatJson(log.rawResponse) || '(vazio)'"></app-ui-code-panel>
   }
 </app-ui-dialog>

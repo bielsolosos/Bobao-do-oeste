@@ -168,7 +168,13 @@ export class LoginComponent {
 
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
 
-    this.authService.login(this.loginForm.value, returnUrl).subscribe({
+    this.authService.login(
+      {
+        username: this.loginForm.value.username ?? '',
+        password: this.loginForm.value.password ?? '',
+      },
+      returnUrl,
+    ).subscribe({
       next: () => this.toast.success('Sucesso', 'Bem-vindo de volta!'),
       error: (err) => {
         this.isLoading.set(false);

@@ -217,7 +217,7 @@
                         </td>
                       }
                       <td class="px-6 py-4 text-xs text-brand-950/60">
-                        @if (item.location) { <p class="font-medium text-brand-950">{{ item.location }}</p> }
+                        @if (item.city) { <p class="font-medium text-brand-950">{{ item.city }}@if (item.state) { <span class="text-brand-950/50"> · {{ item.state }}</span> }</p> }
                         <p>{{ item.lastSeenAt ? (item.lastSeenAt | date: 'dd/MM HH:mm') : '—' }}</p>
                       </td>
                     </tr>
@@ -294,15 +294,17 @@
             @for (log of aiLogs(); track log.id) {
               <li class="py-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="text-sm font-semibold text-brand-950">{{ log.listingTitle || 'Anúncio ' + log.listingId }}</p>
-                  <app-ui-badge [variant]="getTierBadge(log.matchTier)">{{ getTierLabel(log.matchTier) }}</app-ui-badge>
+                  <p class="text-sm font-semibold text-brand-950">Execução #{{ log.id.slice(0, 8) }}</p>
+                  <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
+                    {{ log.status === 'SUCCESS' ? 'Sucesso' : 'Erro' }}
+                  </app-ui-badge>
                 </div>
                 <p class="mt-1 text-xs text-brand-950/50">
-                  {{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }} · Score {{ log.matchScore }}%
-                  @if (log.tokensUsed) { · {{ log.tokensUsed }} tokens }
+                  {{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }} · {{ log.modelName }}
+                  @if (log.totalTokens) { · {{ log.totalTokens }} tokens }
                 </p>
-                @if (log.reasoning) {
-                  <p class="mt-2 line-clamp-3 text-sm text-brand-950/70">{{ log.reasoning }}</p>
+                @if (log.status === 'ERROR' && log.errorMessage) {
+                  <p class="mt-2 text-sm text-red-700">{{ log.errorMessage }}</p>
                 }
               </li>
             }
@@ -315,7 +317,7 @@
 
 @if (activeTabId === 'config') {
   <app-ui-card title="Configuração" subtitle="JSON bruto do payload do monitor.">
-    <app-ui-code-panel [value]="formatJson(monitor())"></app-ui-code-panel>
+    <app-ui-code-panel [content]="formatJson(monitor())"></app-ui-code-panel>
   </app-ui-card>
 }
 
@@ -336,13 +338,20 @@
         <li class="rounded-lg border border-brand-950/10 p-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-sm font-semibold text-brand-950">{{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
-            <app-ui-badge [variant]="getTierBadge(log.matchTier)">{{ getTierLabel(log.matchTier) }}</app-ui-badge>
+            <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
+              {{ log.status === 'SUCCESS' ? 'Sucesso' : 'Erro' }}
+            </app-ui-badge>
           </div>
-          @if (log.reasoning) {
-            <p class="mt-2 text-sm text-brand-950/80">{{ log.reasoning }}</p>
+          <p class="mt-1 text-xs text-brand-950/50">
+            {{ log.modelName }} · {{ log.vendor }} · {{ log.itemsCount }} itens
+            @if (log.durationMs) { · {{ log.durationMs }}ms }
+            @if (log.totalTokens) { · {{ log.totalTokens }} tokens }
+          </p>
+          @if (log.status === 'ERROR' && log.errorMessage) {
+            <p class="mt-2 text-sm text-red-700">{{ log.errorMessage }}</p>
           }
-          @if (log.extractedSpecs) {
-            <app-ui-code-panel class="mt-3" [value]="formatJson(log.extractedSpecs)"></app-ui-code-panel>
+          @if (log.rawResponse) {
+            <app-ui-code-panel class="mt-3" label="Resposta do modelo" [content]="formatJson(log.rawResponse)"></app-ui-code-panel>
           }
         </li>
       }
