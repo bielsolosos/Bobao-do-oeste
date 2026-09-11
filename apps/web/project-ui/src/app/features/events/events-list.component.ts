@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, Subject } from 'rxjs';
 import { WebhookService } from '../../core/services/webhook.service';
 import { WebhookEventSummaryResponse, WebhookStatus } from '../../core/models/webhook.model';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
@@ -29,6 +31,8 @@ type ListState = 'loading' | 'error' | 'ready';
 export class EventsListComponent implements OnInit {
   private webhookService = inject(WebhookService);
   private toast = inject(UiToastService);
+  private destroyRef = inject(DestroyRef);
+  private keywordSearch = new Subject<void>();
 
   state = signal<ListState>('loading');
   events = signal<WebhookEventSummaryResponse[]>([]);
@@ -40,6 +44,12 @@ export class EventsListComponent implements OnInit {
 
   totalElements = signal(0);
   totalPages = signal(0);
+
+  constructor() {
+    this.keywordSearch
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadEvents());
+  }
 
   ngOnInit() {
     this.loadEvents();
@@ -71,7 +81,7 @@ export class EventsListComponent implements OnInit {
   onKeyword(event: Event) {
     this.keyword.set((event.target as HTMLInputElement).value);
     this.page.set(0);
-    this.loadEvents();
+    this.keywordSearch.next();
   }
 
   onPageChange(page: number) {

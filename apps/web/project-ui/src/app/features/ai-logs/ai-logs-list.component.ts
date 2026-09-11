@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, Subject } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { AiLogService } from '../../core/services/ai-log.service';
 import { AiAnalysisLogResponse } from '../../core/models/ai-log.model';
@@ -33,6 +35,8 @@ type ListState = 'loading' | 'error' | 'ready';
 })
 export class AiLogsListComponent implements OnInit {
   private aiLogService = inject(AiLogService);
+  private destroyRef = inject(DestroyRef);
+  private keywordSearch = new Subject<void>();
 
   state = signal<ListState>('loading');
   logs = signal<AiAnalysisLogResponse[]>([]);
@@ -46,6 +50,12 @@ export class AiLogsListComponent implements OnInit {
 
   totalElements = signal(0);
   totalPages = signal(0);
+
+  constructor() {
+    this.keywordSearch
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadLogs());
+  }
 
   ngOnInit() {
     this.loadLogs();
@@ -78,7 +88,7 @@ export class AiLogsListComponent implements OnInit {
   onKeyword(event: Event) {
     this.keyword.set((event.target as HTMLInputElement).value);
     this.page.set(0);
-    this.loadLogs();
+    this.keywordSearch.next();
   }
 
   onPageChange(page: number) {

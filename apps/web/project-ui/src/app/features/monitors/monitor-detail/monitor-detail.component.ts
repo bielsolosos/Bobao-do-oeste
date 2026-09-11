@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, Subject } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { AiLogService } from '../../../core/services/ai-log.service';
@@ -43,6 +45,8 @@ export class MonitorDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   public router = inject(Router);
   private toast = inject(UiToastService);
+  private destroyRef = inject(DestroyRef);
+  private keywordSearch = new Subject<void>();
 
   monitorId = '';
   monitor = signal<ProductMonitorResponse | null>(null);
@@ -71,6 +75,12 @@ export class MonitorDetailComponent implements OnInit {
   selectedListingLogs = signal<AiAnalysisLogResponse[]>([]);
   isLoadingListingLogs = signal(false);
   selectedListingTitle = signal('');
+
+  constructor() {
+    this.keywordSearch
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadListings());
+  }
 
   hasAiAnalysis = computed(() => {
     const m = this.monitor();
@@ -171,7 +181,7 @@ export class MonitorDetailComponent implements OnInit {
   onListingKeyword(event: Event) {
     this.listingKeyword.set((event.target as HTMLInputElement).value);
     this.page.set(0);
-    this.loadListings();
+    this.keywordSearch.next();
   }
 
   onListingTier(event: Event) {

@@ -62,14 +62,7 @@
         />
       }
       @default {
-        @if (listings().length === 0) {
-          <app-ui-state-panel
-            variant="empty"
-            title="Nenhum anúncio encontrado ainda"
-            message="Assim que a primeira coleta rodar, os resultados aparecerão aqui."
-          />
-        } @else {
-          <div class="grid grid-cols-1 gap-3 border-b border-brand-950/10 p-4 sm:grid-cols-4">
+        <div class="grid grid-cols-1 gap-3 border-b border-brand-950/10 p-4 sm:grid-cols-4">
             <div class="sm:col-span-2">
               <label for="detail-keyword" class="sr-only">Buscar anúncio</label>
               <input
@@ -271,7 +264,6 @@
             (pageChange)="onPageChange($event)"
             (pageSizeChange)="onPageSizeChange($event)"
           />
-        }
       }
     }
   </app-ui-card>
