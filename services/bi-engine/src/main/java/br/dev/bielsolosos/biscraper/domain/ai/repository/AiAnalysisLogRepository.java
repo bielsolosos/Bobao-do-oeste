@@ -4,10 +4,11 @@ import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.UUID;
 
-public interface AiAnalysisLogRepository extends JpaRepository<AiAnalysisLog, UUID> {
+public interface AiAnalysisLogRepository extends JpaRepository<AiAnalysisLog, UUID>, JpaSpecificationExecutor<AiAnalysisLog> {
 
     Page<AiAnalysisLog> findByProductMonitorUserId(UUID userId, Pageable pageable);
 

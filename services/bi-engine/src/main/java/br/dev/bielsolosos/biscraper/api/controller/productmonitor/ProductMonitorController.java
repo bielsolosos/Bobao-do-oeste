@@ -1,6 +1,7 @@
 package br.dev.bielsolosos.biscraper.api.controller.productmonitor;
 
 import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
+import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
@@ -61,8 +62,11 @@ public class ProductMonitorController {
     @GetMapping("/{id}/listings")
     public ResponseEntity<Page<ScrapedListingResponse>> listMonitorListings(
             @PathVariable UUID id,
+            @RequestParam(value = "q", required = false) String keyword,
+            @RequestParam(value = "tier", required = false) MatchTier tier,
+            @RequestParam(value = "deliveryOnly", required = false) Boolean deliveryOnly,
             @PageableDefault(size = 20, sort = "lastSeenAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(service.listMonitorListings(id, pageable));
+        return ResponseEntity.ok(service.listMonitorListings(id, keyword, tier, deliveryOnly, pageable));
     }
 
     @Operation(summary = "Listar logs de chamadas de IA de um monitor específico")

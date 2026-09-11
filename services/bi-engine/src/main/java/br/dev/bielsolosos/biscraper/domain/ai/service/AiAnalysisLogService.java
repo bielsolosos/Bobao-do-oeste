@@ -5,6 +5,7 @@ import br.dev.bielsolosos.biscraper.core.exception.BusinessException;
 import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
 import br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogResponse;
 import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogRepository;
+import br.dev.bielsolosos.biscraper.domain.ai.repository.AiAnalysisLogSpecifications;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapedListing;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ProductMonitorRepository;
@@ -31,10 +32,12 @@ public class AiAnalysisLogService {
     private final MeService meService;
 
     @Transactional(readOnly = true)
-    public Page<AiAnalysisLogResponse> listAllAiLogs(Pageable pageable) {
+    public Page<AiAnalysisLogResponse> listAllAiLogs(String status, String keyword, Pageable pageable) {
         User me = meService.getMe();
-        log.debug("Listando logs de IA para o usuário '{}'", me.getUsername());
-        return aiAnalysisLogRepository.findByProductMonitorUserId(me.getId(), pageable)
+        log.debug("Listando logs de IA para o usuário '{}' (status={}, q={})", me.getUsername(), status, keyword);
+        return aiAnalysisLogRepository.findAll(
+                        AiAnalysisLogSpecifications.filter(me.getId(), status, keyword),
+                        pageable)
                 .map(AiAnalysisLogMapper::toResponse);
     }
 

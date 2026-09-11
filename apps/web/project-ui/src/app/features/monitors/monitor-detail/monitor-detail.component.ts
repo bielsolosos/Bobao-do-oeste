@@ -100,45 +100,6 @@ export class MonitorDetailComponent implements OnInit {
     return tabs;
   });
 
-  filteredListings = computed(() => {
-    const kw = this.listingKeyword().trim().toLowerCase();
-    const tier = this.listingTier();
-    const deliveryOnly = this.deliveryOnly();
-
-    let result = this.listings().filter((item) => {
-      if (kw && !item.title.toLowerCase().includes(kw)) return false;
-      if (tier && item.matchTier !== tier) return false;
-      if (deliveryOnly && !item.hasDelivery) return false;
-      return true;
-    });
-
-    switch (this.currentSort()) {
-      case 'matchScore,desc':
-        result = [...result].sort((a, b) => Number(b.matchScore) - Number(a.matchScore));
-        break;
-      case 'currentPrice,asc':
-        result = [...result].sort((a, b) => a.currentPrice - b.currentPrice);
-        break;
-      case 'currentPrice,desc':
-        result = [...result].sort((a, b) => b.currentPrice - a.currentPrice);
-        break;
-      default:
-        result = [...result].sort(
-          (a, b) => new Date(b.lastSeenAt ?? 0).getTime() - new Date(a.lastSeenAt ?? 0).getTime(),
-        );
-    }
-    return result;
-  });
-
-  pagedListings = computed(() => {
-    const start = this.page() * this.pageSize();
-    return this.filteredListings().slice(start, start + this.pageSize());
-  });
-  pagedTotalElements = computed(() => this.filteredListings().length);
-  pagedTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredListings().length / this.pageSize())),
-  );
-
   ngOnInit() {
     this.monitorId = this.route.snapshot.paramMap.get('id') || '';
     const tab = this.route.snapshot.queryParamMap.get('tab');
@@ -164,13 +125,18 @@ export class MonitorDetailComponent implements OnInit {
   loadListings() {
     this.listingsState.set('loading');
     this.monitorService
-      .getMonitorListings(this.monitorId, 0, 200)
+      .getMonitorListings(this.monitorId, this.page(), this.pageSize(), {
+        q: this.listingKeyword(),
+        tier: this.listingTier(),
+        deliveryOnly: this.deliveryOnly(),
+        sort: this.currentSort(),
+      })
       .subscribe({
         next: (res) => {
           this.listings.set(res.content ?? []);
           this.totalElements.set(res.totalElements ?? 0);
           this.totalPages.set(res.totalPages ?? 0);
-          this.page.set(0);
+          this.page.set(res.number ?? 0);
           this.listingsState.set('ready');
         },
         error: () => this.listingsState.set('error'),
@@ -205,30 +171,36 @@ export class MonitorDetailComponent implements OnInit {
   onListingKeyword(event: Event) {
     this.listingKeyword.set((event.target as HTMLInputElement).value);
     this.page.set(0);
+    this.loadListings();
   }
 
   onListingTier(event: Event) {
     this.listingTier.set((event.target as HTMLSelectElement).value as MatchTier | '');
     this.page.set(0);
+    this.loadListings();
   }
 
   onDelivery(event: Event) {
     this.deliveryOnly.set((event.target as HTMLInputElement).checked);
     this.page.set(0);
+    this.loadListings();
   }
 
   onSortChange(event: Event) {
     this.currentSort.set((event.target as HTMLSelectElement).value);
     this.page.set(0);
+    this.loadListings();
   }
 
   onPageChange(page: number) {
     this.page.set(page);
+    this.loadListings();
   }
 
   onPageSizeChange(size: number) {
     this.pageSize.set(size);
     this.page.set(0);
+    this.loadListings();
   }
 
   onImageError(id: string) {

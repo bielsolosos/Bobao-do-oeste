@@ -25,12 +25,6 @@ export const routes: Routes = [
         title: 'Visão geral · Bobão do Oeste',
       },
       {
-        path: 'opportunities',
-        loadComponent: () =>
-          import('./features/opportunities/opportunities.component').then((m) => m.OpportunitiesComponent),
-        title: 'Oportunidades · Bobão do Oeste',
-      },
-      {
         path: 'monitors',
         loadComponent: () =>
           import('./features/monitors/monitor-list/monitor-list.component').then((m) => m.MonitorListComponent),

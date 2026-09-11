@@ -127,7 +127,7 @@
             </div>
           </div>
 
-          @if (pagedListings().length === 0) {
+          @if (listings().length === 0) {
             <app-ui-state-panel
               variant="empty"
               title="Nenhum anúncio para estes filtros"
@@ -147,7 +147,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-brand-950/5">
-                  @for (item of pagedListings(); track item.id) {
+                  @for (item of listings(); track item.id) {
                     <tr class="transition-colors hover:bg-brand-950/[0.02]">
                       <td class="px-6 py-4">
                         <div class="flex items-start gap-4">
@@ -227,7 +227,7 @@
             </div>
 
             <ul class="divide-y divide-brand-950/5 md:hidden">
-              @for (item of pagedListings(); track item.id) {
+              @for (item of listings(); track item.id) {
                 <li class="p-4">
                   <div class="flex items-start gap-3">
                     <div class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-brand-950/10 bg-brand-950/5">
@@ -265,8 +265,8 @@
 
           <app-ui-pagination
             [currentPage]="page()"
-            [totalPages]="pagedTotalPages()"
-            [totalElements]="pagedTotalElements()"
+            [totalPages]="totalPages()"
+            [totalElements]="totalElements()"
             [pageSize]="pageSize()"
             (pageChange)="onPageChange($event)"
             (pageSizeChange)="onPageSizeChange($event)"

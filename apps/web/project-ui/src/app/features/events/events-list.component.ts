@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { WebhookService } from '../../core/services/webhook.service';
 import { WebhookEventSummaryResponse, WebhookStatus } from '../../core/models/webhook.model';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
@@ -38,23 +38,8 @@ export class EventsListComponent implements OnInit {
   page = signal(0);
   pageSize = signal(25);
 
-  filtered = computed(() => {
-    const status = this.statusFilter();
-    const kw = this.keyword().trim().toLowerCase();
-    return this.events().filter((event) => {
-      if (status && event.status !== status) return false;
-      if (kw && !`${event.jobId} ${event.requestId} ${event.eventType}`.toLowerCase().includes(kw)) {
-        return false;
-      }
-      return true;
-    });
-  });
-
-  totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize())));
-  paged = computed(() => {
-    const start = this.page() * this.pageSize();
-    return this.filtered().slice(start, start + this.pageSize());
-  });
+  totalElements = signal(0);
+  totalPages = signal(0);
 
   ngOnInit() {
     this.loadEvents();
@@ -62,10 +47,15 @@ export class EventsListComponent implements OnInit {
 
   loadEvents() {
     this.state.set('loading');
-    this.webhookService.getEvents(0, 200).subscribe({
+    this.webhookService.getEvents(this.page(), this.pageSize(), {
+      status: this.statusFilter() || undefined,
+      q: this.keyword(),
+    }).subscribe({
       next: (res) => {
         this.events.set(res.content ?? []);
-        this.page.set(0);
+        this.page.set(res.number ?? 0);
+        this.totalElements.set(res.totalElements ?? 0);
+        this.totalPages.set(res.totalPages ?? 0);
         this.state.set('ready');
       },
       error: () => this.state.set('error'),
@@ -75,20 +65,24 @@ export class EventsListComponent implements OnInit {
   onStatus(event: Event) {
     this.statusFilter.set((event.target as HTMLSelectElement).value as WebhookStatus | '');
     this.page.set(0);
+    this.loadEvents();
   }
 
   onKeyword(event: Event) {
     this.keyword.set((event.target as HTMLInputElement).value);
     this.page.set(0);
+    this.loadEvents();
   }
 
   onPageChange(page: number) {
     this.page.set(page);
+    this.loadEvents();
   }
 
   onPageSizeChange(size: number) {
     this.pageSize.set(size);
     this.page.set(0);
+    this.loadEvents();
   }
 
   async copy(value: string, label: string) {

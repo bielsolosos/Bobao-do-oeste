@@ -1,9 +1,11 @@
 package br.dev.bielsolosos.biscraper.api.controller.webhook;
 
+import br.dev.bielsolosos.biscraper.core.enums.WebhookStatus;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookAckResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookEventSummaryResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.webhook.WebhookIncomingPayload;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventRepository;
+import br.dev.bielsolosos.biscraper.domain.monitoring.repository.WebhookEventSpecifications;
 import br.dev.bielsolosos.biscraper.domain.monitoring.service.WebhookScrapperService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,12 +43,15 @@ public class WebhookController {
         return ResponseEntity.ok(ack);
     }
 
-    @Operation(summary = "Lista o histórico de eventos de webhooks recebidos")
+    @Operation(summary = "Lista o histórico de eventos de webhooks recebidos, com filtros opcionais por status e busca")
     @GetMapping("/events")
     public ResponseEntity<Page<WebhookEventSummaryResponse>> listEvents(
+            @RequestParam(value = "status", required = false) WebhookStatus status,
+            @RequestParam(value = "q", required = false) String keyword,
             @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
-        
-        Page<WebhookEventSummaryResponse> page = webhookEventRepository.findAll(pageable)
+
+        Page<WebhookEventSummaryResponse> page = webhookEventRepository
+            .findAll(WebhookEventSpecifications.filter(status, keyword), pageable)
             .map(event -> new WebhookEventSummaryResponse(
                 event.getId(),
                 event.getStatus().name(),

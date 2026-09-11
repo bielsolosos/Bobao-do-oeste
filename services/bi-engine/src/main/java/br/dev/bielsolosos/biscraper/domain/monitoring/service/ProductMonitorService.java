@@ -1,6 +1,7 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.service;
 
 import br.dev.bielsolosos.biscraper.core.exception.BusinessException;
+import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.domain.monitoring.event.MonitorCreatedEvent;
 import br.dev.bielsolosos.biscraper.domain.monitoring.mapper.ProductMonitorMapper;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
@@ -10,6 +11,7 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductM
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ProductMonitorRepository;
 import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapedListingRepository;
+import br.dev.bielsolosos.biscraper.domain.monitoring.repository.ScrapedListingSpecifications;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.service.MeService;
 import lombok.RequiredArgsConstructor;
@@ -116,11 +118,18 @@ public class ProductMonitorService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ScrapedListingResponse> listMonitorListings(UUID monitorId, Pageable pageable) {
+    public Page<ScrapedListingResponse> listMonitorListings(
+            UUID monitorId,
+            String keyword,
+            MatchTier tier,
+            Boolean deliveryOnly,
+            Pageable pageable) {
         ProductMonitor monitor = findById(monitorId);
         validatePermission(monitor);
-        log.debug("Listando anúncios do monitor '{}'", monitorId);
-        return scrapedListingRepository.findByProductMonitorId(monitorId, pageable)
+        log.debug("Listando anúncios do monitor '{}' (q={}, tier={}, deliveryOnly={})", monitorId, keyword, tier, deliveryOnly);
+        return scrapedListingRepository.findAll(
+                        ScrapedListingSpecifications.filter(monitorId, keyword, tier, deliveryOnly),
+                        pageable)
                 .map(this::toListingResponse);
     }
 

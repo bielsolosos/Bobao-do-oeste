@@ -49,7 +49,7 @@
       />
     }
     @default {
-      @if (paged().length === 0) {
+      @if (logs().length === 0) {
         <app-ui-state-panel
           variant="empty"
           title="Nenhum log de IA encontrado"
@@ -70,7 +70,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-brand-950/5">
-              @for (log of paged(); track log.id) {
+              @for (log of logs(); track log.id) {
                 <tr class="transition-colors hover:bg-brand-950/[0.02]">
                   <td class="px-6 py-4 text-sm text-brand-950/80">{{ log.createdAt | date: 'dd/MM HH:mm:ss' }}</td>
                   <td class="px-6 py-4 text-sm font-medium text-brand-950">{{ log.productMonitorName || '—' }}</td>
@@ -93,11 +93,11 @@
           </table>
         </div>
 
-        @if (filtered().length > pageSize()) {
+        @if (totalElements() > pageSize()) {
           <app-ui-pagination
             [currentPage]="page()"
             [totalPages]="totalPages()"
-            [totalElements]="filtered().length"
+            [totalElements]="totalElements()"
             [pageSize]="pageSize()"
             (pageChange)="onPageChange($event)"
             (pageSizeChange)="onPageSizeChange($event)"

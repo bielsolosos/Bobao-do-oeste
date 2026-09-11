@@ -52,8 +52,18 @@ export class MonitorService {
     return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/listings`, { params });
   }
 
-  getMonitorListings(monitorId: string, page = 0, size = 20, sort = 'lastSeenAt,desc'): Observable<PageResponse<ScrapedListingResponse>> {
-    return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings?page=${page}&size=${size}&sort=${sort}`);
+  getMonitorListings(
+    monitorId: string,
+    page = 0,
+    size = 20,
+    filters?: { q?: string; tier?: string; deliveryOnly?: boolean; sort?: string },
+  ): Observable<PageResponse<ScrapedListingResponse>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (filters?.q?.trim()) params = params.set('q', filters.q.trim());
+    if (filters?.tier) params = params.set('tier', filters.tier);
+    if (filters?.deliveryOnly) params = params.set('deliveryOnly', true);
+    if (filters?.sort) params = params.set('sort', filters.sort);
+    return this.http.get<PageResponse<ScrapedListingResponse>>(`${this.apiUrl}/${monitorId}/listings`, { params });
   }
 
   getScraperQueueStatus(): Observable<ScraperQueueStatusResponse> {

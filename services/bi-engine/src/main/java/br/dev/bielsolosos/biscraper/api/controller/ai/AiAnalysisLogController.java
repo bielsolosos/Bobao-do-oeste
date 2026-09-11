@@ -22,11 +22,13 @@ public class AiAnalysisLogController {
 
     private final AiAnalysisLogService service;
 
-    @Operation(summary = "Listar histórico e logs de chamadas de IA do usuário")
+    @Operation(summary = "Listar histórico e logs de chamadas de IA do usuário, com filtros opcionais por status e busca")
     @GetMapping
     public ResponseEntity<Page<AiAnalysisLogResponse>> listAllAiLogs(
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "q", required = false) String keyword,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(service.listAllAiLogs(pageable));
+        return ResponseEntity.ok(service.listAllAiLogs(status, keyword, pageable));
     }
 
     @Operation(summary = "Listar logs de IA de um anúncio específico (para visualizar o 'pensamento' da IA)")
