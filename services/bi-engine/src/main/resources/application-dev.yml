@@ -8,11 +8,11 @@ spring:
       maximum-pool-size: 5
       minimum-idle: 1
   jpa:
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        highlight_sql: true
+        format_sql: false
+        highlight_sql: false
   flyway:
     enabled: true
     baseline-on-migrate: true

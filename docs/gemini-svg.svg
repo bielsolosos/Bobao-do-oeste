@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Gradientes de Iluminação e Cores -->
+    <radialGradient id="amberGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.9" />
+      <stop offset="60%" stop-color="#D97706" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#B45309" stop-opacity="0" />
+    </radialGradient>
+
+    <linearGradient id="shieldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#262320" />
+      <stop offset="50%" stop-color="#191715" />
+      <stop offset="100%" stop-color="#0F0E0D" />
+    </linearGradient>
+
+    <linearGradient id="metalBorder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4A373" />
+      <stop offset="35%" stop-color="#8C6239" />
+      <stop offset="70%" stop-color="#4A3423" />
+      <stop offset="100%" stop-color="#B8860B" />
+    </linearGradient>
+
+    <linearGradient id="chipBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2D2B28" />
+      <stop offset="100%" stop-color="#141312" />
+    </linearGradient>
+
+    <linearGradient id="leatherHat" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#443529" />
+      <stop offset="50%" stop-color="#2B2119" />
+      <stop offset="100%" stop-color="#1A1410" />
+    </linearGradient>
+
+    <!-- Filtro de Brilho dos Olhos LED -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. ESCUDO TRASEIRO (BASE / BADGE DO SHERIFF) -->
+  <g id="badge-backplate">
+    <!-- Borda Externa Metálica -->
+    <path d="M256 32 
+             C362 32 428 72 428 174 
+             C428 322 320 424 256 468 
+             C192 424 84 322 84 174 
+             C84 72 150 32 256 32 Z"
+          fill="url(#metalBorder)" 
+          stroke="#0F0E0D" 
+          stroke-width="6" />
+
+    <!-- Interior Escuro do Escudo -->
+    <path d="M256 46 
+             C350 46 412 82 412 174 
+             C412 310 312 406 256 448 
+             C200 406 100 310 100 174 
+             C100 82 162 46 256 46 Z"
+          fill="url(#shieldBg)" 
+          stroke="#523B28" 
+          stroke-width="3" />
+
+    <!-- Grade de Radar Estilizada -->
+    <path d="M256 60 V 430 M115 220 H 397 M140 310 H 372" 
+          stroke="#D4A373" 
+          stroke-opacity="0.12" 
+          stroke-width="2" 
+          stroke-dasharray="6 4" />
+    <circle cx="256" cy="220" r="90" fill="none" stroke="#D4A373" stroke-opacity="0.1" stroke-width="2" />
+    <circle cx="256" cy="220" r="140" fill="none" stroke="#D4A373" stroke-opacity="0.07" stroke-width="2" />
+  </g>
+
+  <!-- 2. PINOS DE HARDWARE DO CHIP -->
+  <g id="chip-pins" fill="#D4A373" stroke="#2B2119" stroke-width="2">
+    <!-- Pinos Laterais Esquerdos -->
+    <rect x="144" y="240" width="22" height="10" rx="3" />
+    <rect x="144" y="266" width="22" height="10" rx="3" />
+    <rect x="144" y="292" width="22" height="10" rx="3" />
+    <rect x="144" y="318" width="22" height="10" rx="3" />
+
+    <!-- Pinos Laterais Direitos -->
+    <rect x="346" y="240" width="22" height="10" rx="3" />
+    <rect x="346" y="266" width="22" height="10" rx="3" />
+    <rect x="346" y="292" width="22" height="10" rx="3" />
+    <rect x="346" y="318" width="22" height="10" rx="3" />
+
+    <!-- Pinos Inferiores -->
+    <rect x="204" y="378" width="10" height="20" rx="3" />
+    <rect x="230" y="378" width="10" height="20" rx="3" />
+    <rect x="256" y="378" width="10" height="20" rx="3" />
+    <rect x="282" y="378" width="10" height="20" rx="3" />
+    <rect x="308" y="378" width="10" height="20" rx="3" />
+  </g>
+
+  <!-- 3. CORPO PRINCIPAL DO CHIP PROCESSADOR -->
+  <g id="chip-core">
+    <rect x="160" y="196" width="192" height="192" rx="28" 
+          fill="url(#chipBody)" 
+          stroke="url(#metalBorder)" 
+          stroke-width="5" />
+    
+    <!-- Chanfro Interno de Proteção -->
+    <rect x="172" y="208" width="168" height="168" rx="20" 
+          fill="none" 
+          stroke="#3E342B" 
+          stroke-width="2" />
+
+    <!-- Indicador do Pino 1 (Detalhe típico de processador) -->
+    <circle cx="322" cy="350" r="4" fill="#6B533E" />
+  </g>
+
+  <!-- 4. OLHOS DE LED ÂMBAR (GEMINI / VISÃO COMPUTACIONAL) -->
+  <g id="led-eyes" filter="url(#glow)">
+    <rect x="204" y="270" width="22" height="38" rx="8" fill="#F59E0B" />
+    <rect x="286" y="270" width="22" height="38" rx="8" fill="#F59E0B" />
+    <!-- Reflexo especular dos LEDs -->
+    <rect x="208" y="274" width="8" height="14" rx="4" fill="#FEF3C7" />
+    <rect x="290" y="274" width="8" height="14" rx="4" fill="#FEF3C7" />
+  </g>
+
+  <!-- 5. CHAPÉU DE COWBOY (ESTILO FORASTEIRO) -->
+  <g id="cowboy-hat">
+    <!-- Copa do Chapéu -->
+    <path d="M192 188 
+             C188 132 180 84 216 78 
+             C232 75 244 96 256 96 
+             C268 96 280 75 296 78 
+             C332 84 324 132 320 188 Z" 
+          fill="url(#leatherHat)" 
+          stroke="#0F0E0D" 
+          stroke-width="4" />
+
+    <!-- Entalhe / Dobra Superior do Chapéu -->
+    <path d="M232 84 C244 104 268 104 280 84" 
+          fill="none" 
+          stroke="#14100C" 
+          stroke-width="4" 
+          stroke-linecap="round" />
+
+    <!-- Faixa de Couro do Chapéu com Circuito Integrado -->
+    <path d="M190 178 C224 186 288 186 322 178 L320 192 C288 200 224 200 192 192 Z" 
+          fill="#D4A373" 
+          stroke="#523B28" 
+          stroke-width="2" />
+    
+    <!-- Miniatura de Chip na Fivela da Faixa -->
+    <rect x="246" y="174" width="20" height="18" rx="3" fill="#1F1D1B" stroke="#F59E0B" stroke-width="2" />
+    <path d="M243 180 H 246 M243 186 H 246 M266 180 H 269 M266 186 H 269" stroke="#F59E0B" stroke-width="1.5" />
+
+    <!-- Aba Larga Curvada de Faroeste -->
+    <path d="M88 190 
+             C132 178 180 184 256 184 
+             C332 184 380 178 424 190 
+             C446 196 448 214 424 220 
+             C372 232 322 216 256 216 
+             C190 216 140 232 88 220 
+             C64 214 66 196 88 190 Z" 
+          fill="url(#leatherHat)" 
+          stroke="#D4A373" 
+          stroke-width="4" />
+
+    <!-- Sombra Projetada da Aba sobre a Face do Chip -->
+    <path d="M164 206 C206 220 306 220 348 206 L348 224 C306 240 206 240 164 224 Z" 
+          fill="#000000" 
+          opacity="0.45" />
+  </g>
+</svg>
