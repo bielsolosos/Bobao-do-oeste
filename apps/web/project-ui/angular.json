@@ -57,6 +57,17 @@
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+            "development-remote": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development-remote.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -69,6 +80,9 @@
             },
             "development": {
               "buildTarget": "project-ui:build:development"
+            },
+            "development-remote": {
+              "buildTarget": "project-ui:build:development-remote"
             }
           },
           "defaultConfiguration": "development"
