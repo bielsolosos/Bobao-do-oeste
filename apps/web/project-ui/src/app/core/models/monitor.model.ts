@@ -5,11 +5,20 @@ export type ScrapingFrequency =
   | 'EVERY_5_MINUTES'
   | 'EVERY_30_MINUTES'
   | 'HOURLY'
+  | 'EIGHT_TIMES_DAILY'
+  | 'SIX_TIMES_DAILY'
+  | 'FOUR_TIMES_DAILY'
   | 'EVERY_6_HOURS'
   | 'DAILY'
   | 'TWICE_DAILY'
   | 'WEEKLY'
   | 'MANUAL';
+
+export interface ScrapingFrequencyOption {
+  name: ScrapingFrequency;
+  description: string;
+  cronExpression?: string | null;
+}
 
 export interface MonitorSearchQueryResponse {
   id: string;

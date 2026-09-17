@@ -154,12 +154,17 @@ export class MonitorListComponent implements OnInit {
     }
   }
 
+  //Meio sem sentido colocar isso no back-end se tem tudo no front. Corrigir isso depois em algum momento
+  // TODO Corrigir essa alucinada depois.
   frequencyLabel(frequency: ScrapingFrequency): string {
     const labels: Record<ScrapingFrequency, string> = {
       EVERY_MINUTE: 'A cada minuto',
       EVERY_5_MINUTES: 'A cada 5 min',
       EVERY_30_MINUTES: 'A cada 30 min',
       HOURLY: 'A cada hora',
+      EIGHT_TIMES_DAILY: '8x ao dia',
+      SIX_TIMES_DAILY: '6x ao dia',
+      FOUR_TIMES_DAILY: '4x ao dia',
       EVERY_6_HOURS: 'A cada 6 horas',
       DAILY: 'Diário',
       TWICE_DAILY: '2x ao dia',

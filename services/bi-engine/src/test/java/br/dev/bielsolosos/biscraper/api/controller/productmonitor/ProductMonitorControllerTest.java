@@ -172,6 +172,17 @@ class ProductMonitorControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/product-monitors/frequencies - Deve listar todas as opções de frequências com 200 OK")
+    void shouldListFrequencies() throws Exception {
+        mockMvc.perform(get("/api/v1/product-monitors/frequencies"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[?(@.name == 'EIGHT_TIMES_DAILY')].description").value("8 vezes ao dia (a cada 3 horas)"))
+                .andExpect(jsonPath("$[?(@.name == 'SIX_TIMES_DAILY')].description").value("6 vezes ao dia (a cada 4 horas)"))
+                .andExpect(jsonPath("$[?(@.name == 'FOUR_TIMES_DAILY')].description").value("4 vezes ao dia (a cada 6 horas)"));
+    }
+
+    @Test
     @DisplayName("DELETE /api/v1/product-monitors/{id} - Deve excluir monitor e retornar 204 NO CONTENT")
     void shouldDeleteMonitor() throws Exception {
         doNothing().when(service).delete(monitorId);

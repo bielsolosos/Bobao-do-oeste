@@ -13,6 +13,7 @@ import {
   AnalysisType,
   ProductMonitorRequest,
   ScrapingFrequency,
+  ScrapingFrequencyOption,
   Vendor,
 } from '../../../core/models/monitor.model';
 import { UiButtonComponent } from '../../../shared/components/ui-button/ui-button.component';
@@ -62,17 +63,19 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
   keywords = signal<string[]>([]);
   keywordInput = signal('');
 
-  readonly frequencies: { value: ScrapingFrequency; label: string }[] = [
-    { value: 'EVERY_MINUTE', label: 'A cada 1 minuto (agressivo)' },
-    { value: 'EVERY_5_MINUTES', label: 'A cada 5 minutos' },
-    { value: 'EVERY_30_MINUTES', label: 'A cada 30 minutos' },
-    { value: 'HOURLY', label: 'A cada hora' },
-    { value: 'EVERY_6_HOURS', label: 'A cada 6 horas' },
-    { value: 'DAILY', label: 'Uma vez ao dia' },
-    { value: 'TWICE_DAILY', label: 'Duas vezes ao dia' },
-    { value: 'WEEKLY', label: 'Semanal' },
-    { value: 'MANUAL', label: 'Somente manual' },
-  ];
+  frequencies = signal<ScrapingFrequencyOption[]>([
+    { name: 'EVERY_MINUTE', description: 'A cada 1 minuto (agressivo)' },
+    { name: 'EVERY_5_MINUTES', description: 'A cada 5 minutos' },
+    { name: 'EVERY_30_MINUTES', description: 'A cada 30 minutos' },
+    { name: 'HOURLY', description: 'A cada hora' },
+    { name: 'EIGHT_TIMES_DAILY', description: '8 vezes ao dia (a cada 3 horas)' },
+    { name: 'SIX_TIMES_DAILY', description: '6 vezes ao dia (a cada 4 horas)' },
+    { name: 'FOUR_TIMES_DAILY', description: '4 vezes ao dia (a cada 6 horas)' },
+    { name: 'DAILY', description: 'Uma vez ao dia' },
+    { name: 'TWICE_DAILY', description: 'Duas vezes ao dia' },
+    { name: 'WEEKLY', description: 'Semanal' },
+    { name: 'MANUAL', description: 'Somente manual' },
+  ]);
 
   form = this.fb.group(
     {
@@ -112,11 +115,23 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
   });
 
   ngOnInit() {
+    this.loadFrequencies();
     this.monitorId = this.route.snapshot.paramMap.get('id');
     if (this.monitorId) {
       this.isEditMode = true;
       this.loadMonitor(this.monitorId);
     }
+  }
+
+  loadFrequencies() {
+    this.monitorService.getFrequencies().subscribe({
+      next: (options) => {
+        if (options && options.length > 0) {
+          this.frequencies.set(options);
+        }
+      },
+      error: (err) => console.warn('Usando frequências padrão locais:', err),
+    });
   }
 
   hasUnsavedChanges(): boolean {

@@ -1,9 +1,11 @@
 package br.dev.bielsolosos.biscraper.api.controller.productmonitor;
 
-import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
+import br.dev.bielsolosos.biscraper.core.enums.ScrapingFrequency;
+import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
+import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ScrapingFrequencyOptionResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.service.ProductMonitorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Product Monitor", description = "Endpoints para gerenciamento completo dos monitores de produtos.")
@@ -93,6 +97,15 @@ public class ProductMonitorController {
     @PatchMapping("/{id}/activate")
     public ResponseEntity<ProductMonitorResponse> activate(@PathVariable UUID id) {
         return ResponseEntity.ok(service.activate(id));
+    }
+
+    @Operation(summary = "Listar todas as opções disponíveis de frequência de monitoramento")
+    @GetMapping("/frequencies")
+    public ResponseEntity<List<ScrapingFrequencyOptionResponse>> listFrequencies() {
+        List<ScrapingFrequencyOptionResponse> options = Arrays.stream(ScrapingFrequency.values())
+                .map(ScrapingFrequencyOptionResponse::from)
+                .toList();
+        return ResponseEntity.ok(options);
     }
 
     @Operation(summary = "Excluir permanentemente um monitor de produtos")

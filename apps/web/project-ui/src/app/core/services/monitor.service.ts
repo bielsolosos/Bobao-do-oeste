@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
-import { ProductMonitorRequest, ProductMonitorResponse, PageResponse, ScraperQueueStatusResponse } from '../models/monitor.model';
+import { ProductMonitorRequest, ProductMonitorResponse, PageResponse, ScraperQueueStatusResponse, ScrapingFrequencyOption } from '../models/monitor.model';
 import { ScrapedListingResponse } from '../models/listing.model';
 
 @Injectable({
@@ -11,6 +11,10 @@ import { ScrapedListingResponse } from '../models/listing.model';
 export class MonitorService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/product-monitors`;
+
+  getFrequencies(): Observable<ScrapingFrequencyOption[]> {
+    return this.http.get<ScrapingFrequencyOption[]>(`${this.apiUrl}/frequencies`);
+  }
 
   getMonitors(page = 0, size = 10): Observable<PageResponse<ProductMonitorResponse>> {
     return this.http.get<PageResponse<ProductMonitorResponse>>(`${this.apiUrl}?page=${page}&size=${size}`);
