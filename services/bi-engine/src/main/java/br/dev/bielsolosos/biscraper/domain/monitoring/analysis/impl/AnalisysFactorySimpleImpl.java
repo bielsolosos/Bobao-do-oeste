@@ -11,9 +11,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.LlmModelEnum;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto;
+import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
 import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.AnalisysFactory;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
@@ -41,57 +43,53 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
     private static final String ENRICHMENT_SYSTEM_TEMPLATE = """
             Você é um especialista em investigação técnica de produtos em marketplaces.
-            Sua missão é realizar uma triagem inteligente e coletar informações adicionais APENAS quando estritamente necessário para validar se um anúncio atende ao critério do usuário.
+            Sua missão é realizar triagem e coletar informações adicionais com ferramentas (Tools) para validar se anúncios atendem ao critério do usuário.
 
             CRITÉRIO DO USUÁRIO:
             \"\"\"
             {userCriteria}
             \"\"\"
 
-            REGRAS GERAIS DE TRIAGEM E USO DE FERRAMENTAS:
-
-            1. Você possui acesso a ferramentas auxiliares (Tools) que podem enriquecer a sua investigação.
-            2. LEIA ATENTAMENTE a descrição de cada ferramenta antes de usá-la. As regras exatas de QUANDO e COMO usar (ou não usar) cada ferramenta estão documentadas na própria descrição delas. Você DEVE respeitá-las rigorosamente.
-            3. Como princípio de ouro: NUNCA acione ferramentas para produtos obviamente incompatíveis com o critério do usuário (marcas, categorias ou gerações erradas) ou que possuam defeitos graves que os desclassifiquem imediatamente.
-            4. Se o título e os dados básicos fornecidos na entrada inicial já contiverem todas as informações essenciais necessárias para 100%% de validação, confie nesses dados e poupe as chamadas às ferramentas.
+            REGRAS DE INVESTIGAÇÃO E USO DE FERRAMENTAS (TOOLS):
+            1. Descarte IMEDIATAMENTE produtos obviamente incompatíveis (marcas, modelos ou categorias erradas) SEM acionar ferramentas.
+            2. Para anúncios que são candidatos válidos/promissores mas possuem dados resumidos incompletos ou ambíguos (ex: memória RAM, capacidade SSD, variante exata do chip, versão do modelo ou estado de conservação), ACIONE as ferramentas 'getAdditionalInfo' ou 'getAdditionalInfoAndImages' passando o 'vendor' e a 'url' do item.
+            3. Se os dados fornecidos no resumo já forem suficientes para confirmar se o item atende aos critérios com 100% de certeza, não é necessário acionar ferramentas.
 
             SAÍDA DESTA ETAPA:
-            - NÃO calcule nem atribua notas de 0 a 100.
-            - Para cada anúncio (identificado por vendor_listing_id), compile um dossiê técnico conciso detalhando: identificação confirmada (marca/modelo/geração), especificações completas apuradas e o veredito se o item é um candidato válido ou foi descartado.
+            - NÃO calcule nem atribua notas numéricas de 0 a 100 nesta etapa.
+            - Para cada anúncio (identificado por vendor_listing_id), monte um dossiê técnico objetivo com status (DESCARTADO / INVESTIGADO / VALIDADO) e as especificações técnicas apuradas (máx 2 linhas por anúncio).
             """;
 
     private static final String EVALUATION_SYSTEM_TEMPLATE = """
-            Você é um especialista em inteligência de compras e juiz avaliador de mercado (hardware, peças de computador, videogames, eletrônicos em geral).
-            Sua função é avaliar detalhadamente cada anúncio com base no dossiê técnico investigado e nos critérios e preferências do usuário, atribuindo a pontuação final e gerando o resultado estruturado.
+            Você é um juiz avaliador de compras de produtos em marketplaces.
+            Avalie os anúncios com base no dossiê técnico investigado e nos critérios do usuário, atribuindo nota e justificativa curta.
 
             CRITÉRIO DO USUÁRIO:
             \"\"\"
             {userCriteria}
             \"\"\"
 
-            DIRETRIZES DE AVALIAÇÃO E PONTUAÇÃO:
-            1. Avalie cada anúncio com um score numérico de 0.00 a 100.00:
-               - 85.00 a 100.00: Excelente oportunidade, atende perfeitamente aos requisitos e preferências do usuário (especificações corretas, modelo desejado, bom estado).
-               - 65.00 a 84.99: Boa oportunidade, atende aos requisitos principais com pequenas ressalvas aceitáveis (ex: variante ligeiramente diferente mas compatível, marcas de uso).
-               - 45.00 a 64.99: Parcialmente aderente ou com ressalvas moderadas.
-               - 0.00 a 44.99: Não relevante, produto incorreto, geração incompatível, fora do escopo ou preço abusivo.
-            2. Para cada anúncio (vendor_listing_id), forneça:
-               - score: nota de 0.00 a 100.00.
-               - summary: justificativa técnica concisa e objetiva explicando a nota.
-               - highlights: lista de diferenciais e pontos positivos.
-               - concerns: lista de limitações, ressalvas ou pontos de atenção.
-            3. Retorne a resposta estritamente no formato BatchAnalysisResponse.
+            DIRETRIZES DE PONTUAÇÃO (0.0 a 100.0):
+            - 85.0 a 100.0: Excelente oportunidade (atende plenamente aos requisitos e bom preço).
+            - 65.0 a 84.9: Boa oportunidade com pequenas ressalvas aceitáveis.
+            - 45.0 a 64.9: Parcialmente aderente ou ressalvas moderadas.
+            - 0.0 a 44.9: Não relevante, produto incorreto, fora do escopo ou defeituoso.
+
+            DIRETRIZES DE SAÍDA:
+            - "reason": Justificativa técnica estritamente concisa em no máximo 15 palavras.
+            - Responda EXCLUSIVAMENTE em JSON válido com a estrutura:
+            {"results":[{"id":"ID_DO_ANUNCIO","score":85.0,"reason":"justificativa curta"}]}
             """;
 
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
-    private final br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService aiAnalysisLogService;
+    private final AiAnalysisLogService aiAnalysisLogService;
     private final ScrappingDetailsTools detailsTools;
 
     public AnalisysFactorySimpleImpl(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
             ObjectMapper objectMapper,
-            br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService aiAnalysisLogService,
+            AiAnalysisLogService aiAnalysisLogService,
             ScrappingDetailsTools detailsTools
     ) {
         this.objectMapper = objectMapper;
@@ -145,10 +143,12 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         String modelName = LlmModelEnum.GEMINI_2_5_FLASH_LITE.getModel();
 
         // ==============================================================================
-        // ETAPA 1: Investigação e Coleta de Dados via Tool Calling (Sem cálculo de notas)
+        // ETAPA 1: Investigação e Coleta de Dados via Tool Calling (Saída telegráfica enxuta)
         // ==============================================================================
         long step1Start = System.currentTimeMillis();
         String enrichedAnalysis;
+        String step1SystemPrompt = ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria);
+        String step1UserPrompt = "Analise os anúncios a seguir e investigue via ferramentas os anúncios promissores que precisarem de confirmação técnica para montar o dossiê:\n" + itemsJson;
 
         try {
             log.debug("Executando Etapa 1 (Investigação e Coleta com Tools) para lote de {} anúncios...", batch.size());
@@ -157,8 +157,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .options(ChatOptions.builder()
                             .model(modelName)
                             .temperature(0.2))
-                    .system(s -> s.text(ENRICHMENT_SYSTEM_TEMPLATE).param("userCriteria", userCriteria))
-                    .user(u -> u.text("Analise os anúncios a seguir e obtenha mais informações via ferramenta quando necessário para montar o dossiê de cada um:\n{itemsJson}").param("itemsJson", itemsJson))
+                    .messages(new SystemMessage(step1SystemPrompt), new UserMessage(step1UserPrompt))
                     .call()
                     .chatResponse();
 
@@ -171,8 +170,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .scrapingExecution(execution)
                     .modelName(modelName)
                     .itemsCount(batch.size())
-                    .systemPrompt(ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
-                    .userPrompt("Investigação de " + batch.size() + " anúncios:\n" + itemsJson)
+                    .systemPrompt(step1SystemPrompt)
+                    .userPrompt(step1UserPrompt)
                     .rawResponse(enrichedAnalysis)
                     .status("SUCCESS")
                     .durationMs(step1Duration)
@@ -189,8 +188,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .scrapingExecution(execution)
                     .modelName(modelName)
                     .itemsCount(batch.size())
-                    .systemPrompt(ENRICHMENT_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
-                    .userPrompt(itemsJson)
+                    .systemPrompt(step1SystemPrompt)
+                    .userPrompt(step1UserPrompt)
                     .status("ERROR")
                     .durationMs(step1Duration)
                     .errorMessage("Etapa 1 (Investigação) falhou: " + e.getMessage())
@@ -203,27 +202,25 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         }
 
         // ==============================================================================
-        // ETAPA 2: Avaliação, Pontuação e Estruturação Estrita no DTO (BatchAnalysisResponse)
+        // ETAPA 2: Avaliação, Pontuação e Estruturação Enxuta (JSON com id, score, reason)
         // ==============================================================================
         long step2Start = System.currentTimeMillis();
+        String step2SystemPrompt = EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria);
+        String step2UserPrompt = "Gere a avaliação JSON com base no dossiê técnico:\n\n" + (enrichedAnalysis != null ? enrichedAnalysis : "");
 
         try {
-            log.debug("Executando Etapa 2 (Avaliação e Estruturação de Objeto) para lote de {} anúncios...", batch.size());
-            BeanOutputConverter<BatchAnalysisResponse> converter = new BeanOutputConverter<>(BatchAnalysisResponse.class);
+            log.debug("Executando Etapa 2 (Avaliação e Estruturação Enxuta) para lote de {} anúncios...", batch.size());
 
             ChatResponse response2 = chatClient.prompt()
                     .options(ChatOptions.builder()
                             .model(modelName)
                             .temperature(0.1))
-                    .system(s -> s.text(EVALUATION_SYSTEM_TEMPLATE).param("userCriteria", userCriteria))
-                    .user(u -> u.text("Avalie os seguintes anúncios com base no dossiê técnico investigado e gere o resultado estruturado:\n\n{enrichedAnalysis}\n\n{format}")
-                                .param("enrichedAnalysis", enrichedAnalysis != null ? enrichedAnalysis : "")
-                                .param("format", converter.getFormat()))
+                    .messages(new SystemMessage(step2SystemPrompt), new UserMessage(step2UserPrompt))
                     .call()
                     .chatResponse();
 
             String responseContent = response2.getResult().getOutput().getText();
-            BatchAnalysisResponse aiResponse = converter.convert(responseContent);
+            BatchAnalysisResponse aiResponse = parseBatchResponse(responseContent);
 
             int step2Duration = (int) (System.currentTimeMillis() - step2Start);
 
@@ -233,8 +230,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .scrapingExecution(execution)
                     .modelName(modelName)
                     .itemsCount(batch.size())
-                    .systemPrompt(EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
-                    .userPrompt(enrichedAnalysis != null ? enrichedAnalysis : "")
+                    .systemPrompt(step2SystemPrompt)
+                    .userPrompt(step2UserPrompt)
                     .rawResponse(responseContent)
                     .status("SUCCESS")
                     .durationMs(step2Duration)
@@ -265,8 +262,6 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
                     Map<String, Object> params = new HashMap<>();
                     params.put("summary", result.summary() != null ? result.summary() : "");
-                    params.put("highlights", result.highlights() != null ? result.highlights() : Collections.emptyList());
-                    params.put("concerns", result.concerns() != null ? result.concerns() : Collections.emptyList());
                     params.put("score", score);
 
                     batchResponses.add(new AnalisysResponse(execution, item, tier, score, params));
@@ -286,8 +281,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .scrapingExecution(execution)
                     .modelName(modelName)
                     .itemsCount(batch.size())
-                    .systemPrompt(EVALUATION_SYSTEM_TEMPLATE.replace("{userCriteria}", userCriteria))
-                    .userPrompt(enrichedAnalysis != null ? enrichedAnalysis : "")
+                    .systemPrompt(step2SystemPrompt)
+                    .userPrompt(step2UserPrompt)
                     .status("ERROR")
                     .durationMs(step2Duration)
                     .errorMessage("Etapa 2 (Avaliação) falhou: " + e.getMessage())
@@ -296,6 +291,27 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
             if (execution != null) execution.setUsedFallback(true);
             return createFallbackResponses(execution, batch);
+        }
+    }
+
+    private BatchAnalysisResponse parseBatchResponse(String rawContent) {
+        if (rawContent == null || rawContent.isBlank()) {
+            return null;
+        }
+        try {
+            String cleaned = rawContent.strip();
+            if (cleaned.startsWith("```json")) {
+                cleaned = cleaned.substring(7);
+            } else if (cleaned.startsWith("```")) {
+                cleaned = cleaned.substring(3);
+            }
+            if (cleaned.endsWith("```")) {
+                cleaned = cleaned.substring(0, cleaned.length() - 3);
+            }
+            return objectMapper.readValue(cleaned.strip(), BatchAnalysisResponse.class);
+        } catch (Exception e) {
+            log.warn("Falha ao desserializar JSON da Etapa 2: {}. Conteúdo bruto: {}", e.getMessage(), rawContent);
+            return null;
         }
     }
 
@@ -325,25 +341,32 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
     }
 
     /**
-     * Método responsável por transformar todos os itens coletados em um json para a IA ler.
-     * @param batch
-     * @return
+     * Transforma os itens coletados em um payload compacto para o prompt, omitindo campos desnecessários/vazios.
      */
     private String formatBatchForPrompt(List<ScrapedListingDTO> batch) {
-        List<Map<String, Object>> list = new ArrayList<>();
+        List<Map<String, Object>> list = new ArrayList<>(batch.size());
         for (ScrapedListingDTO item : batch) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("vendor_listing_id", item.vendorListingId());
             map.put("vendor", item.vendor() != null ? item.vendor().name() : "OLX");
-            map.put("url", item.url());
+            if (item.url() != null && !item.url().isBlank()) {
+                map.put("url", item.url());
+            }
             map.put("title", item.title());
-            map.put("price", item.price());
-            map.put("original_price", item.originalPrice());
-            map.put("location", (item.city() != null ? item.city() : "") + (item.state() != null ? "/" + item.state() : ""));
-            map.put("has_delivery", item.hasDelivery());
-            map.put("description", item.description() != null && item.description().length() > 300
-                    ? item.description().substring(0, 300) + "..."
-                    : item.description());
+            if (item.price() != null) {
+                map.put("price", item.price());
+            }
+            if (item.hasDelivery()) {
+                map.put("has_delivery", true);
+            }
+            String loc = (item.city() != null ? item.city() : "") + (item.state() != null ? "/" + item.state() : "");
+            if (!loc.isBlank()) {
+                map.put("location", loc);
+            }
+            if (item.description() != null && !item.description().isBlank()) {
+                String desc = item.description().strip();
+                map.put("description", desc.length() > 450 ? desc.substring(0, 450) + "..." : desc);
+            }
             list.add(map);
         }
         try {

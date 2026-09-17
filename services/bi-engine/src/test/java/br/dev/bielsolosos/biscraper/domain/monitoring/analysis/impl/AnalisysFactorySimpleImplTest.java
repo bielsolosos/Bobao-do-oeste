@@ -88,9 +88,9 @@ class AnalisysFactorySimpleImplTest {
         ScrapedListingDTO item2 = createListing("item-2", "Acer Nitro 5 i5 8GB", BigDecimal.valueOf(2800));
         ScrapedListingDTO item3 = createListing("item-3", "Positivo Celeron 4GB", BigDecimal.valueOf(800));
 
-        ItemAnalysisResult res1 = new ItemAnalysisResult("item-1", BigDecimal.valueOf(95.0), "Excelente estado e atende todos requisitos", List.of("i7", "16GB"), List.of());
-        ItemAnalysisResult res2 = new ItemAnalysisResult("item-2", BigDecimal.valueOf(70.0), "Bom notebook mas tem 8GB", List.of("Preço bom"), List.of("Apenas 8GB"));
-        ItemAnalysisResult res3 = new ItemAnalysisResult("item-3", BigDecimal.valueOf(20.0), "Não atende especificações", List.of(), List.of("Celeron"));
+        ItemAnalysisResult res1 = new ItemAnalysisResult("item-1", BigDecimal.valueOf(95.0), "Excelente estado e atende todos requisitos");
+        ItemAnalysisResult res2 = new ItemAnalysisResult("item-2", BigDecimal.valueOf(70.0), "Bom notebook mas tem 8GB");
+        ItemAnalysisResult res3 = new ItemAnalysisResult("item-3", BigDecimal.valueOf(20.0), "Não atende especificações");
 
         BatchAnalysisResponse aiResponse = new BatchAnalysisResponse(List.of(res1, res2, res3));
 
@@ -113,12 +113,12 @@ class AnalisysFactorySimpleImplTest {
 
         // Etapa 1
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec1 = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(org.springframework.ai.chat.prompt.ChatOptions.Builder.class)).system(any(java.util.function.Consumer.class)).user(any(java.util.function.Consumer.class)).call()).thenReturn(callSpec1);
+        when(chatClient.prompt().tools(any()).options(any(org.springframework.ai.chat.prompt.ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec1);
         when(callSpec1.chatResponse()).thenReturn(mockResponse1);
 
         // Etapa 2
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec2 = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().options(any(org.springframework.ai.chat.prompt.ChatOptions.Builder.class)).system(any(java.util.function.Consumer.class)).user(any(java.util.function.Consumer.class)).call()).thenReturn(callSpec2);
+        when(chatClient.prompt().options(any(org.springframework.ai.chat.prompt.ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec2);
         when(callSpec2.chatResponse()).thenReturn(mockResponse2);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1, item2, item3));
@@ -166,7 +166,7 @@ class AnalisysFactorySimpleImplTest {
         AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpecEx = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        lenient().when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).system(any(java.util.function.Consumer.class)).user(any(java.util.function.Consumer.class)).call()).thenReturn(callSpecEx);
+        lenient().when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpecEx);
         lenient().when(callSpecEx.chatResponse()).thenThrow(new RuntimeException("API indisponível"));
 
         ScrapedListingDTO item1 = createListing("item-1", "Notebook", BigDecimal.valueOf(3000));
