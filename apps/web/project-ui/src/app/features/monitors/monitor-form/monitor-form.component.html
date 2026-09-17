@@ -195,12 +195,12 @@
       </div>
     </app-ui-card>
 
-    <app-ui-card title="Inteligência artificial" subtitle="Como o Gemini classifica cada anúncio.">
+    <app-ui-card title="Inteligência artificial & Análise" subtitle="Como o Gemini avalia e classifica cada anúncio coletado.">
       <app-ui-form-field
         fieldId="monitor-analysis"
         label="Estratégia de análise"
         [required]="true"
-        hint="NONE coleta os dados brutos. SIMPLE usa um prompt customizado. NOTEBOOK extrai especificações técnicas."
+        hint="Escolha como a IA deve inspecionar e avaliar os anúncios encontrados."
       >
         <select
           id="monitor-analysis"
@@ -209,57 +209,219 @@
         >
           <option value="NONE">Coleta bruta (sem IA)</option>
           <option value="SIMPLE">Prompt personalizado</option>
-          <option value="NOTEBOOK">Extrator especializado de notebooks</option>
+          <option value="NOTEBOOK">Extrator Especializado de Notebooks</option>
         </select>
       </app-ui-form-field>
 
+      <!-- ========================================== -->
+      <!-- PAINEL DE PROMPT PERSONALIZADO (SIMPLE)    -->
+      <!-- ========================================== -->
       @if (analysisTypeCtrl.value === 'SIMPLE') {
-        <div class="mt-4 rounded-lg border border-radar/30 bg-radar/5 p-4" formGroupName="simpleFields">
+        <div class="mt-4 rounded-xl border border-radar/30 bg-radar/5 p-4" formGroupName="simpleFields">
           <app-ui-form-field
             fieldId="monitor-prompt"
-            label="System prompt / regras de negócio"
-            hint="Instruções claras para o Gemini classificar o anúncio."
+            label="Regras de negócio / Prompt do usuário"
+            hint="Instruções claras em texto livre para o Gemini classificar o anúncio."
           >
             <textarea
               id="monitor-prompt"
               formControlName="prompt"
               rows="4"
               class="w-full rounded-lg border border-radar/30 bg-surface px-4 py-2.5 font-mono text-sm text-brand-950 transition-colors focus:border-radar focus:outline-none focus:ring-2 focus:ring-radar"
-              placeholder="Ex: Descarte anúncios com 'com defeito' ou 'tela trincada'. Marque como HIGH quando for 16GB de RAM."
+              placeholder="Ex: Descarte anúncios com 'com defeito' ou 'tela trincada'. Marque como HIGH quando for 16GB de RAM e M1 Pro."
             ></textarea>
           </app-ui-form-field>
         </div>
       }
 
+      <!-- ========================================== -->
+      <!-- PAINEL ESPECIALIZADO DE NOTEBOOKS          -->
+      <!-- ========================================== -->
       @if (analysisTypeCtrl.value === 'NOTEBOOK') {
-        <div class="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-brand-amber/30 bg-brand-amber/5 p-4 sm:grid-cols-2" formGroupName="notebookFields">
+        <div class="mt-6 space-y-6 rounded-2xl border border-brand-amber/30 bg-brand-amber/5 p-5" formGroupName="notebookFields">
+          <div class="flex items-center gap-2 border-b border-brand-amber/20 pb-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-amber/20 text-brand-amber-strong">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </span>
+            <div>
+              <h4 class="text-sm font-semibold text-brand-950">Critérios Técnicos de Notebook</h4>
+              <p class="text-xs text-brand-950/60">Selecione os requisitos de hardware aceitos para guiar o Gemini na triagem automática.</p>
+            </div>
+          </div>
+
+          <!-- 1. Marcas -->
           <app-ui-form-field
-            fieldId="monitor-ram"
-            label="Memória RAM mínima (GB)"
+            label="Marcas de Fabricante desejadas"
+            hint="Deixe vazio para aceitar qualquer marca, ou selecione uma ou mais marcas."
           >
-            <input
-              id="monitor-ram"
-              formControlName="minimumRamGb"
-              type="number"
-              min="0"
-              class="w-full rounded-lg border border-brand-amber/40 bg-surface px-4 py-2.5 text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
-            />
+            <app-ui-multiselect
+              formControlName="brands"
+              [options]="notebookBrandOptions"
+              placeholder="Todas as marcas (ou selecione as desejadas)..."
+            ></app-ui-multiselect>
           </app-ui-form-field>
 
-          <app-ui-form-field
-            fieldId="monitor-gpu"
-            label="GPU dedicada obrigatória"
-          >
-            <select
-              id="monitor-gpu"
-              formControlName="needsDedicatedGpu"
-              class="w-full rounded-lg border border-brand-amber/40 bg-surface px-4 py-2.5 text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+          <!-- 2. Seção de Processador (CPU) -->
+          <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-4">
+            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Processamento & CPU</h5>
+            
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <app-ui-form-field
+                label="Fabricante do Processador"
+                hint="Quais arquiteturas são aceitas."
+              >
+                <app-ui-multiselect
+                  formControlName="processorVendors"
+                  [options]="processorVendorOptions"
+                  placeholder="Intel, AMD, Apple, etc..."
+                ></app-ui-multiselect>
+              </app-ui-form-field>
+
+              <app-ui-form-field
+                label="Geração Mínima (Intel / AMD)"
+                hint="Opcional. Ex: 11 (para 11ª Gen+ / Ryzen série 5000+)"
+              >
+                <input
+                  type="number"
+                  min="1"
+                  formControlName="minimumProcessorGeneration"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-4 py-2 text-sm text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+                  placeholder="Ex: 11"
+                />
+              </app-ui-form-field>
+            </div>
+
+            <app-ui-form-field
+              label="Nível de Desempenho do Processador (Tier)"
+              hint="Selecione as categorias de força que atendem ao seu caso de uso."
             >
-              <option [ngValue]="null">Não importa</option>
-              <option [ngValue]="true">Sim, exigir</option>
-              <option [ngValue]="false">Não exigir</option>
-            </select>
-          </app-ui-form-field>
+              <app-ui-multiselect
+                formControlName="processorTiers"
+                [options]="processorTierOptions"
+                placeholder="Selecione os níveis de desempenho..."
+              ></app-ui-multiselect>
+            </app-ui-form-field>
+          </div>
+
+          <!-- 3. Memória RAM -->
+          <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-4">
+            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Memória RAM</h5>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-brand-950">RAM Mínima</label>
+              <div class="flex flex-wrap items-center gap-2">
+                @for (gb of ramQuickOptions; track gb) {
+                  <button
+                    type="button"
+                    (click)="setQuickRam(gb)"
+                    class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                    [ngClass]="
+                      notebookGroup.get('minimumRamGb')?.value === gb
+                        ? 'bg-brand-amber-strong text-white shadow-sm ring-2 ring-brand-amber-strong'
+                        : 'border border-brand-950/20 bg-surface text-brand-950 hover:bg-brand-950/5'
+                    "
+                  >
+                    {{ gb }} GB
+                  </button>
+                }
+                <div class="flex items-center gap-1.5 ml-auto">
+                  <span class="text-xs text-brand-950/50">Customizado:</span>
+                  <input
+                    type="number"
+                    min="4"
+                    formControlName="minimumRamGb"
+                    class="w-20 rounded-md border border-brand-950/20 bg-surface px-2.5 py-1 text-xs text-brand-950 focus:border-brand-amber-strong focus:outline-none focus:ring-1 focus:ring-brand-amber-strong"
+                    placeholder="GB"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <app-ui-form-field
+              label="Tecnologias de RAM aceitas"
+              hint="Opcional. Deixe vazio para aceitar qualquer tipo."
+            >
+              <app-ui-multiselect
+                formControlName="ramTypes"
+                [options]="ramTypeOptions"
+                placeholder="DDR4, DDR5, LPDDR5..."
+              ></app-ui-multiselect>
+            </app-ui-form-field>
+          </div>
+
+          <!-- 4. Armazenamento -->
+          <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-4">
+            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Armazenamento & Disco</h5>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-brand-950">Capacidade Mínima</label>
+              <div class="flex flex-wrap items-center gap-2">
+                @for (opt of storageQuickOptions; track opt.value) {
+                  <button
+                    type="button"
+                    (click)="setQuickStorage(opt.value)"
+                    class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                    [ngClass]="
+                      notebookGroup.get('minimumStorageGb')?.value === opt.value
+                        ? 'bg-brand-amber-strong text-white shadow-sm ring-2 ring-brand-amber-strong'
+                        : 'border border-brand-950/20 bg-surface text-brand-950 hover:bg-brand-950/5'
+                    "
+                  >
+                    {{ opt.label }}
+                  </button>
+                }
+                <div class="flex items-center gap-1.5 ml-auto">
+                  <span class="text-xs text-brand-950/50">Customizado (GB):</span>
+                  <input
+                    type="number"
+                    min="64"
+                    formControlName="minimumStorageGb"
+                    class="w-24 rounded-md border border-brand-950/20 bg-surface px-2.5 py-1 text-xs text-brand-950 focus:border-brand-amber-strong focus:outline-none focus:ring-1 focus:ring-brand-amber-strong"
+                    placeholder="GB"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <app-ui-form-field
+              label="Tipos de Disco aceitos"
+              hint="Opcional. Selecione se deseja exigir SSD NVMe ou SSD convencional."
+            >
+              <app-ui-multiselect
+                formControlName="diskTypes"
+                [options]="diskTypeOptions"
+                placeholder="SSD NVMe, SSD SATA..."
+              ></app-ui-multiselect>
+            </app-ui-form-field>
+          </div>
+
+          <!-- 5. Tela & Placa de Vídeo -->
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-2">
+              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Tela & Resolução</h5>
+              <app-ui-multiselect
+                formControlName="screenResolutions"
+                [options]="screenResolutionOptions"
+                placeholder="Full HD, 2K, Retina..."
+              ></app-ui-multiselect>
+              <p class="text-[11px] text-brand-950/50">Deixe vazio para aceitar qualquer resolução.</p>
+            </div>
+
+            <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-2">
+              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Placa de Vídeo (GPU)</h5>
+              <select
+                formControlName="needsDedicatedGpu"
+                class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+              >
+                <option [ngValue]="null">Tanto faz (Integrada ou Dedicada)</option>
+                <option [ngValue]="true">Exigir GPU Dedicada (NVIDIA / Radeon)</option>
+                <option [ngValue]="false">Não exigir (Integrada / Apple Silicon ok)</option>
+              </select>
+              <p class="text-[11px] text-brand-950/50">Essencial para notebooks gamers e render 3D.</p>
+            </div>
+          </div>
         </div>
       }
     </app-ui-card>

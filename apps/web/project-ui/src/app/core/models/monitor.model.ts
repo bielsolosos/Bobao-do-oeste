@@ -32,12 +32,66 @@ export interface MonitorSearchQueryResponse {
   active?: boolean;
 }
 
+export type ScreenResolution =
+  | 'HD'
+  | 'FULL_HD'
+  | 'WUXGA'
+  | 'QHD_2K'
+  | 'WQXGA_2K'
+  | 'UHD_4K'
+  | 'RETINA';
+
+export type DiskType = 'SSD' | 'SSD_NVME' | 'SSD_SATA' | 'HDD' | 'EMMC';
+
+export type ProcessorBrand = 'INTEL' | 'AMD' | 'APPLE' | 'QUALCOMM';
+
+export type NotebookBrand =
+  | 'APPLE'
+  | 'DELL'
+  | 'LENOVO'
+  | 'ACER'
+  | 'ASUS'
+  | 'HP'
+  | 'SAMSUNG'
+  | 'AVELL'
+  | 'LG'
+  | 'VAIO'
+  | 'MSI'
+  | 'ALIENWARE'
+  | 'OTHER';
+
+export type RamType =
+  | 'DDR1'
+  | 'DDR2'
+  | 'DDR3'
+  | 'DDR4'
+  | 'DDR5'
+  | 'LPDDR4'
+  | 'LPDDR5';
+
+export type ProcessorTier = 'ENTRY' | 'INTERMEDIATE' | 'ADVANCED';
+
+export interface ProcessorTierOption {
+  tier: ProcessorTier;
+  title: string;
+  description: string;
+  typicalExamples: string;
+}
+
 export interface SimpleAnalysisFields {
   prompt?: string;
 }
 
 export interface NotebookAnalysisFields {
+  brands?: NotebookBrand[];
+  processorVendors?: ProcessorBrand[];
+  processorTiers?: ProcessorTier[];
+  minimumProcessorGeneration?: number;
   minimumRamGb?: number;
+  ramTypes?: RamType[];
+  minimumStorageGb?: number;
+  diskTypes?: DiskType[];
+  screenResolutions?: ScreenResolution[];
   needsDedicatedGpu?: boolean | null;
 }
 

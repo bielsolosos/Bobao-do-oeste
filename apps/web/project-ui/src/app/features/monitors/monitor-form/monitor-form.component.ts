@@ -11,14 +11,24 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
 import {
   AnalysisType,
+  DiskType,
+  NotebookBrand,
+  ProcessorBrand,
+  ProcessorTier,
   ProductMonitorRequest,
+  RamType,
   ScrapingFrequency,
   ScrapingFrequencyOption,
+  ScreenResolution,
   Vendor,
 } from '../../../core/models/monitor.model';
 import { UiButtonComponent } from '../../../shared/components/ui-button/ui-button.component';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiFormFieldComponent } from '../../../shared/components/ui-form-field/ui-form-field.component';
+import {
+  MultiSelectOption,
+  UiMultiSelectComponent,
+} from '../../../shared/components/ui-multiselect/ui-multiselect.component';
 import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
 import { UiStatePanelComponent } from '../../../shared/components/ui-state-panel/ui-state-panel.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
@@ -42,6 +52,7 @@ function priceRangeValidator(group: AbstractControl): ValidationErrors | null {
     UiButtonComponent,
     UiCardComponent,
     UiFormFieldComponent,
+    UiMultiSelectComponent,
     UiPageHeaderComponent,
     UiStatePanelComponent,
   ],
@@ -77,6 +88,86 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
     { name: 'MANUAL', description: 'Somente manual' },
   ]);
 
+  // --- Opções para MultiSelects de Notebook ---
+  readonly notebookBrandOptions: MultiSelectOption<NotebookBrand>[] = [
+    { label: 'Apple', value: 'APPLE', badge: 'MacBook' },
+    { label: 'Dell', value: 'DELL', badge: 'XPS / Inspiron / G15' },
+    { label: 'Lenovo', value: 'LENOVO', badge: 'ThinkPad / Legion / IdeaPad' },
+    { label: 'Acer', value: 'ACER', badge: 'Nitro / Predator / Aspire' },
+    { label: 'Asus', value: 'ASUS', badge: 'ROG / TUF / ZenBook' },
+    { label: 'HP', value: 'HP', badge: 'Victus / Pavilion / Omen' },
+    { label: 'Samsung', value: 'SAMSUNG', badge: 'Galaxy Book' },
+    { label: 'Avell', value: 'AVELL', badge: 'Workstation / Gamer' },
+    { label: 'LG', value: 'LG', badge: 'Gram' },
+    { label: 'Vaio', value: 'VAIO' },
+    { label: 'MSI', value: 'MSI', badge: 'Gamer' },
+    { label: 'Alienware', value: 'ALIENWARE', badge: 'Ultra Gamer' },
+    { label: 'Outra marca', value: 'OTHER' },
+  ];
+
+  readonly processorVendorOptions: MultiSelectOption<ProcessorBrand>[] = [
+    { label: 'Intel', value: 'INTEL', description: 'Core i3, i5, i7, i9 e Core Ultra' },
+    { label: 'AMD', value: 'AMD', description: 'Ryzen 3, 5, 7, 9 e AI' },
+    { label: 'Apple Silicon', value: 'APPLE', description: 'Chips M1, M2, M3, M4 (Base, Pro, Max)' },
+    { label: 'Qualcomm', value: 'QUALCOMM', description: 'Snapdragon X Plus e X Elite (ARM)' },
+  ];
+
+  readonly processorTierOptions: MultiSelectOption<ProcessorTier>[] = [
+    {
+      label: 'Básico / Uso Leve',
+      value: 'ENTRY',
+      description: 'Navegação, estudos e escritório básico (Core i3, Ryzen 3, N100)',
+      badge: 'i3 / R3',
+    },
+    {
+      label: 'Intermediário / Produtividade',
+      value: 'INTERMEDIATE',
+      description: 'Trabalho diário, multitarefa e programação (Core i5, Ryzen 5, M1/M2/M3 base, Ultra 5)',
+      badge: 'i5 / R5 / M1',
+    },
+    {
+      label: 'Alto Desempenho / Pesado',
+      value: 'ADVANCED',
+      description: 'Jogos pesados, render 3D e edição de vídeo (Core i7/i9, Ryzen 7/9, M Pro/Max/Ultra)',
+      badge: 'i7 / i9 / R7 / M Pro',
+    },
+  ];
+
+  readonly ramTypeOptions: MultiSelectOption<RamType>[] = [
+    { label: 'DDR4', value: 'DDR4', description: 'Padrão tradicional de mercado' },
+    { label: 'DDR5', value: 'DDR5', badge: 'Mais rápida', description: 'Alta velocidade e eficiência' },
+    { label: 'LPDDR5 / LPDDR5X', value: 'LPDDR5', badge: 'Ultrabooks / Mac', description: 'Baixo consumo de energia' },
+    { label: 'LPDDR4 / LPDDR4X', value: 'LPDDR4', description: 'Ultrabooks compactos' },
+    { label: 'DDR3', value: 'DDR3', badge: 'Antiga', description: 'Notebooks mais antigos' },
+  ];
+
+  readonly diskTypeOptions: MultiSelectOption<DiskType>[] = [
+    { label: 'SSD NVMe / M.2', value: 'SSD_NVME', badge: 'Ultra Rápido', description: 'Leituras ultra-rápidas acima de 2000MB/s' },
+    { label: 'SSD SATA', value: 'SSD_SATA', description: 'SSD convencional 2.5" de alta confiabilidade' },
+    { label: 'SSD (Genérico)', value: 'SSD', description: 'Qualquer tecnologia SSD' },
+    { label: 'HD Mecânico', value: 'HDD', description: 'Disco rígido tradicional de grande capacidade' },
+    { label: 'eMMC Flash', value: 'EMMC', description: 'Armazenamento flash básico integrado' },
+  ];
+
+  readonly screenResolutionOptions: MultiSelectOption<ScreenResolution>[] = [
+    { label: 'Full HD (1080p)', value: 'FULL_HD', badge: '1920x1080', description: 'Padrão nítido mais comum' },
+    { label: '2K / QHD', value: 'QHD_2K', badge: '2560x1440', description: 'Alta definição e amplo espaço visual' },
+    { label: 'Retina / Liquid Retina', value: 'RETINA', badge: 'Apple', description: 'Telas de altíssima densidade de pixels' },
+    { label: 'WUXGA (16:10)', value: 'WUXGA', badge: '1920x1200', description: 'Excelente para produtividade vertical' },
+    { label: '2.5K / WQXGA (16:10)', value: 'WQXGA_2K', badge: '2560x1600', description: 'Display premium de trabalho e games' },
+    { label: '4K Ultra HD', value: 'UHD_4K', badge: '3840x2160', description: 'Resolução máxima para edição visual' },
+    { label: 'HD (720p)', value: 'HD', badge: '1366x768', description: 'Resolução básica de entrada' },
+  ];
+
+  readonly ramQuickOptions = [4, 8, 16, 32, 64];
+  readonly storageQuickOptions = [
+    { label: '128 GB', value: 128 },
+    { label: '256 GB', value: 256 },
+    { label: '512 GB', value: 512 },
+    { label: '1 TB', value: 1024 },
+    { label: '2 TB', value: 2048 },
+  ];
+
   form = this.fb.group(
     {
       name: ['', [Validators.required, Validators.maxLength(150)]],
@@ -93,7 +184,15 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
         prompt: [''],
       }),
       notebookFields: this.fb.group({
-        minimumRamGb: [8],
+        brands: [[] as NotebookBrand[]],
+        processorVendors: [[] as ProcessorBrand[]],
+        processorTiers: [[] as ProcessorTier[]],
+        minimumProcessorGeneration: [null as number | null, [Validators.min(1)]],
+        minimumRamGb: [null as number | null, [Validators.min(4)]],
+        ramTypes: [[] as RamType[]],
+        minimumStorageGb: [null as number | null, [Validators.min(64)]],
+        diskTypes: [[] as DiskType[]],
+        screenResolutions: [[] as ScreenResolution[]],
         needsDedicatedGpu: [null as boolean | null],
       }),
     },
@@ -102,6 +201,10 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
 
   get analysisTypeCtrl() {
     return this.form.get('analysisType')!;
+  }
+
+  get notebookGroup() {
+    return this.form.get('notebookFields')!;
   }
 
   formError = computed(() => {
@@ -170,7 +273,15 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
             });
           } else if (m.analysisType === 'NOTEBOOK') {
             this.form.get('notebookFields')?.patchValue({
-              minimumRamGb: m.expectedSpecs.minimumRamGb ?? 8,
+              brands: m.expectedSpecs.brands ?? [],
+              processorVendors: m.expectedSpecs.processorVendors ?? [],
+              processorTiers: m.expectedSpecs.processorTiers ?? [],
+              minimumProcessorGeneration: m.expectedSpecs.minimumProcessorGeneration ?? null,
+              minimumRamGb: m.expectedSpecs.minimumRamGb ?? null,
+              ramTypes: m.expectedSpecs.ramTypes ?? [],
+              minimumStorageGb: m.expectedSpecs.minimumStorageGb ?? null,
+              diskTypes: m.expectedSpecs.diskTypes ?? [],
+              screenResolutions: m.expectedSpecs.screenResolutions ?? [],
               needsDedicatedGpu:
                 m.expectedSpecs.needsDedicatedGpu !== undefined
                   ? m.expectedSpecs.needsDedicatedGpu
@@ -219,6 +330,26 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
     this.form.markAsDirty();
   }
 
+  setQuickRam(gb: number) {
+    const ctrl = this.notebookGroup.get('minimumRamGb');
+    if (ctrl?.value === gb) {
+      ctrl.setValue(null);
+    } else {
+      ctrl?.setValue(gb);
+    }
+    this.form.markAsDirty();
+  }
+
+  setQuickStorage(gb: number) {
+    const ctrl = this.notebookGroup.get('minimumStorageGb');
+    if (ctrl?.value === gb) {
+      ctrl.setValue(null);
+    } else {
+      ctrl?.setValue(gb);
+    }
+    this.form.markAsDirty();
+  }
+
   onSubmit() {
     this.form.markAllAsTouched();
 
@@ -234,9 +365,18 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
     if (v.analysisType === 'SIMPLE') {
       analysisTypeFields = { prompt: v.simpleFields?.prompt ?? undefined };
     } else if (v.analysisType === 'NOTEBOOK') {
+      const nf = v.notebookFields;
       analysisTypeFields = {
-        minimumRamGb: v.notebookFields?.minimumRamGb ?? undefined,
-        needsDedicatedGpu: v.notebookFields?.needsDedicatedGpu,
+        brands: nf?.brands?.length ? nf.brands : undefined,
+        processorVendors: nf?.processorVendors?.length ? nf.processorVendors : undefined,
+        processorTiers: nf?.processorTiers?.length ? nf.processorTiers : undefined,
+        minimumProcessorGeneration: nf?.minimumProcessorGeneration ?? undefined,
+        minimumRamGb: nf?.minimumRamGb ?? undefined,
+        ramTypes: nf?.ramTypes?.length ? nf.ramTypes : undefined,
+        minimumStorageGb: nf?.minimumStorageGb ?? undefined,
+        diskTypes: nf?.diskTypes?.length ? nf.diskTypes : undefined,
+        screenResolutions: nf?.screenResolutions?.length ? nf.screenResolutions : undefined,
+        needsDedicatedGpu: nf?.needsDedicatedGpu,
       };
     }
 
@@ -262,7 +402,10 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
     request$.subscribe({
       next: () => {
         this.form.markAsPristine();
-        this.toast.success('Sucesso', `Monitor ${this.isEditMode ? 'atualizado' : 'criado'} com sucesso!`);
+        this.toast.success(
+          'Sucesso',
+          `Monitor ${this.isEditMode ? 'atualizado' : 'criado'} com sucesso!`,
+        );
         this.router.navigate(['/monitors']);
       },
       error: (err) => {

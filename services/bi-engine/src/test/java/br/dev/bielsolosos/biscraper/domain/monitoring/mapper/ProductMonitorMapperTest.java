@@ -3,6 +3,7 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.mapper;
 import br.dev.bielsolosos.biscraper.core.abstractfields.NotebookAnalysisTypeFields;
 import br.dev.bielsolosos.biscraper.core.abstractfields.SimpleAnalisisTypeFields;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
+import br.dev.bielsolosos.biscraper.core.enums.DiskType;
 import br.dev.bielsolosos.biscraper.core.enums.ScrapingFrequency;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
@@ -79,9 +80,10 @@ class ProductMonitorMapperTest {
     void shouldMapRequestWithNotebookFieldsToEntity() {
         NotebookAnalysisTypeFields notebookFields = NotebookAnalysisTypeFields.builder()
                 .minimumRamGb(16)
+                .minimumStorageGb(512)
                 .needsDedicatedGpu(true)
-                .requiredProcessor("i7")
-                .requiredStorage("512GB SSD")
+                .processorTiers(List.of(br.dev.bielsolosos.biscraper.core.enums.ProcessorTier.ADVANCED))
+                .diskTypes(List.of(DiskType.SSD))
                 .build();
 
         ProductMonitorRequest request = new ProductMonitorRequest(
