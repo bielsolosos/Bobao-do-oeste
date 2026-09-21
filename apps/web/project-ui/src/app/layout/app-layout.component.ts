@@ -19,85 +19,174 @@ interface NavItem {
   imports: [CommonModule, RouterModule],
   template: `
     <div class="flex h-[100dvh] w-full flex-col overflow-hidden bg-canvas md:flex-row">
+      <!-- Desktop Sidebar -->
       <aside
-        class="z-[var(--z-nav)] hidden h-full w-64 flex-shrink-0 flex-col bg-brand-900 text-white shadow-xl md:flex"
+        class="z-[var(--z-nav)] hidden h-full flex-shrink-0 flex-col bg-brand-900 text-white shadow-xl transition-all duration-300 ease-in-out md:flex"
+        [class.w-64]="!isSidebarCollapsed()"
+        [class.w-20]="isSidebarCollapsed()"
         aria-label="Navegação lateral"
       >
+        <!-- Brand Header -->
         <a
           routerLink="/dashboard"
-          class="flex h-16 items-center gap-3 border-b border-white/10 px-5 transition-colors hover:bg-white/5"
+          class="flex h-16 items-center border-b border-white/10 transition-colors hover:bg-white/5"
+          [class.px-5]="!isSidebarCollapsed()"
+          [class.justify-center]="isSidebarCollapsed()"
+          [class.px-2]="isSidebarCollapsed()"
+          [title]="isSidebarCollapsed() ? 'Bobão do Oeste - Monitor de Oportunidades' : ''"
         >
           <img
             src="assets/brand/marketplace-intelligence-mark.svg"
             alt=""
-            class="h-9 w-9"
+            class="h-9 w-9 flex-shrink-0"
             aria-hidden="true"
           />
-          <span class="min-w-0">
-            <span class="block truncate font-display text-base font-bold leading-tight text-white"
-              >Bobão do Oeste</span
-            >
-            <span class="block truncate text-[11px] text-brand-brass"
-              >Monitor de oportunidades</span
-            >
-          </span>
+          @if (!isSidebarCollapsed()) {
+            <span class="min-w-0 transition-opacity duration-200">
+              <span class="block truncate font-display text-base font-bold leading-tight text-white"
+                >Bobão do Oeste</span
+              >
+              <span class="block truncate text-[11px] text-brand-brass"
+                >Monitor de oportunidades</span
+              >
+            </span>
+          }
         </a>
 
-        <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        <!-- Nav Items -->
+        <nav
+          class="flex-1 space-y-6 overflow-y-auto px-3 py-5"
+          [class.px-2]="isSidebarCollapsed()"
+        >
           <div>
-            <p
-              class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40"
-            >
-              Produto
-            </p>
+            @if (!isSidebarCollapsed()) {
+              <p
+                class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40"
+              >
+                Produto
+              </p>
+            } @else {
+              <div class="my-2 border-t border-white/10"></div>
+            }
             @for (item of productNav; track item.path) {
               <a
                 [routerLink]="item.path"
                 routerLinkActive="bg-white/10 text-white border-brand-amber"
                 [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
-                class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                [title]="item.label"
+                class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                [class.px-3]="!isSidebarCollapsed()"
+                [class.py-2.5]="!isSidebarCollapsed()"
+                [class.justify-center]="isSidebarCollapsed()"
+                [class.py-3]="isSidebarCollapsed()"
+                [class.px-0]="isSidebarCollapsed()"
               >
                 <span
-                  class="mr-3 h-5 w-5 flex-shrink-0"
+                  class="h-5 w-5 flex-shrink-0"
+                  [class.mr-3]="!isSidebarCollapsed()"
                   [innerHTML]="item.icon"
                   aria-hidden="true"
                 ></span>
-                {{ item.label }}
+                @if (!isSidebarCollapsed()) {
+                  <span class="truncate">{{ item.label }}</span>
+                }
               </a>
             }
           </div>
 
           @if (isAdmin()) {
             <div>
-              <p
-                class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40"
-              >
-                Operação
-              </p>
+              @if (!isSidebarCollapsed()) {
+                <p
+                  class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40"
+                >
+                  Operação
+                </p>
+              } @else {
+                <div class="my-2 border-t border-white/10"></div>
+              }
               @for (item of operationNav; track item.path) {
                 <a
                   [routerLink]="item.path"
                   routerLinkActive="bg-white/10 text-white border-brand-amber"
-                  class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                  [title]="item.label"
+                  class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                  [class.px-3]="!isSidebarCollapsed()"
+                  [class.py-2.5]="!isSidebarCollapsed()"
+                  [class.justify-center]="isSidebarCollapsed()"
+                  [class.py-3]="isSidebarCollapsed()"
+                  [class.px-0]="isSidebarCollapsed()"
                 >
                   <span
-                    class="mr-3 h-5 w-5 flex-shrink-0"
+                    class="h-5 w-5 flex-shrink-0"
+                    [class.mr-3]="!isSidebarCollapsed()"
                     [innerHTML]="item.icon"
                     aria-hidden="true"
                   ></span>
-                  {{ item.label }}
+                  @if (!isSidebarCollapsed()) {
+                    <span class="truncate">{{ item.label }}</span>
+                  }
                 </a>
               }
             </div>
           }
         </nav>
+
+        <!-- Bottom Collapse Button -->
+        <div class="border-t border-white/10 p-3">
+          <button
+            type="button"
+            (click)="toggleSidebar()"
+            [attr.aria-label]="isSidebarCollapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'"
+            [title]="isSidebarCollapsed() ? 'Expandir menu lateral (Ctrl+B)' : 'Recolher menu lateral (Ctrl+B)'"
+            class="flex w-full items-center rounded-lg py-2 text-xs font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-amber"
+            [class.justify-center]="isSidebarCollapsed()"
+            [class.px-3]="!isSidebarCollapsed()"
+          >
+            <svg
+              class="h-5 w-5 flex-shrink-0 transition-transform duration-300"
+              [class.rotate-180]="isSidebarCollapsed()"
+              [class.mr-2.5]="!isSidebarCollapsed()"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l-7.5 7.5 7.5 7.5m6-15l-7.5 7.5 7.5 7.5" />
+            </svg>
+            @if (!isSidebarCollapsed()) {
+              <span>Recolher menu</span>
+            }
+          </button>
+        </div>
       </aside>
 
+      <!-- Main Workspace -->
       <div class="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <header
           class="z-10 flex h-16 flex-shrink-0 items-center justify-between border-b border-brand-950/10 bg-surface px-4 shadow-sm md:px-6"
         >
           <div class="flex min-w-0 items-center gap-3">
+            <!-- Header Sidebar Toggle Button -->
+            <button
+              type="button"
+              (click)="toggleSidebar()"
+              [attr.aria-label]="isSidebarCollapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'"
+              [title]="isSidebarCollapsed() ? 'Expandir menu lateral (Ctrl+B)' : 'Recolher menu lateral (Ctrl+B)'"
+              class="hidden h-9 w-9 items-center justify-center rounded-lg text-brand-950/60 transition-colors hover:bg-brand-950/5 hover:text-brand-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-amber-strong md:inline-flex"
+            >
+              <svg
+                class="h-5 w-5 transition-transform duration-300"
+                [class.rotate-180]="isSidebarCollapsed()"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+              </svg>
+            </button>
+
             <img
               src="assets/brand/marketplace-intelligence-mark.svg"
               alt=""
@@ -164,6 +253,7 @@ interface NavItem {
         </main>
       </div>
 
+      <!-- Mobile Bottom Navigation -->
       <nav
         class="safe-bottom fixed bottom-0 left-0 right-0 z-50 flex items-stretch border-t border-brand-950/10 bg-surface px-1 shadow-[0_-2px_10px_rgba(15,14,13,0.06)] md:hidden"
         aria-label="Navegação principal"
@@ -188,6 +278,9 @@ export class AppLayoutComponent {
   private router = inject(Router);
 
   menuOpen = signal(false);
+  isSidebarCollapsed = signal<boolean>(
+    typeof window !== 'undefined' && localStorage.getItem('sidebar_collapsed') === 'true',
+  );
 
   readonly productNav: NavItem[] = [
     {
@@ -262,6 +355,24 @@ export class AppLayoutComponent {
     if (roles.includes('ROLE_ADMIN')) return 'Administrador';
     if (roles.length > 0) return roles[0].replace('ROLE_', '');
     return 'Usuário';
+  }
+
+  toggleSidebar() {
+    this.isSidebarCollapsed.update((collapsed) => {
+      const next = !collapsed;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sidebar_collapsed', String(next));
+      }
+      return next;
+    });
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
+      event.preventDefault();
+      this.toggleSidebar();
+    }
   }
 
   toggleMenu(event: MouseEvent) {
