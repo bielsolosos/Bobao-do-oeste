@@ -44,10 +44,13 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
-    private static final Pattern INTEL_CORE_GEN_PATTERN = Pattern.compile("(?i)(?:i[3579]|core)[ -]?(\\d{1,2})\\d{2,3}");
+    private static final Pattern INTEL_CORE_GEN_PATTERN = Pattern
+            .compile("(?i)(?:i[3579]|core)[ -]?(\\d{1,2})\\d{2,3}");
     private static final Pattern GEN_NUM_PATTERN = Pattern.compile("(?i)(\\d{1,2})\\s*(?:ª|o|th)?\\s*ger");
     private static final Pattern RYZEN_GEN_PATTERN = Pattern.compile("(?i)ryzen\\s*[3579]\\s*(\\d{4})");
     private static final Pattern APPLE_M_PATTERN = Pattern.compile("(?i)m(\\d)");
+
+    private static final int BATCH_SIZE = 15;
 
     private final ChatClient chatClient;
     private final AiAnalysisLogService aiAnalysisLogService;
@@ -55,39 +58,44 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
     private final ObjectMapper nullFallbackObjectmapper = new ObjectMapper()
             .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE);
 
-    private final String systemPrompt = String.format(
-            """
-            Você é um agente especializado em analisar buscas e anúncios de Notebooks.
-            Seu objetivo exclusivo é EXTRAIR com máxima precisão os dados técnicos do equipamento.
-            Você receberá uma lista com os resumos dos anúncios no seguinte formato:
+    private static final String SYSTEM_PROMPT_TEMPLATE = """
+            Você é um agente especialista na extração precisa de dados técnicos de Notebooks em marketplaces.
+            Seu objetivo exclusivo é EXTRAIR os dados técnicos reais do equipamento a partir do resumo ou de ferramentas.
 
+            OBJETIVO E ESCOPO DA BUSCA DO USUÁRIO:
+            \"\"\"
+            %s
+            \"\"\"
+
+            FORMATO DO RESUMO DOS ANÚNCIOS:
             %s
 
-            Os dados iniciais contêm apenas título, preço e breve descrição. Não possuem todos os detalhes técnicos.
-            Você tem registradas as TOOLS necessárias para buscar a descrição detalhada ou descrição com imagens ('getAdditionalInfo' e 'getAdditionalInfoAndImages').
-            Busque via Tool sempre que o resumo estiver incompleto para obter os dados de hardware com precisão.
-            Ao analisar imagens, observe atentamente stickers no palmrest (adesivos ao lado do touchpad indicando Intel Core i3/i5/i7, AMD Ryzen, geração, GeForce, etc.).
+            DIRETRIZES RÍGIDAS DE TRIAGEM E USO DE TOOLS ('getAdditionalInfo' e 'getAdditionalInfoAndImages'):
+            1. NÃO CHAME TOOLS PARA PRODUTOS FORA DO ESCOPO: Se o anúncio for claramente de marca incompatível com o que o usuário busca (ex: usuário busca DELL, mas o anúncio é Apple MacBook, Lenovo, Sony, etc.), ou for peças/carcaças/sucatas/acessórios, APENAS extraia os dados básicos presentes no título/resumo. NUNCA acione tools para produtos incompatíveis.
+            2. USO CIRÚRGICO DE TOOLS: Acione a tool 'getAdditionalInfo' EXCLUSIVAMENTE para anúncios candidatos que pertençam à marca/linha desejada MAS cujos detalhes vitais (ex: geração/modelo exato do processador, RAM ou capacidade de SSD) estejam ausentes ou incompletos no título/resumo.
+            3. DADOS JÁ CLAROS NO RESUMO: Se o título/descrição inicial já contiver os dados necessários (ex: 'Notebook Dell Inspiron i5 1135G7 16GB SSD 512GB'), NÃO acione nenhuma tool.
+            4. Se for analisar imagens de candidatos válidos, atente-se a adesivos no palmrest (adesivos ao lado do touchpad indicando Intel Core i3/i5/i7, AMD Ryzen, geração, GeForce, etc.).
 
-            Você precisa extrair:
+            CAMPOS A EXTRAIR POR ANÚNCIO:
             - brand: Marca do Notebook (APPLE, DELL, LENOVO, ACER, ASUS, HP, SAMSUNG, AVELL, LG, VAIO, MSI, ALIENWARE, OTHER)
             - processorBrand: Fabricante do processador (INTEL, AMD, APPLE, QUALCOMM)
-            - processorModel: Nome/modelo do processador exatamente como identificado (ex: 'Core i5-1135G7', 'Ryzen 5 5500U', 'i5 7ª geração', 'M1 Pro', 'Celeron N4020')
+            - processorModel: Nome/modelo do processador (ex: 'Core i5-1135G7', 'Ryzen 5 5500U', 'i5 7ª geração', 'M1 Pro', 'Celeron N4020')
             - processGeneration: Número da geração se identificada (ex: 11, 7, 5000, 1)
             - ramSize: Quantidade total de memória RAM em Gigabytes (ex: 8, 16, 32)
             - ramType: Tipo da memória RAM (DDR3, DDR4, DDR5, LPDDR4, LPDDR5)
             - storageSizeGb: Tamanho do armazenamento principal em Gigabytes (ex: 128, 256, 512, 1024 para 1TB)
             - diskType: Tipo de disco (SSD, SSD_NVME, SSD_SATA, HDD, EMMC)
             - screenResolution: Resolução da tela (HD, FULL_HD, WUXGA, QHD_2K, WQXGA_2K, UHD_4K, RETINA)
-            - hasGpu: Se possui placa de vídeo dedicada (true se tiver GeForce GTX/RTX, Radeon dedicada, etc; false se integrada)
+            - hasGpu: Se possui placa de vídeo dedicada (true se tiver GeForce GTX/RTX, Radeon dedicada; false se integrada)
 
-            A sua resposta DEVE ser estritamente um array JSON correspondente à quantidade exata de anúncios fornecidos:
-
+            FORMATO DO ESQUEMA DE SAÍDA:
             %s
 
-            Caso não consiga identificar algum campo, preencha como null.
-            """,
-            AiAnalisysUtils.getJsonSchema(ScrapedListingDTO.class),
-            AiAnalisysUtils.getJsonSchema(AiExtractedItem.class));
+            REQUISITO ESTRITO DE RESPOSTA:
+            A sua resposta DEVE ser EXCLUSIVAMENTE um array JSON iniciando com '[' e terminando com ']' correspondente à quantidade exata de anúncios fornecidos neste lote.
+            NÃO inclua nenhuma conversa, introdução, relatório ou justificativa antes ou depois do JSON.
+            Caso não consiga identificar algum campo específico, preencha o campo como null.
+            """;
 
     private record AiExtractedItem(
             NotebookBrand brand,
@@ -99,8 +107,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             Integer storageSizeGb,
             DiskType diskType,
             ScreenResolution screenResolution,
-            Boolean hasGpu
-    ) {}
+            Boolean hasGpu) {
+    }
 
     public AnalisysFactoryNotebookImpl(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
@@ -132,13 +140,36 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             return Collections.emptyList();
         }
 
-        String itemsJson = AiAnalisysUtils.formatBatchForPrompt(listings);
+        String userCriteria = extractUserCriteria(monitor);
+        List<AnalisysResponse> results = new ArrayList<>(listings.size());
+
+        for (int i = 0; i < listings.size(); i += BATCH_SIZE) {
+            List<ScrapedListingDTO> batch = listings.subList(i, Math.min(i + BATCH_SIZE, listings.size()));
+            results.addAll(analyzeBatch(execution, batch, userCriteria, monitor));
+        }
+
+        return results;
+    }
+
+    private List<AnalisysResponse> analyzeBatch(
+            ScrapingExecution execution,
+            List<ScrapedListingDTO> batch,
+            String userCriteria,
+            ProductMonitor monitor) {
+
+        String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
         String modelName = LlmModelEnum.GEMINI_2_5_FLASH_LITE.getModel();
         long timerStart = System.currentTimeMillis();
 
+        String systemPrompt = String.format(
+                SYSTEM_PROMPT_TEMPLATE,
+                userCriteria,
+                AiAnalisysUtils.getJsonSchema(ScrapedListingDTO.class),
+                AiAnalisysUtils.getJsonSchema(AiExtractedItem.class));
+
         try {
-            log.debug("Disparando prompt de extração com Tools para {} anúncios usando modelo '{}'...",
-                    listings.size(), modelName);
+            log.debug("Disparando prompt de extração com Tools para lote de {} anúncios usando modelo '{}'...",
+                    batch.size(), modelName);
 
             ChatResponse response = chatClient.prompt()
                     .tools(detailsTools)
@@ -150,19 +181,20 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                     .chatResponse();
 
             long duration = System.currentTimeMillis() - timerStart;
-            log.info("Análise LLM de notebooks concluída com sucesso para {} anúncios em {}ms.",
-                    listings.size(), duration);
+            log.info("Análise LLM de notebooks concluída com sucesso para lote de {} anúncios em {}ms.",
+                    batch.size(), duration);
 
-            String rawResponse = response != null && response.getResult() != null && response.getResult().getOutput() != null
-                    ? response.getResult().getOutput().getText()
-                    : "";
+            String rawResponse = response != null && response.getResult() != null
+                    && response.getResult().getOutput() != null
+                            ? response.getResult().getOutput().getText()
+                            : "";
 
             // Log de Auditoria
             AiAnalysisLogCreateDto dtoBuilder = AiAnalysisLogCreateDto.fromResponse(response)
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
-                    .itemsCount(listings.size())
+                    .itemsCount(batch.size())
                     .systemPrompt(systemPrompt)
                     .userPrompt(itemsJson)
                     .rawResponse(rawResponse)
@@ -172,15 +204,16 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
             aiAnalysisLogService.saveLog(dtoBuilder);
 
+            String sanitizedJson = AiAnalisysUtils.sanitizeJson(rawResponse);
             AiExtractedItem[] itensToAnalyze = this.nullFallbackObjectmapper.readValue(
-                    AiAnalisysUtils.sanitizeJson(rawResponse),
+                    sanitizedJson,
                     AiExtractedItem[].class);
 
             List<AnalisysResponse> itensAnalized = new ArrayList<>();
 
-            for (int i = 0; i < Math.min(itensToAnalyze.length, listings.size()); i++) {
+            for (int i = 0; i < Math.min(itensToAnalyze.length, batch.size()); i++) {
                 AiExtractedItem currentAnalisys = itensToAnalyze[i];
-                ScrapedListingDTO listing = listings.get(i);
+                ScrapedListingDTO listing = batch.get(i);
                 AnalisysResponse itemAnalized = analyzeExtractedItems(currentAnalisys, listing, execution, monitor);
 
                 if (itemAnalized != null) {
@@ -192,19 +225,19 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - timerStart;
-            log.error("Erro na análise de notebooks via Gemini: {}. Gravando log de erro e aplicando fallback.",
+            log.error("Erro na análise do lote de notebooks via Gemini: {}. Gravando log de erro e aplicando fallback.",
                     e.getMessage(), e);
 
             AiAnalysisLogCreateDto errorDto = AiAnalysisLogCreateDto.builder()
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
-                    .itemsCount(listings.size())
+                    .itemsCount(batch.size())
                     .systemPrompt(systemPrompt)
                     .userPrompt(itemsJson)
                     .status("ERROR")
                     .durationMs((int) duration)
-                    .errorMessage("Não foi possível analisar utilizando IA. " + e.getMessage())
+                    .errorMessage("Não foi possível analisar lote utilizando IA. " + e.getMessage())
                     .build();
 
             aiAnalysisLogService.saveLog(errorDto);
@@ -216,24 +249,78 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         }
     }
 
+    private String extractUserCriteria(ProductMonitor monitor) {
+        if (monitor == null) {
+            return "Busca geral por notebooks.";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Monitor: ").append(monitor.getName() != null ? monitor.getName() : "Notebook");
+        if (monitor.getSearchQueries() != null && !monitor.getSearchQueries().isEmpty()) {
+            List<String> terms = monitor.getSearchQueries().stream()
+                    .map(q -> q.getQueryTerm())
+                    .filter(t -> t != null && !t.isBlank())
+                    .toList();
+            if (!terms.isEmpty()) {
+                sb.append(" | Termos de busca: ").append(terms);
+            }
+        }
+        if (monitor.getExpectedSpecs() != null && !monitor.getExpectedSpecs().isEmpty()) {
+            try {
+                NotebookAnalysisTypeFields fields = new NotebookAnalysisTypeFields(monitor.getExpectedSpecs());
+                if (fields.getBrands() != null && !fields.getBrands().isEmpty()) {
+                    sb.append(" | Marcas desejadas: ").append(fields.getBrands());
+                }
+                if (fields.getProcessorVendors() != null && !fields.getProcessorVendors().isEmpty()) {
+                    sb.append(" | Processadores: ").append(fields.getProcessorVendors());
+                }
+                if (fields.getProcessorTiers() != null && !fields.getProcessorTiers().isEmpty()) {
+                    sb.append(" | Níveis de CPU: ").append(fields.getProcessorTiers());
+                }
+                if (fields.getMinimumProcessorGeneration() != null) {
+                    sb.append(" | Geração mínima: ").append(fields.getMinimumProcessorGeneration());
+                }
+                if (fields.getMinimumRamGb() != null) {
+                    sb.append(" | RAM mínima: ").append(fields.getMinimumRamGb()).append("GB");
+                }
+                if (fields.getMinimumStorageGb() != null) {
+                    sb.append(" | Armazenamento mínimo: ").append(fields.getMinimumStorageGb()).append("GB");
+                }
+                if (fields.getNeedsDedicatedGpu() != null) {
+                    sb.append(" | Exige GPU dedicada: ").append(fields.getNeedsDedicatedGpu());
+                }
+            } catch (Exception e) {
+                log.debug("Não foi possível detalhar expectedSpecs no prompt: {}", e.getMessage());
+            }
+        }
+        return sb.toString();
+    }
+
     /**
      * Motor determinístico de avaliação e pontuação de anúncios de notebooks.
      * <p>
      * <b>Filosofia de Avaliação:</b>
      * <ul>
-     *   <li>A IA (Gemini) atua exclusivamente como coletora fiel de dados brutos (extração das especificações).</li>
-     *   <li>O código Java atua como motor de regras de negócio determinístico, evitando alucinações de score.</li>
-     *   <li>Cada anúncio inicia com pontuação máxima (100 pontos) e vai perdendo pontos conforme divergências com os critérios do usuário.</li>
-     *   <li>Campos não preenchidos no monitor (nulos/vazios) são tratados como "Curingas / Aceita Qualquer", não aplicando penalidade.</li>
-     *   <li>Divergências críticas (ex: marca de processador incompatível ou hardware obsoleto) disparam reprovação imediata ({@code isReproved = true}, score 0 e {@code MatchTier.NONE}).</li>
+     * <li>A IA (Gemini) atua exclusivamente como coletora fiel de dados brutos
+     * (extração das especificações).</li>
+     * <li>O código Java atua como motor de regras de negócio determinístico,
+     * evitando alucinações de score.</li>
+     * <li>Cada anúncio inicia com pontuação máxima (100 pontos) e vai perdendo
+     * pontos conforme divergências com os critérios do usuário.</li>
+     * <li>Campos não preenchidos no monitor (nulos/vazios) são tratados como
+     * "Curingas / Aceita Qualquer", não aplicando penalidade.</li>
+     * <li>Divergências críticas (ex: marca de processador incompatível ou hardware
+     * obsoleto) disparam reprovação imediata ({@code isReproved = true}, score 0 e
+     * {@code MatchTier.NONE}).</li>
      * </ul>
      * </p>
      *
      * @param currentAnalisys Dados técnicos brutos extraídos pelo LLM
-     * @param listing Anúncio coletado original (metadados do scraping)
-     * @param execution Execução de scraping associada
-     * @param monitor Configuração de monitoramento do usuário (com os critérios estruturados)
-     * @return {@link AnalisysResponse} contendo o score final, tier e o payload JSONB tipado
+     * @param listing         Anúncio coletado original (metadados do scraping)
+     * @param execution       Execução de scraping associada
+     * @param monitor         Configuração de monitoramento do usuário (com os
+     *                        critérios estruturados)
+     * @return {@link AnalisysResponse} contendo o score final, tier e o payload
+     *         JSONB tipado
      */
     private AnalisysResponse analyzeExtractedItems(
             AiExtractedItem currentAnalisys,
@@ -260,8 +347,9 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         /*
          * 1.1 FABRICANTE DO PROCESSADOR (processorVendors)
          * - Se o usuário definiu fabricantes (ex: [INTEL, AMD]):
-         *   - Marca não identificada no anúncio: penalidade leve (-10 pts de incerteza).
-         *   - Marca divergente (ex: pediu Intel e veio Apple Silicon): REPROVAÇÃO IMEDIATA.
+         * - Marca não identificada no anúncio: penalidade leve (-10 pts de incerteza).
+         * - Marca divergente (ex: pediu Intel e veio Apple Silicon): REPROVAÇÃO
+         * IMEDIATA.
          */
         List<ProcessorBrand> allowedVendors = fieldsForAnalise.getProcessorVendors();
         if (allowedVendors != null && !allowedVendors.isEmpty()) {
@@ -270,24 +358,28 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                 evaluationNotes.add("Marca do processador não identificada no anúncio (-10 pts)");
             } else if (!allowedVendors.contains(procBrand)) {
                 isReproved = true;
-                evaluationNotes.add("Fabricante de processador incompatível: " + procBrand + " (Esperado: " + allowedVendors + ")");
+                evaluationNotes.add(
+                        "Fabricante de processador incompatível: " + procBrand + " (Esperado: " + allowedVendors + ")");
             }
         }
 
         /*
          * 1.2 NÍVEL DE DESEMPENHO / TIER DO PROCESSADOR (processorTiers)
-         * - Classifica o processador em ENTRY (i3/R3), INTERMEDIATE (i5/R5/M1) ou ADVANCED (i7/i9/R7/M Pro).
+         * - Classifica o processador em ENTRY (i3/R3), INTERMEDIATE (i5/R5/M1) ou
+         * ADVANCED (i7/i9/R7/M Pro).
          * - Se o processador for inferior ao solicitado:
-         *   - Pediu ADVANCED e veio ENTRY: -35 pts (discrepância severa de desempenho).
-         *   - Pediu ADVANCED e veio INTERMEDIATE: -15 pts (ressalva moderada).
-         *   - Pediu INTERMEDIATE e veio ENTRY: -20 pts.
-         * - Se o processador for de nível superior ao solicitado (ex: pediu ENTRY e veio i7): 0 perda (bônus).
+         * - Pediu ADVANCED e veio ENTRY: -35 pts (discrepância severa de desempenho).
+         * - Pediu ADVANCED e veio INTERMEDIATE: -15 pts (ressalva moderada).
+         * - Pediu INTERMEDIATE e veio ENTRY: -20 pts.
+         * - Se o processador for de nível superior ao solicitado (ex: pediu ENTRY e
+         * veio i7): 0 perda (bônus).
          */
         List<ProcessorTier> allowedTiers = fieldsForAnalise.getProcessorTiers();
         if (allowedTiers != null && !allowedTiers.isEmpty() && !isReproved) {
             if (inferredTier == null) {
                 score -= 10;
-                evaluationNotes.add("Nível de desempenho (Tier) do processador não identificado com precisão (-10 pts)");
+                evaluationNotes
+                        .add("Nível de desempenho (Tier) do processador não identificado com precisão (-10 pts)");
             } else if (!allowedTiers.contains(inferredTier)) {
                 boolean requestedAdvanced = allowedTiers.contains(ProcessorTier.ADVANCED);
                 boolean requestedIntermediate = allowedTiers.contains(ProcessorTier.INTERMEDIATE);
@@ -295,27 +387,31 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                 if (inferredTier == ProcessorTier.ENTRY) {
                     if (requestedAdvanced && !requestedIntermediate) {
                         score -= 35;
-                        evaluationNotes.add("Processador básico/entrada (" + inferredTier + ") muito abaixo do nível avançado desejado (-35 pts)");
+                        evaluationNotes.add("Processador básico/entrada (" + inferredTier
+                                + ") muito abaixo do nível avançado desejado (-35 pts)");
                     } else {
                         score -= 20;
-                        evaluationNotes.add("Processador básico/entrada (" + inferredTier + ") abaixo do nível intermediário desejado (-20 pts)");
+                        evaluationNotes.add("Processador básico/entrada (" + inferredTier
+                                + ") abaixo do nível intermediário desejado (-20 pts)");
                     }
                 } else if (inferredTier == ProcessorTier.INTERMEDIATE && requestedAdvanced) {
                     score -= 15;
-                    evaluationNotes.add("Processador intermediário (" + inferredTier + ") abaixo do nível avançado desejado (-15 pts)");
+                    evaluationNotes.add("Processador intermediário (" + inferredTier
+                            + ") abaixo do nível avançado desejado (-15 pts)");
                 }
             }
         }
 
         /*
          * 1.3 GERAÇÃO MÍNIMA DO PROCESSADOR (minimumProcessorGeneration)
-         * - Avalia a geração para arquiteturas x86 (Intel Core e AMD Ryzen série 5000+).
+         * - Avalia a geração para arquiteturas x86 (Intel Core e AMD Ryzen série
+         * 5000+).
          * - Apple Silicon (M1+) é isento por ser arquitetura recente e eficiente.
          * - Penalidades graduais:
-         *   - 1 geração abaixo: -10 pts.
-         *   - 2 gerações abaixo: -20 pts.
-         *   - 3 gerações abaixo: -40 pts.
-         *   - >= 4 gerações abaixo: REPROVAÇÃO IMEDIATA (hardware considerado obsoleto).
+         * - 1 geração abaixo: -10 pts.
+         * - 2 gerações abaixo: -20 pts.
+         * - 3 gerações abaixo: -40 pts.
+         * - >= 4 gerações abaixo: REPROVAÇÃO IMEDIATA (hardware considerado obsoleto).
          */
         Integer minGen = fieldsForAnalise.getMinimumProcessorGeneration();
         if (minGen != null && minGen > 0 && !isReproved) {
@@ -331,16 +427,20 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                         int diff = normalizedMin - normalizedGen;
                         if (diff == 1) {
                             score -= 10;
-                            evaluationNotes.add("Geração do processador (" + procGen + ") 1 nível abaixo da mínima (" + minGen + ") (-10 pts)");
+                            evaluationNotes.add("Geração do processador (" + procGen + ") 1 nível abaixo da mínima ("
+                                    + minGen + ") (-10 pts)");
                         } else if (diff == 2) {
                             score -= 20;
-                            evaluationNotes.add("Geração do processador (" + procGen + ") 2 níveis abaixo da mínima (" + minGen + ") (-20 pts)");
+                            evaluationNotes.add("Geração do processador (" + procGen + ") 2 níveis abaixo da mínima ("
+                                    + minGen + ") (-20 pts)");
                         } else {
                             score -= 40;
-                            evaluationNotes.add("Geração do processador (" + procGen + ") muito antiga em relação à mínima (" + minGen + ") (-40 pts)");
+                            evaluationNotes.add("Geração do processador (" + procGen
+                                    + ") muito antiga em relação à mínima (" + minGen + ") (-40 pts)");
                             if (diff >= 4) {
                                 isReproved = true;
-                                evaluationNotes.add("Reprovado: geração do processador (" + procGen + ") considerada obsoleta para o critério exigido.");
+                                evaluationNotes.add("Reprovado: geração do processador (" + procGen
+                                        + ") considerada obsoleta para o critério exigido.");
                             }
                         }
                     }
@@ -358,9 +458,11 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
          * 2.1 QUANTIDADE MÍNIMA DE MEMÓRIA RAM (minimumRamGb)
          * - Se ramSize >= minRam: Atende plenamente (0 perda).
          * - Se ramSize < minRam:
-         *   - 4GB quando o usuário pediu >= 16GB: REPROVAÇÃO IMEDIATA (inviável para multitarefa/trabalho).
-         *   - Muito abaixo (< metade): -25 pts.
-         *   - 1 degrau abaixo (ex: 8GB quando pediu 16GB, ou 16GB quando pediu 32GB): -20 pts.
+         * - 4GB quando o usuário pediu >= 16GB: REPROVAÇÃO IMEDIATA (inviável para
+         * multitarefa/trabalho).
+         * - Muito abaixo (< metade): -25 pts.
+         * - 1 degrau abaixo (ex: 8GB quando pediu 16GB, ou 16GB quando pediu 32GB): -20
+         * pts.
          * - Quantidade não informada no anúncio: -15 pts de incerteza.
          */
         Integer minRam = fieldsForAnalise.getMinimumRamGb();
@@ -371,13 +473,16 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             } else if (ramSize < minRam) {
                 if (minRam >= 16 && ramSize <= 4) {
                     isReproved = true;
-                    evaluationNotes.add("Reprovado: Memória RAM de " + ramSize + "GB insuficiente para o perfil exigido (" + minRam + "GB).");
+                    evaluationNotes.add("Reprovado: Memória RAM de " + ramSize
+                            + "GB insuficiente para o perfil exigido (" + minRam + "GB).");
                 } else if (ramSize <= 4 || ramSize < minRam / 2) {
                     score -= 25;
-                    evaluationNotes.add("Memória RAM de " + ramSize + "GB muito abaixo do mínimo desejado (" + minRam + "GB) (-25 pts)");
+                    evaluationNotes.add("Memória RAM de " + ramSize + "GB muito abaixo do mínimo desejado (" + minRam
+                            + "GB) (-25 pts)");
                 } else {
                     score -= 20;
-                    evaluationNotes.add("Memória RAM de " + ramSize + "GB abaixo do mínimo desejado (" + minRam + "GB) (-20 pts)");
+                    evaluationNotes.add(
+                            "Memória RAM de " + ramSize + "GB abaixo do mínimo desejado (" + minRam + "GB) (-20 pts)");
                 }
             }
         }
@@ -385,9 +490,10 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         /*
          * 2.2 TECNOLOGIAS E GERAÇÕES DE RAM (ramTypes)
          * - Se o usuário exigiu padrões modernos (ex: [DDR5, LPDDR5]):
-         *   - Anúncio com DDR4: -15 pts (tecnologia anterior, porém ainda utilizável).
-         *   - Anúncio com DDR3/DDR2/DDR1: -30 pts (padrão obsoleto).
-         *   - Tipo não especificado no anúncio: -5 pts (penalidade branda, visto que vendedores costumam omitir).
+         * - Anúncio com DDR4: -15 pts (tecnologia anterior, porém ainda utilizável).
+         * - Anúncio com DDR3/DDR2/DDR1: -30 pts (padrão obsoleto).
+         * - Tipo não especificado no anúncio: -5 pts (penalidade branda, visto que
+         * vendedores costumam omitir).
          */
         List<RamType> allowedRamTypes = fieldsForAnalise.getRamTypes();
         if (allowedRamTypes != null && !allowedRamTypes.isEmpty() && !isReproved) {
@@ -397,10 +503,12 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             } else if (!allowedRamTypes.contains(ramType)) {
                 if (ramType == RamType.DDR3 || ramType == RamType.DDR2 || ramType == RamType.DDR1) {
                     score -= 30;
-                    evaluationNotes.add("Tipo de memória " + ramType + " obsoleto em relação aos tipos desejados " + allowedRamTypes + " (-30 pts)");
+                    evaluationNotes.add("Tipo de memória " + ramType + " obsoleto em relação aos tipos desejados "
+                            + allowedRamTypes + " (-30 pts)");
                 } else {
                     score -= 15;
-                    evaluationNotes.add("Tipo de memória " + ramType + " divergente dos tipos desejados " + allowedRamTypes + " (-15 pts)");
+                    evaluationNotes.add("Tipo de memória " + ramType + " divergente dos tipos desejados "
+                            + allowedRamTypes + " (-15 pts)");
                 }
             }
         }
@@ -415,10 +523,12 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
          * 3.1 CAPACIDADE MÍNIMA DE ARMAZENAMENTO (minimumStorageGb)
          * - Se storageSizeGb >= minStorage: Atende 100% ou superior (0 perda).
          * - Se storageSizeGb < minStorage:
-         *   - <= 64GB quando o usuário exigiu >= 512GB: REPROVAÇÃO IMEDIATA (inviável para a proposta do usuário).
-         *   - <= 64GB quando o usuário exigiu >= 256GB: -35 pts.
-         *   - 2 degraus abaixo (< metade, ex: 128GB quando pediu 512GB): -25 pts.
-         *   - 1 degrau abaixo (ex: 256GB quando pediu 512GB, ou 512GB quando pediu 1TB): -15 pts.
+         * - <= 64GB quando o usuário exigiu >= 512GB: REPROVAÇÃO IMEDIATA (inviável
+         * para a proposta do usuário).
+         * - <= 64GB quando o usuário exigiu >= 256GB: -35 pts.
+         * - 2 degraus abaixo (< metade, ex: 128GB quando pediu 512GB): -25 pts.
+         * - 1 degrau abaixo (ex: 256GB quando pediu 512GB, ou 512GB quando pediu 1TB):
+         * -15 pts.
          * - Capacidade não informada no anúncio: -10 pts de incerteza.
          */
         Integer minStorage = fieldsForAnalise.getMinimumStorageGb();
@@ -429,16 +539,20 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             } else if (storageSizeGb < minStorage) {
                 if (minStorage >= 512 && storageSizeGb <= 64) {
                     isReproved = true;
-                    evaluationNotes.add("Reprovado: Armazenamento de " + storageSizeGb + "GB insuficiente para o perfil exigido (" + minStorage + "GB).");
+                    evaluationNotes.add("Reprovado: Armazenamento de " + storageSizeGb
+                            + "GB insuficiente para o perfil exigido (" + minStorage + "GB).");
                 } else if (storageSizeGb <= 64) {
                     score -= 35;
-                    evaluationNotes.add("Armazenamento de " + storageSizeGb + "GB crítico em relação ao mínimo desejado (" + minStorage + "GB) (-35 pts)");
+                    evaluationNotes.add("Armazenamento de " + storageSizeGb
+                            + "GB crítico em relação ao mínimo desejado (" + minStorage + "GB) (-35 pts)");
                 } else if (storageSizeGb < minStorage / 2) {
                     score -= 25;
-                    evaluationNotes.add("Armazenamento de " + storageSizeGb + "GB muito abaixo do mínimo desejado (" + minStorage + "GB) (-25 pts)");
+                    evaluationNotes.add("Armazenamento de " + storageSizeGb + "GB muito abaixo do mínimo desejado ("
+                            + minStorage + "GB) (-25 pts)");
                 } else {
                     score -= 15;
-                    evaluationNotes.add("Armazenamento de " + storageSizeGb + "GB abaixo do mínimo desejado (" + minStorage + "GB) (-15 pts)");
+                    evaluationNotes.add("Armazenamento de " + storageSizeGb + "GB abaixo do mínimo desejado ("
+                            + minStorage + "GB) (-15 pts)");
                 }
             }
         }
@@ -446,13 +560,16 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         /*
          * 3.2 TECNOLOGIAS DE DISCO (diskTypes)
          * - Compatibilidade inteligente:
-         *   - Se o usuário pediu SSD genérico, qualquer SSD (NVMe ou SATA) é aceito sem perda.
-         *   - Se o usuário pediu especificamente SSD_NVME:
-         *     - SSD_NVME: 0 perda.
-         *     - SSD genérico: -5 pts (leve incerteza de ser SATA ou NVMe).
-         *     - SSD_SATA: -10 pts (é SSD, porém taxa de transferência menor).
-         *   - HD Mecânico (HDD) quando exigido SSD: -30 pts (impacto severo na velocidade do sistema).
-         *   - Memória Flash básica (EMMC) quando exigido SSD: -35 pts (ou reprovação se exigiu NVMe).
+         * - Se o usuário pediu SSD genérico, qualquer SSD (NVMe ou SATA) é aceito sem
+         * perda.
+         * - Se o usuário pediu especificamente SSD_NVME:
+         * - SSD_NVME: 0 perda.
+         * - SSD genérico: -5 pts (leve incerteza de ser SATA ou NVMe).
+         * - SSD_SATA: -10 pts (é SSD, porém taxa de transferência menor).
+         * - HD Mecânico (HDD) quando exigido SSD: -30 pts (impacto severo na velocidade
+         * do sistema).
+         * - Memória Flash básica (EMMC) quando exigido SSD: -35 pts (ou reprovação se
+         * exigiu NVMe).
          * - Tipo de disco não informado no anúncio: -10 pts de incerteza.
          */
         List<DiskType> allowedDiskTypes = fieldsForAnalise.getDiskTypes();
@@ -464,23 +581,28 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                 if (diskType == DiskType.EMMC) {
                     if (allowedDiskTypes.contains(DiskType.SSD_NVME) && allowedDiskTypes.size() == 1) {
                         isReproved = true;
-                        evaluationNotes.add("Reprovado: Armazenamento eMMC básico incompatível com a exigência de SSD NVMe.");
+                        evaluationNotes
+                                .add("Reprovado: Armazenamento eMMC básico incompatível com a exigência de SSD NVMe.");
                     } else {
                         score -= 35;
-                        evaluationNotes.add("Armazenamento em memória flash eMMC lento em relação aos tipos desejados " + allowedDiskTypes + " (-35 pts)");
+                        evaluationNotes.add("Armazenamento em memória flash eMMC lento em relação aos tipos desejados "
+                                + allowedDiskTypes + " (-35 pts)");
                     }
                 } else if (diskType == DiskType.HDD) {
                     score -= 30;
-                    evaluationNotes.add("Armazenamento em HD mecânico (lento) divergente dos tipos desejados " + allowedDiskTypes + " (-30 pts)");
+                    evaluationNotes.add("Armazenamento em HD mecânico (lento) divergente dos tipos desejados "
+                            + allowedDiskTypes + " (-30 pts)");
                 } else if (diskType == DiskType.SSD_SATA && allowedDiskTypes.contains(DiskType.SSD_NVME)) {
                     score -= 10;
-                    evaluationNotes.add("SSD SATA com taxa de transferência inferior ao padrão NVMe desejado (-10 pts)");
+                    evaluationNotes
+                            .add("SSD SATA com taxa de transferência inferior ao padrão NVMe desejado (-10 pts)");
                 } else if (diskType == DiskType.SSD && allowedDiskTypes.contains(DiskType.SSD_NVME)) {
                     score -= 5;
                     evaluationNotes.add("SSD não especificado como NVMe (-5 pts)");
                 } else {
                     score -= 15;
-                    evaluationNotes.add("Tipo de disco " + diskType + " divergente dos tipos desejados " + allowedDiskTypes + " (-15 pts)");
+                    evaluationNotes.add("Tipo de disco " + diskType + " divergente dos tipos desejados "
+                            + allowedDiskTypes + " (-15 pts)");
                 }
             }
         }
@@ -494,10 +616,13 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         /*
          * 4.1 EXIGÊNCIA DE GPU DEDICADA (needsDedicatedGpu)
          * - Se needsDedicatedGpu == true (Exige placa dedicada GeForce / Radeon):
-         *   - Anúncio com GPU dedicada confirmada (hasGpu == true): Atende plenamente (0 perda).
-         *   - Anúncio sem GPU dedicada / apenas integrados (hasGpu == false): REPROVAÇÃO IMEDIATA (inviável para perfil gamer/render).
-         *   - GPU não confirmada no anúncio (hasGpu == null): -15 pts de incerteza.
-         * - Se needsDedicatedGpu == false ou null: Aceita qualquer configuração gráfica (0 perda).
+         * - Anúncio com GPU dedicada confirmada (hasGpu == true): Atende plenamente (0
+         * perda).
+         * - Anúncio sem GPU dedicada / apenas integrados (hasGpu == false): REPROVAÇÃO
+         * IMEDIATA (inviável para perfil gamer/render).
+         * - GPU não confirmada no anúncio (hasGpu == null): -15 pts de incerteza.
+         * - Se needsDedicatedGpu == false ou null: Aceita qualquer configuração gráfica
+         * (0 perda).
          */
         if (Boolean.TRUE.equals(needsDedicatedGpu) && !isReproved) {
             if (hasGpu == null) {
@@ -517,9 +642,9 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         /*
          * 5.1 RESOLUÇÕES DE TELA DESEJADAS (screenResolutions)
          * - Se o usuário definiu resoluções (ex: [FULL_HD, QHD_2K, RETINA]):
-         *   - Compatível ou Superior: 0 perda.
-         *   - Anúncio com resolução HD básica (720p) quando exigido Full HD+: -15 pts.
-         *   - Resolução não informada no anúncio: -5 pts de incerteza.
+         * - Compatível ou Superior: 0 perda.
+         * - Anúncio com resolução HD básica (720p) quando exigido Full HD+: -15 pts.
+         * - Resolução não informada no anúncio: -5 pts de incerteza.
          */
         List<ScreenResolution> allowedResolutions = fieldsForAnalise.getScreenResolutions();
         if (allowedResolutions != null && !allowedResolutions.isEmpty() && !isReproved) {
@@ -529,10 +654,12 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             } else if (!isResolutionCompatible(screenResolution, allowedResolutions)) {
                 if (screenResolution == ScreenResolution.HD) {
                     score -= 15;
-                    evaluationNotes.add("Tela com resolução básica HD (720p) inferior ao padrão desejado " + allowedResolutions + " (-15 pts)");
+                    evaluationNotes.add("Tela com resolução básica HD (720p) inferior ao padrão desejado "
+                            + allowedResolutions + " (-15 pts)");
                 } else {
                     score -= 10;
-                    evaluationNotes.add("Resolução de tela " + screenResolution + " divergente do padrão desejado " + allowedResolutions + " (-10 pts)");
+                    evaluationNotes.add("Resolução de tela " + screenResolution + " divergente do padrão desejado "
+                            + allowedResolutions + " (-10 pts)");
                 }
             }
         }
@@ -545,9 +672,10 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         /*
          * 6.1 MARCAS DE NOTEBOOK ACEITAS (brands)
          * - Se o usuário selecionou marcas específicas (ex: [DELL, LENOVO, APPLE]):
-         *   - Marca coincidente: 0 perda.
-         *   - Marca não identificada no anúncio: -10 pts de incerteza.
-         *   - Marca divergente (ex: anúncio Acer quando filtrou apenas Dell): REPROVAÇÃO IMEDIATA.
+         * - Marca coincidente: 0 perda.
+         * - Marca não identificada no anúncio: -10 pts de incerteza.
+         * - Marca divergente (ex: anúncio Acer quando filtrou apenas Dell): REPROVAÇÃO
+         * IMEDIATA.
          */
         List<NotebookBrand> allowedBrands = fieldsForAnalise.getBrands();
         if (allowedBrands != null && !allowedBrands.isEmpty() && !isReproved) {
@@ -584,8 +712,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                 screenResolution,
                 hasGpu,
                 isReproved,
-                evaluationNotes
-        );
+                evaluationNotes);
 
         return new AnalisysResponse(execution, listing, matchTier, finalScore, specsDto.toMap());
     }
@@ -604,7 +731,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
     }
 
     private int getResolutionRank(ScreenResolution res) {
-        if (res == null) return 0;
+        if (res == null)
+            return 0;
         return switch (res) {
             case HD -> 1;
             case FULL_HD -> 2;
@@ -619,7 +747,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         if (allowed.contains(actual)) {
             return true;
         }
-        // Se o usuário pediu SSD genérico, SSD_NVME e SSD_SATA são ambos tecnologias válidas de SSD
+        // Se o usuário pediu SSD genérico, SSD_NVME e SSD_SATA são ambos tecnologias
+        // válidas de SSD
         if (allowed.contains(DiskType.SSD) && (actual == DiskType.SSD_NVME || actual == DiskType.SSD_SATA)) {
             return true;
         }
@@ -627,33 +756,34 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
     }
 
     private ProcessorTier inferProcessorTier(ProcessorBrand brand, String model) {
-        if (model == null || model.isBlank()) return null;
+        if (model == null || model.isBlank())
+            return null;
         String m = model.toLowerCase();
 
         // Código feio mas funcional aqui:
         if (m.contains("i9") || m.contains("ryzen 9") || m.contains("r9") ||
-            m.contains("i7") || m.contains("ryzen 7") || m.contains("r7") ||
-            m.contains("ultra 7") || m.contains("ultra 9") ||
-            m.contains("m1 pro") || m.contains("m1 max") || m.contains("m1 ultra") ||
-            m.contains("m2 pro") || m.contains("m2 max") || m.contains("m2 ultra") ||
-            m.contains("m3 pro") || m.contains("m3 max") || m.contains("m3 ultra") ||
-            m.contains("m4 pro") || m.contains("m4 max") || m.contains("m4 ultra") ||
-            m.contains("threadripper") || m.contains("xeon")) {
+                m.contains("i7") || m.contains("ryzen 7") || m.contains("r7") ||
+                m.contains("ultra 7") || m.contains("ultra 9") ||
+                m.contains("m1 pro") || m.contains("m1 max") || m.contains("m1 ultra") ||
+                m.contains("m2 pro") || m.contains("m2 max") || m.contains("m2 ultra") ||
+                m.contains("m3 pro") || m.contains("m3 max") || m.contains("m3 ultra") ||
+                m.contains("m4 pro") || m.contains("m4 max") || m.contains("m4 ultra") ||
+                m.contains("threadripper") || m.contains("xeon")) {
             return ProcessorTier.ADVANCED;
         }
 
         if (m.contains("i5") || m.contains("ryzen 5") || m.contains("r5") ||
-            m.contains("ultra 5") ||
-            m.contains("m1") || m.contains("m2") || m.contains("m3") || m.contains("m4") ||
-            m.contains("snapdragon x")) {
+                m.contains("ultra 5") ||
+                m.contains("m1") || m.contains("m2") || m.contains("m3") || m.contains("m4") ||
+                m.contains("snapdragon x")) {
             return ProcessorTier.INTERMEDIATE;
         }
 
         if (m.contains("i3") || m.contains("ryzen 3") || m.contains("r3") ||
-            m.contains("celeron") || m.contains("pentium") || m.contains("n100") ||
-            m.contains("n200") || m.contains("n4000") || m.contains("n4020") ||
-            m.contains("n4500") || m.contains("n5100") || m.contains("athlon") ||
-            m.contains("atom")) {
+                m.contains("celeron") || m.contains("pentium") || m.contains("n100") ||
+                m.contains("n200") || m.contains("n4000") || m.contains("n4020") ||
+                m.contains("n4500") || m.contains("n5100") || m.contains("athlon") ||
+                m.contains("atom")) {
             return ProcessorTier.ENTRY;
         }
 
@@ -668,12 +798,14 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             return null;
         }
 
-        // 1. Tenta padrão Intel Core (ex: i5-1135G7 -> 11, i7 8550U -> 8, i3 1005G1 -> 10)
+        // 1. Tenta padrão Intel Core (ex: i5-1135G7 -> 11, i7 8550U -> 8, i3 1005G1 ->
+        // 10)
         Matcher intelMatcher = INTEL_CORE_GEN_PATTERN.matcher(model);
         if (intelMatcher.find()) {
             try {
                 return Integer.parseInt(intelMatcher.group(1));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         // 2. Tenta padrão explícito (ex: 11ª geração, 7 ger, 10th gen)
@@ -681,7 +813,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         if (genMatcher.find()) {
             try {
                 return Integer.parseInt(genMatcher.group(1));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         // 3. Tenta padrão AMD Ryzen (ex: Ryzen 5 5500U -> 5)
@@ -690,7 +823,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             try {
                 int fullNumber = Integer.parseInt(ryzenMatcher.group(1));
                 return fullNumber / 1000;
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         // 4. Tenta Apple Silicon (ex: M1 -> 1, M2 -> 2)
@@ -698,22 +832,27 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         if (appleMatcher.find()) {
             try {
                 return Integer.parseInt(appleMatcher.group(1));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         return null;
     }
 
     private MatchTier calculateTier(int score) {
-        if (score >= 85) return MatchTier.HIGH;
-        if (score >= 65) return MatchTier.MEDIUM;
-        if (score >= 45) return MatchTier.LOW;
+        if (score >= 85)
+            return MatchTier.HIGH;
+        if (score >= 65)
+            return MatchTier.MEDIUM;
+        if (score >= 45)
+            return MatchTier.LOW;
         return MatchTier.NONE;
     }
 
     private boolean isChatClientAvailable(ScrapingExecution execution, int listingsCount) {
         if (this.chatClient == null) {
-            log.warn("ChatClient (Spring AI / Gemini) não disponível no contexto. Aplicando fallback (MatchTier.NONE) para {} anúncios.",
+            log.warn(
+                    "ChatClient (Spring AI / Gemini) não disponível no contexto. Aplicando fallback (MatchTier.NONE) para {} anúncios.",
                     listingsCount);
             if (execution != null) {
                 execution.setUsedFallback(true);

@@ -81,19 +81,47 @@ public class AiAnalisysUtils {
             return "";
         }
         String cleaned = rawResponse.strip();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring(7);
-        } else if (cleaned.startsWith("```JSON")) {
-            cleaned = cleaned.substring(7);
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring(3);
+
+        // 1. Se contiver delimitadores markdown de código (```json ... ``` ou ``` ... ```), extrai o miolo
+        int codeBlockStart = cleaned.indexOf("```json");
+        if (codeBlockStart == -1) {
+            codeBlockStart = cleaned.indexOf("```JSON");
+        }
+        if (codeBlockStart == -1) {
+            codeBlockStart = cleaned.indexOf("```");
         }
 
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
+        if (codeBlockStart != -1) {
+            int contentStart = cleaned.indexOf('\n', codeBlockStart);
+            if (contentStart != -1) {
+                int codeBlockEnd = cleaned.indexOf("```", contentStart);
+                if (codeBlockEnd != -1) {
+                    cleaned = cleaned.substring(contentStart + 1, codeBlockEnd).strip();
+                } else {
+                    cleaned = cleaned.substring(contentStart + 1).strip();
+                }
+            }
         }
 
-        return cleaned.strip();
+        // 2. Se houver texto conversacional antes ou depois do JSON (ex: "Tool output... [...]"), isola os delimitadores JSON
+        int firstBracket = cleaned.indexOf('[');
+        int lastBracket = cleaned.lastIndexOf(']');
+        int firstBrace = cleaned.indexOf('{');
+        int lastBrace = cleaned.lastIndexOf('}');
+
+        // Dá preferência ao array se '[' aparecer antes de '{' ou se apenas array existir
+        if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
+            if (firstBrace == -1 || firstBracket < firstBrace) {
+                return cleaned.substring(firstBracket, lastBracket + 1).strip();
+            }
+        }
+
+        // Se for um objeto JSON
+        if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+            return cleaned.substring(firstBrace, lastBrace + 1).strip();
+        }
+
+        return cleaned;
     }
 }
 
