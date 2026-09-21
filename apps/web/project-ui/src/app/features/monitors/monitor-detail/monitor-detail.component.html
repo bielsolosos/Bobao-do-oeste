@@ -492,6 +492,16 @@
   </app-ui-card>
 }
 
+@if (activeTabId === 'notebook-specs' && isNotebookMonitor()) {
+  <app-notebook-specs-table
+    [listings]="listings()"
+    [loading]="listingsState() === 'loading'"
+    [monitorName]="monitor()?.name || 'monitor'"
+    [hasAiAnalysis]="hasAiAnalysis()"
+    (openAiLogs)="openListingAiLogs($event)"
+  />
+}
+
 @if (activeTabId === 'config') {
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <app-ui-card

@@ -1,0 +1,981 @@
+<!-- Toolbar de Filtros & Ações de Hardware -->
+<div class="surface-card mb-6 p-4 space-y-4">
+  <!-- Linha 1: Busca Livre, Relevância e Ações -->
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+      <!-- Input de Busca -->
+      <div class="relative flex-1">
+        <label for="specs-keyword" class="sr-only">Filtrar especificações</label>
+        <input
+          id="specs-keyword"
+          type="search"
+          [value]="specsKeyword()"
+          (input)="onSpecsKeyword($event)"
+          placeholder="Filtrar por título, processador (ex: i7, Ryzen), marca..."
+          class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+        />
+      </div>
+
+      <!-- Seletor de Relevância -->
+      @if (hasAiAnalysis) {
+        <div class="sm:w-48">
+          <label for="specs-tier" class="sr-only">Relevância</label>
+          <select
+            id="specs-tier"
+            [value]="specsTier()"
+            (change)="onSpecsTier($event)"
+            class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+          >
+            <option value="">Todas relevâncias</option>
+            <option value="HIGH">Alta relevância</option>
+            <option value="MEDIUM">Média relevância</option>
+            <option value="LOW">Baixa relevância</option>
+            <option value="NONE">Sem análise</option>
+          </select>
+        </div>
+      }
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="flex items-center gap-2">
+      @if (hasActiveSpecsFilters()) {
+        <app-ui-button variant="ghost" size="sm" (clicked)="resetSpecsFilters()">
+          Limpar filtros
+        </app-ui-button>
+      }
+      <app-ui-button variant="outline" size="sm" (clicked)="exportSpecsToCsv()">
+        <svg
+          class="h-4 w-4 mr-1.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          />
+        </svg>
+        Exportar CSV
+      </app-ui-button>
+    </div>
+  </div>
+
+  <!-- Linha 2: Chips de Hardware & Toggles -->
+  <div class="flex flex-wrap items-center gap-4 pt-3 border-t border-brand-950/10 text-xs">
+    <!-- Memória RAM -->
+    <div class="flex items-center gap-1.5">
+      <span class="font-semibold text-brand-950/60 uppercase tracking-wider text-[11px]"
+        >RAM Mínima:</span
+      >
+      <button
+        type="button"
+        (click)="setFilterMinRam(8)"
+        [class]="
+          specsMinRam() === 8
+            ? 'bg-brand-950 text-brand-50'
+            : 'bg-brand-950/5 text-brand-950/70 hover:bg-brand-950/10'
+        "
+        class="rounded-full px-2.5 py-1 font-medium transition-colors"
+      >
+        8GB+
+      </button>
+      <button
+        type="button"
+        (click)="setFilterMinRam(16)"
+        [class]="
+          specsMinRam() === 16
+            ? 'bg-brand-950 text-brand-50'
+            : 'bg-brand-950/5 text-brand-950/70 hover:bg-brand-950/10'
+        "
+        class="rounded-full px-2.5 py-1 font-medium transition-colors"
+      >
+        16GB+
+      </button>
+      <button
+        type="button"
+        (click)="setFilterMinRam(32)"
+        [class]="
+          specsMinRam() === 32
+            ? 'bg-brand-950 text-brand-50'
+            : 'bg-brand-950/5 text-brand-950/70 hover:bg-brand-950/10'
+        "
+        class="rounded-full px-2.5 py-1 font-medium transition-colors"
+      >
+        32GB+
+      </button>
+    </div>
+
+    <!-- Geração CPU -->
+    <div class="flex items-center gap-1.5">
+      <span class="font-semibold text-brand-950/60 uppercase tracking-wider text-[11px]"
+        >Geração Mínima:</span
+      >
+      <button
+        type="button"
+        (click)="setFilterMinGen(10)"
+        [class]="
+          specsMinGen() === 10
+            ? 'bg-brand-950 text-brand-50'
+            : 'bg-brand-950/5 text-brand-950/70 hover:bg-brand-950/10'
+        "
+        class="rounded-full px-2.5 py-1 font-medium transition-colors"
+      >
+        10ª+
+      </button>
+      <button
+        type="button"
+        (click)="setFilterMinGen(11)"
+        [class]="
+          specsMinGen() === 11
+            ? 'bg-brand-950 text-brand-50'
+            : 'bg-brand-950/5 text-brand-950/70 hover:bg-brand-950/10'
+        "
+        class="rounded-full px-2.5 py-1 font-medium transition-colors"
+      >
+        11ª+
+      </button>
+      <button
+        type="button"
+        (click)="setFilterMinGen(12)"
+        [class]="
+          specsMinGen() === 12
+            ? 'bg-brand-950 text-brand-50'
+            : 'bg-brand-950/5 text-brand-950/70 hover:bg-brand-950/10'
+        "
+        class="rounded-full px-2.5 py-1 font-medium transition-colors"
+      >
+        12ª+
+      </button>
+    </div>
+
+    <!-- Toggles Rápidos -->
+    <div class="flex items-center gap-3">
+      <label class="inline-flex items-center gap-1.5 font-medium text-brand-950/80 cursor-pointer">
+        <input
+          type="checkbox"
+          [checked]="specsOnlyDedicatedGpu()"
+          (change)="toggleDedicatedGpu()"
+          class="h-3.5 w-3.5 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong"
+        />
+        GPU Dedicada
+      </label>
+      <label class="inline-flex items-center gap-1.5 font-medium text-brand-950/80 cursor-pointer">
+        <input
+          type="checkbox"
+          [checked]="specsHideReproved()"
+          (change)="toggleHideReproved()"
+          class="h-3.5 w-3.5 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong"
+        />
+        Ocultar Reprovados
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela Técnica -->
+<app-ui-card [noPadding]="true">
+  @if (loading) {
+    <app-ui-state-panel variant="loading" title="Carregando especificações técnicas..." />
+  } @else if (filteredAndSortedSpecsListings().length === 0) {
+    <app-ui-state-panel
+      variant="empty"
+      title="Nenhum notebook encontrado para os critérios selecionados"
+      message="Ajuste os filtros de hardware ou de relevância acima."
+    />
+  } @else {
+    <!-- Barra de contagem -->
+    <div
+      class="flex items-center justify-between border-b border-brand-950/10 px-4 py-2.5 text-xs text-brand-950/60 bg-brand-950/[0.01]"
+    >
+      <span
+        >Mostrando
+        <strong class="text-brand-950">{{ filteredAndSortedSpecsListings().length }}</strong>
+        notebooks encontrados</span
+      >
+      <span class="text-[11px] text-brand-950/40">Dica: clique no cabeçalho das colunas para ordenar</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-brand-950/10 text-left text-xs">
+        <thead class="bg-brand-950/[0.03] select-none">
+          <tr>
+            <!-- Coluna Produto -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('title')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>Produto</span>
+                @if (getSpecsSortIcon('title') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('title') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            <!-- Coluna Preço -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('currentPrice')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>Preço</span>
+                @if (getSpecsSortIcon('currentPrice') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('currentPrice') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            @if (hasAiAnalysis) {
+              <!-- Coluna Relevância -->
+              <th
+                scope="col"
+                (click)="toggleSpecsSort('matchScore')"
+                class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+              >
+                <div class="flex items-center gap-1">
+                  <span>Relevância</span>
+                  @if (getSpecsSortIcon('matchScore') === 'asc') {
+                    <span class="text-brand-amber-strong">▲</span>
+                  } @else if (getSpecsSortIcon('matchScore') === 'desc') {
+                    <span class="text-brand-amber-strong">▼</span>
+                  } @else {
+                    <span class="text-brand-950/20">⇅</span>
+                  }
+                </div>
+              </th>
+            }
+
+            <!-- Coluna Marca -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('brand')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>Marca</span>
+                @if (getSpecsSortIcon('brand') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('brand') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            <!-- Coluna Processador -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('processorModel')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>Processador</span>
+                @if (getSpecsSortIcon('processorModel') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('processorModel') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            <!-- Coluna Geração -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('processGeneration')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>Geração</span>
+                @if (getSpecsSortIcon('processGeneration') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('processGeneration') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            <!-- Coluna RAM -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('ramSize')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>RAM</span>
+                @if (getSpecsSortIcon('ramSize') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('ramSize') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            <!-- Coluna Armazenamento -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('storageSizeGb')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>Armaz.</span>
+                @if (getSpecsSortIcon('storageSizeGb') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('storageSizeGb') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            <!-- Coluna GPU -->
+            <th
+              scope="col"
+              (click)="toggleSpecsSort('hasGpu')"
+              class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+            >
+              <div class="flex items-center gap-1">
+                <span>GPU</span>
+                @if (getSpecsSortIcon('hasGpu') === 'asc') {
+                  <span class="text-brand-amber-strong">▲</span>
+                } @else if (getSpecsSortIcon('hasGpu') === 'desc') {
+                  <span class="text-brand-amber-strong">▼</span>
+                } @else {
+                  <span class="text-brand-950/20">⇅</span>
+                }
+              </div>
+            </th>
+
+            @if (hasAiAnalysis) {
+              <!-- Coluna Status / Veredito -->
+              <th
+                scope="col"
+                (click)="toggleSpecsSort('isReproved')"
+                class="cursor-pointer px-4 py-3 font-semibold uppercase tracking-wider text-brand-950/60 hover:text-brand-950 transition-colors"
+              >
+                <div class="flex items-center gap-1">
+                  <span>Veredito</span>
+                  @if (getSpecsSortIcon('isReproved') === 'asc') {
+                    <span class="text-brand-amber-strong">▲</span>
+                  } @else if (getSpecsSortIcon('isReproved') === 'desc') {
+                    <span class="text-brand-amber-strong">▼</span>
+                  } @else {
+                    <span class="text-brand-950/20">⇅</span>
+                  }
+                </div>
+              </th>
+            }
+
+            <!-- Ações -->
+            <th
+              scope="col"
+              class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-brand-950/60"
+            >
+              Ações
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-brand-950/5 font-sans">
+          @for (item of filteredAndSortedSpecsListings(); track item.id) {
+            @let specs = item.extractedSpecs;
+            <tr class="transition-colors hover:bg-brand-950/[0.02]">
+              <!-- Produto -->
+              <td class="px-4 py-3 min-w-[220px] max-w-xs">
+                <div class="flex items-center gap-2.5">
+                  <div
+                    class="h-9 w-9 flex-shrink-0 overflow-hidden rounded border border-brand-950/10 bg-brand-950/5"
+                  >
+                    @if (item.images && item.images.length > 0 && !isImageBroken(item.id)) {
+                      <img
+                        [src]="item.images[0]"
+                        [alt]="item.title"
+                        loading="lazy"
+                        (error)="onImageError(item.id)"
+                        class="h-full w-full object-cover"
+                      />
+                    } @else {
+                      <div
+                        class="flex h-full w-full items-center justify-center text-brand-950/20"
+                        aria-hidden="true"
+                      >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                    }
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <a
+                      [href]="item.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="line-clamp-2 text-xs font-semibold text-brand-950 hover:text-brand-amber-strong transition-colors"
+                      [title]="item.title"
+                    >
+                      {{ item.title }}
+                    </a>
+                    <p class="text-[10px] text-brand-950/40">
+                      {{ item.city || 'Local não informado' }}
+                      {{ item.state ? '· ' + item.state : '' }}
+                    </p>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Preço -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                <p class="font-bold text-brand-950">
+                  {{ item.currentPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                </p>
+                @if (item.originalPrice && item.originalPrice > item.currentPrice) {
+                  <p class="text-[10px] text-brand-950/40 line-through">
+                    {{ item.originalPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                  </p>
+                }
+              </td>
+
+              @if (hasAiAnalysis) {
+                <!-- Relevância -->
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="flex items-center gap-1.5">
+                    <app-ui-badge [variant]="getTierBadge(item.matchTier)" size="xs">
+                      {{ item.matchTier }}
+                    </app-ui-badge>
+                    @if (item.matchScore > 0) {
+                      <span class="font-mono text-[11px] font-bold text-brand-950/80">
+                        {{ item.matchScore }}%
+                      </span>
+                    }
+                  </div>
+                </td>
+              }
+
+              <!-- Marca -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if (specs?.brand) {
+                  <span class="font-medium text-brand-950 uppercase text-[11px]">
+                    {{ specs?.brand }}
+                  </span>
+                } @else {
+                  <span class="text-brand-950/30">—</span>
+                }
+              </td>
+
+              <!-- Processador -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if (specs?.processorModel || specs?.processor) {
+                  <span class="font-mono text-[11px] font-medium text-brand-950">
+                    {{ specs?.processorModel || specs?.processor }}
+                  </span>
+                } @else {
+                  <span class="text-brand-950/30">—</span>
+                }
+              </td>
+
+              <!-- Geração -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if (specs?.processGeneration) {
+                  <span
+                    class="inline-flex items-center rounded bg-brand-950/5 px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-950/80"
+                  >
+                    {{ specs?.processGeneration }}ª Gen
+                  </span>
+                } @else {
+                  <span class="text-brand-950/30">—</span>
+                }
+              </td>
+
+              <!-- RAM -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if (specs?.ramSize || specs?.ramGb) {
+                  <span
+                    class="inline-flex items-center rounded bg-brand-950/5 px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-950/80"
+                  >
+                    {{ specs?.ramSize || specs?.ramGb }}GB
+                    @if (specs?.ramType) {
+                      <span class="ml-1 text-[10px] text-brand-950/50 font-normal">{{
+                        specs?.ramType
+                      }}</span>
+                    }
+                  </span>
+                } @else {
+                  <span class="text-brand-950/30">—</span>
+                }
+              </td>
+
+              <!-- Armazenamento -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if (specs?.storageSizeGb) {
+                  <span
+                    class="inline-flex items-center rounded bg-brand-950/5 px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-950/80"
+                  >
+                    {{ specs?.storageSizeGb }}GB
+                    @if (specs?.diskType) {
+                      <span class="ml-1 text-[10px] text-brand-950/50 font-normal">{{
+                        specs?.diskType
+                      }}</span>
+                    }
+                  </span>
+                } @else {
+                  <span class="text-brand-950/30">—</span>
+                }
+              </td>
+
+              <!-- GPU -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if (specs?.hasGpu || specs?.hasDedicatedGpu) {
+                  <span
+                    class="inline-flex items-center rounded bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-800"
+                  >
+                    {{ specs?.gpuModel || 'DEDICADA' }}
+                  </span>
+                } @else {
+                  <span class="text-[11px] text-brand-950/40">Integrada</span>
+                }
+              </td>
+
+              @if (hasAiAnalysis) {
+                <!-- Veredito -->
+                <td class="px-4 py-3 max-w-xs">
+                  @if (specs?.isReproved) {
+                    <div class="flex flex-col">
+                      <span
+                        class="inline-flex items-center w-max rounded bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-700"
+                      >
+                        REPROVADO
+                      </span>
+                      @if (specs?.reproveReason) {
+                        <span
+                          class="mt-0.5 line-clamp-1 text-[10px] text-rose-600/80"
+                          [title]="specs?.reproveReason"
+                        >
+                          {{ specs?.reproveReason }}
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span
+                      class="inline-flex items-center rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700"
+                    >
+                      APROVADO
+                    </span>
+                  }
+                </td>
+              }
+
+              <!-- Ações -->
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    (click)="openDetailsModal(item)"
+                    class="rounded p-1 text-brand-950/60 hover:bg-brand-950/5 hover:text-brand-amber-strong transition-colors"
+                    title="Ver ficha técnica completa e notas de IA"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </button>
+                  @if (hasAiAnalysis) {
+                    <button
+                      type="button"
+                      (click)="triggerOpenAiLogs(item)"
+                      class="rounded p-1 text-brand-950/60 hover:bg-brand-950/5 hover:text-brand-950 transition-colors"
+                      title="Ver dossiê de IA"
+                    >
+                      <svg
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </button>
+                  }
+                  <a
+                    [href]="item.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="rounded p-1 text-brand-950/60 hover:bg-brand-950/5 hover:text-brand-amber-strong transition-colors"
+                    title="Abrir anúncio original"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</app-ui-card>
+
+<!-- Modal Ficha Técnica & Avaliação de IA -->
+<app-ui-dialog
+  [open]="isDetailsModalOpen()"
+  [title]="'Ficha Técnica: ' + (selectedListing()?.title || '')"
+  subtitle="Especificações de hardware extraídas e parecer analítico da IA"
+  panelClass="sm:max-w-3xl"
+  (closed)="closeDetailsModal()"
+>
+  @if (selectedListing(); as item) {
+    @let specs = item.extractedSpecs;
+    <div class="space-y-5 max-h-[75vh] overflow-y-auto p-1">
+      <!-- Topo: Foto, Título, Preço e Relevância -->
+      <div
+        class="flex flex-col sm:flex-row items-start gap-4 rounded-xl border border-brand-950/10 bg-brand-950/[0.02] p-4"
+      >
+        <div
+          class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-brand-950/10 bg-surface"
+        >
+          @if (item.images && item.images.length > 0 && !isImageBroken(item.id)) {
+            <img
+              [src]="item.images[0]"
+              [alt]="item.title"
+              loading="lazy"
+              (error)="onImageError(item.id)"
+              class="h-full w-full object-cover"
+            />
+          } @else {
+            <div
+              class="flex h-full w-full items-center justify-center text-brand-950/20"
+              aria-hidden="true"
+            >
+              <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+          }
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <app-ui-badge [variant]="getTierBadge(item.matchTier)">
+              {{ item.matchTier }}
+            </app-ui-badge>
+            @if (item.matchScore > 0) {
+              <span class="font-mono text-xs font-bold text-brand-950">
+                Score: {{ item.matchScore }}%
+              </span>
+            }
+            @if (specs?.isReproved) {
+              <span class="rounded bg-rose-500/10 px-2 py-0.5 text-xs font-bold text-rose-700">
+                REPROVADO PELA IA
+              </span>
+            } @else {
+              <span class="rounded bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                APROVADO
+              </span>
+            }
+          </div>
+
+          <h3 class="text-sm font-semibold text-brand-950 line-clamp-2">
+            {{ item.title }}
+          </h3>
+
+          <div class="mt-2 flex flex-wrap items-baseline gap-3">
+            <span class="text-lg font-bold text-brand-950">
+              {{ item.currentPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
+            </span>
+            @if (item.originalPrice && item.originalPrice > item.currentPrice) {
+              <span class="text-xs text-brand-950/40 line-through">
+                {{ item.originalPrice | currency: 'BRL' : 'symbol' : '1.2-2' }}
+              </span>
+            }
+            <span class="text-xs text-brand-950/60">
+              {{ item.city || 'Local não informado' }} {{ item.state ? '· ' + item.state : '' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas da Avaliação de IA (evaluationNotes) -->
+      @if (specs?.evaluationNotes && specs.evaluationNotes.length > 0) {
+        <div class="rounded-xl border border-brand-amber-strong/20 bg-brand-amber-strong/[0.04] p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <svg
+              class="h-4 w-4 text-brand-amber-strong"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-brand-950">
+              Notas da Avaliação de IA
+            </h4>
+          </div>
+          <ul class="space-y-1.5 text-xs text-brand-950/80">
+            @for (note of specs.evaluationNotes; track note) {
+              <li class="flex items-start gap-2">
+                <span class="text-brand-amber-strong font-bold mt-0.5">•</span>
+                <span>{{ note }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- Motivo de Reprovação / Penalidades -->
+      @if (specs?.isReproved || (specs?.penalties && specs.penalties.length > 0)) {
+        <div class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs">
+          <div class="flex items-center gap-2 font-bold text-rose-700 mb-1">
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <span>Critérios Reprovados / Penalidades</span>
+          </div>
+          @if (specs?.reproveReason) {
+            <p class="text-rose-800 font-medium">{{ specs?.reproveReason }}</p>
+          }
+          @if (specs?.penalties && specs.penalties.length > 0) {
+            <ul class="mt-2 space-y-1 text-rose-700">
+              @for (p of specs.penalties; track p) {
+                <li class="flex items-start gap-1.5">
+                  <span>-</span>
+                  <span>{{ p }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <!-- Grid de Especificações de Hardware -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-brand-950/60 mb-2">
+          Especificações de Hardware
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <!-- Processador -->
+          <div class="rounded-lg border border-brand-950/10 p-3 bg-surface">
+            <p class="text-[11px] font-semibold text-brand-950/50 uppercase">Processador</p>
+            <p class="mt-1 text-xs font-bold text-brand-950 font-mono">
+              {{ specs?.processorModel || specs?.processor || 'Não identificado' }}
+            </p>
+            @if (specs?.processorBrand || specs?.processGeneration) {
+              <p class="text-[11px] text-brand-950/60 mt-0.5">
+                {{ specs?.processorBrand || '' }}
+                {{ specs?.processGeneration ? '· ' + specs?.processGeneration + 'ª Gen' : '' }}
+              </p>
+            }
+          </div>
+
+          <!-- Memória RAM -->
+          <div class="rounded-lg border border-brand-950/10 p-3 bg-surface">
+            <p class="text-[11px] font-semibold text-brand-950/50 uppercase">Memória RAM</p>
+            <p class="mt-1 text-xs font-bold text-brand-950 font-mono">
+              {{
+                specs?.ramSize || specs?.ramGb
+                  ? (specs?.ramSize || specs?.ramGb) + ' GB'
+                  : 'Não identificada'
+              }}
+            </p>
+            @if (specs?.ramType) {
+              <p class="text-[11px] text-brand-950/60 mt-0.5">{{ specs?.ramType }}</p>
+            }
+          </div>
+
+          <!-- Armazenamento -->
+          <div class="rounded-lg border border-brand-950/10 p-3 bg-surface">
+            <p class="text-[11px] font-semibold text-brand-950/50 uppercase">Armazenamento</p>
+            <p class="mt-1 text-xs font-bold text-brand-950 font-mono">
+              {{
+                specs?.storageSizeGb
+                  ? specs?.storageSizeGb! >= 1000
+                    ? specs?.storageSizeGb! / 1000 + ' TB'
+                    : specs?.storageSizeGb + ' GB'
+                  : specs?.storage || 'Não identificado'
+              }}
+            </p>
+            @if (specs?.diskType) {
+              <p class="text-[11px] text-brand-950/60 mt-0.5">{{ specs?.diskType }}</p>
+            }
+          </div>
+
+          <!-- GPU -->
+          <div class="rounded-lg border border-brand-950/10 p-3 bg-surface">
+            <p class="text-[11px] font-semibold text-brand-950/50 uppercase">Placa de Vídeo</p>
+            <p
+              class="mt-1 text-xs font-bold font-mono"
+              [class]="
+                specs?.hasGpu || specs?.hasDedicatedGpu ? 'text-amber-800' : 'text-brand-950'
+              "
+            >
+              {{
+                specs?.hasGpu || specs?.hasDedicatedGpu
+                  ? specs?.gpuModel || 'GPU DEDICADA'
+                  : 'Integrada'
+              }}
+            </p>
+          </div>
+
+          <!-- Marca / Modelo -->
+          <div class="rounded-lg border border-brand-950/10 p-3 bg-surface">
+            <p class="text-[11px] font-semibold text-brand-950/50 uppercase">Marca / Fabricante</p>
+            <p class="mt-1 text-xs font-bold text-brand-950 uppercase">
+              {{ specs?.brand || 'Não informada' }}
+            </p>
+            @if (specs?.model) {
+              <p class="text-[11px] text-brand-950/60 mt-0.5">{{ specs?.model }}</p>
+            }
+          </div>
+
+          <!-- Tela / Resolução -->
+          <div class="rounded-lg border border-brand-950/10 p-3 bg-surface">
+            <p class="text-[11px] font-semibold text-brand-950/50 uppercase">Tela</p>
+            <p class="mt-1 text-xs font-bold text-brand-950">
+              {{ specs?.screenResolution || 'Padrão' }}
+            </p>
+            @if (specs?.screenSize) {
+              <p class="text-[11px] text-brand-950/60 mt-0.5">{{ specs?.screenSize }}</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Prós & Contras (se houver) -->
+      @if ((specs?.pros && specs.pros.length > 0) || (specs?.cons && specs.cons.length > 0)) {
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          @if (specs?.pros && specs.pros.length > 0) {
+            <div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+              <p class="font-bold text-emerald-800 mb-1.5">✓ Pontos Fortes</p>
+              <ul class="space-y-1 text-emerald-900">
+                @for (p of specs.pros; track p) {
+                  <li>• {{ p }}</li>
+                }
+              </ul>
+            </div>
+          }
+          @if (specs?.cons && specs.cons.length > 0) {
+            <div class="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+              <p class="font-bold text-amber-800 mb-1.5">⚠ Pontos de Atenção</p>
+              <ul class="space-y-1 text-amber-900">
+                @for (c of specs.cons; track c) {
+                  <li>• {{ c }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Botões de Ação do Rodapé -->
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-brand-950/10"
+      >
+        <div class="flex items-center gap-2">
+          @if (hasAiAnalysis) {
+            <app-ui-button variant="outline" size="sm" (clicked)="triggerOpenAiLogs(item)">
+              <svg
+                class="h-4 w-4 mr-1.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Ver Dossiê Bruto
+            </app-ui-button>
+          }
+          <a
+            [href]="item.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded-lg bg-brand-amber-strong px-3 py-1.5 text-xs font-semibold text-brand-950 shadow-sm hover:bg-brand-amber-strong/90 transition-colors"
+          >
+            Acessar no Marketplace ↗
+          </a>
+        </div>
+
+        <app-ui-button variant="ghost" size="sm" (clicked)="closeDetailsModal()">
+          Fechar
+        </app-ui-button>
+      </div>
+    </div>
+  }
+</app-ui-dialog>
+
