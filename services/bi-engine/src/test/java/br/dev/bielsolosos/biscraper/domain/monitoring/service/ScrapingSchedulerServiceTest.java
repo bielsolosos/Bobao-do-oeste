@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ScrapingSchedulerTest {
+class ScrapingSchedulerServiceTest {
 
     @Mock
     private ProductMonitorRepository productMonitorRepository;
@@ -30,11 +30,11 @@ class ScrapingSchedulerTest {
     private ScrapingJobDispatcher scrapingJobDispatcher;
 
     @InjectMocks
-    private ScrapingScheduler scheduler;
+    private ScrapingSchedulerService schedulerService;
 
     @Test
     @DisplayName("Deve disparar apenas queries ativas para monitores com cron vencido")
-    void scheduleScrapesDueMonitor() {
+    void executeScheduledScrapesDueMonitor() {
         ProductMonitor monitor = ProductMonitor.builder()
                 .id(UUID.randomUUID())
                 .name("ThinkPad Monitor")
@@ -60,7 +60,7 @@ class ScrapingSchedulerTest {
 
         when(productMonitorRepository.findByActiveTrue()).thenReturn(List.of(monitor));
 
-        scheduler.scheduleScrapes();
+        schedulerService.executeScheduledScrapes();
 
         verify(scrapingJobDispatcher, times(1)).dispatchQuery(monitor, activeQuery);
         verify(scrapingJobDispatcher, never()).dispatchQuery(monitor, inactiveQuery);
@@ -69,7 +69,7 @@ class ScrapingSchedulerTest {
 
     @Test
     @DisplayName("Não deve disparar monitor cujo cron ainda não venceu")
-    void scheduleScrapesNotDueMonitor() {
+    void executeScheduledScrapesNotDueMonitor() {
         ProductMonitor monitor = ProductMonitor.builder()
                 .id(UUID.randomUUID())
                 .name("ThinkPad Monitor Daily")
@@ -88,7 +88,7 @@ class ScrapingSchedulerTest {
 
         when(productMonitorRepository.findByActiveTrue()).thenReturn(List.of(monitor));
 
-        scheduler.scheduleScrapes();
+        schedulerService.executeScheduledScrapes();
 
         verifyNoInteractions(scrapingJobDispatcher);
         verify(productMonitorRepository, never()).save(any(ProductMonitor.class));
@@ -96,7 +96,7 @@ class ScrapingSchedulerTest {
 
     @Test
     @DisplayName("Não deve disparar monitor com cronExpression nula ou em branco (manual)")
-    void scheduleScrapesManualMonitor() {
+    void executeScheduledScrapesManualMonitor() {
         ProductMonitor monitor = ProductMonitor.builder()
                 .id(UUID.randomUUID())
                 .name("Manual Monitor")
@@ -106,14 +106,14 @@ class ScrapingSchedulerTest {
 
         when(productMonitorRepository.findByActiveTrue()).thenReturn(List.of(monitor));
 
-        scheduler.scheduleScrapes();
+        schedulerService.executeScheduledScrapes();
 
         verifyNoInteractions(scrapingJobDispatcher);
     }
 
     @Test
     @DisplayName("Não deve disparar monitor com cron inválido")
-    void scheduleScrapesInvalidCron() {
+    void executeScheduledScrapesInvalidCron() {
         ProductMonitor monitor = ProductMonitor.builder()
                 .id(UUID.randomUUID())
                 .name("Invalid Cron Monitor")
@@ -123,17 +123,17 @@ class ScrapingSchedulerTest {
 
         when(productMonitorRepository.findByActiveTrue()).thenReturn(List.of(monitor));
 
-        scheduler.scheduleScrapes();
+        schedulerService.executeScheduledScrapes();
 
         verifyNoInteractions(scrapingJobDispatcher);
     }
 
     @Test
     @DisplayName("Não deve fazer nada quando não houver monitores ativos")
-    void scheduleScrapesNoActiveMonitors() {
+    void executeScheduledScrapesNoActiveMonitors() {
         when(productMonitorRepository.findByActiveTrue()).thenReturn(Collections.emptyList());
 
-        scheduler.scheduleScrapes();
+        schedulerService.executeScheduledScrapes();
 
         verifyNoInteractions(scrapingJobDispatcher);
     }
@@ -149,7 +149,7 @@ class ScrapingSchedulerTest {
                 .lastScrapedAt(null)
                 .build();
 
-        boolean due = scheduler.isDue(monitor, OffsetDateTime.now());
+        boolean due = schedulerService.isDue(monitor, OffsetDateTime.now());
 
         assertTrue(due);
     }
@@ -160,8 +160,7 @@ class ScrapingSchedulerTest {
         ProductMonitor monitorNull = ProductMonitor.builder().cronExpression(null).build();
         ProductMonitor monitorInvalid = ProductMonitor.builder().cronExpression("abc").build();
 
-        assertFalse(scheduler.isDue(monitorNull, OffsetDateTime.now()));
-        assertFalse(scheduler.isDue(monitorInvalid, OffsetDateTime.now()));
+        assertFalse(schedulerService.isDue(monitorNull, OffsetDateTime.now()));
+        assertFalse(schedulerService.isDue(monitorInvalid, OffsetDateTime.now()));
     }
 }
-
