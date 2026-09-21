@@ -320,10 +320,10 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
     private String extractUserCriteria(ProductMonitor monitor) {
         if (monitor == null) return "Avalie a relevância e o custo-benefício geral do produto.";
 
-        if (monitor.getExpectedSpecs() != null && monitor.getExpectedSpecs().has("prompt")) {
-            String prompt = monitor.getExpectedSpecs().get("prompt").asText();
-            if (prompt != null && !prompt.isBlank()) {
-                return prompt;
+        if (monitor.getExpectedSpecs() != null && monitor.getExpectedSpecs().containsKey("prompt")) {
+            Object promptObj = monitor.getExpectedSpecs().get("prompt");
+            if (promptObj != null && !promptObj.toString().isBlank()) {
+                return promptObj.toString();
             }
         }
 

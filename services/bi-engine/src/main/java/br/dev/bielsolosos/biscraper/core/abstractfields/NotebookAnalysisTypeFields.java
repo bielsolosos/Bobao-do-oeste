@@ -33,7 +33,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = false)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
 public class NotebookAnalysisTypeFields extends AnalysisTypeFields {
 
     /**
@@ -101,8 +100,34 @@ public class NotebookAnalysisTypeFields extends AnalysisTypeFields {
 
 
     
+    public NotebookAnalysisTypeFields(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            NotebookAnalysisTypeFields temp = mapper.convertValue(map, NotebookAnalysisTypeFields.class);
+
+            this.brands = temp.getBrands();
+            this.processorVendors = temp.getProcessorVendors();
+            this.processorTiers = temp.getProcessorTiers();
+            this.minimumProcessorGeneration = temp.getMinimumProcessorGeneration();
+            this.minimumRamGb = temp.getMinimumRamGb();
+            this.ramTypes = temp.getRamTypes();
+            this.minimumStorageGb = temp.getMinimumStorageGb();
+            this.diskTypes = temp.getDiskTypes();
+            this.screenResolutions = temp.getScreenResolutions();
+            this.needsDedicatedGpu = temp.getNeedsDedicatedGpu();
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao converter Map para NotebookAnalysisTypeFields", e);
+        }
+    }
+
     public NotebookAnalysisTypeFields(JsonNode json) {
-        if (json == null || json.isMissingNode()) {
+        if (json == null || json.isMissingNode() || json.isNull()) {
             return;
         }
 

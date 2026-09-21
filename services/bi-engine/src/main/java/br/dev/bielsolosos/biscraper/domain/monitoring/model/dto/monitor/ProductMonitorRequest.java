@@ -10,37 +10,60 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-public record ProductMonitorRequest(
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductMonitorRequest {
+
     @NotBlank(message = "Nome do monitor é obrigatório.")
     @Size(max = 150, message = "Nome do monitor não pode exceder 150 caracteres.")
-    String name,
+    private String name;
 
-    String description,
+    private String description;
 
     @NotNull(message = "Vendor alvo (ex: OLX, MERCADO_LIVRE) é obrigatório.")
-    Vendor vendor,
+    private Vendor vendor;
 
     @NotNull(message = "Tipo de análise (ex: SIMPLE, NOTEBOOK) é obrigatório.")
-    AnalysisType analysisType,
+    private AnalysisType analysisType;
 
     @Valid
-    AnalysisTypeFields analysisTypeFields,
+    private AnalysisTypeFields analysisTypeFields;
 
     @NotEmpty(message = "Ao menos uma palavra-chave para busca deve ser informada.")
-    List<@NotBlank(message = "Palavra-chave não pode ser vazia.") String> searchKeywords,
+    private List<@NotBlank(message = "Palavra-chave não pode ser vazia.") String> searchKeywords;
 
     @PositiveOrZero(message = "Preço mínimo não pode ser negativo.")
-    BigDecimal minPrice,
+    private BigDecimal minPrice;
 
     @PositiveOrZero(message = "Preço máximo não pode ser negativo.")
-    BigDecimal maxPrice,
+    private BigDecimal maxPrice;
 
-    String stateFilter,
-    String regionFilter,
-    Boolean requireDelivery,
-    ScrapingFrequency frequency
-) {}
+    private String stateFilter;
+    private String regionFilter;
+    private Boolean requireDelivery;
+    private ScrapingFrequency frequency;
+
+    // Métodos de conveniência no estilo record
+    public String name() { return name; }
+    public String description() { return description; }
+    public Vendor vendor() { return vendor; }
+    public AnalysisType analysisType() { return analysisType; }
+    public AnalysisTypeFields analysisTypeFields() { return analysisTypeFields; }
+    public List<String> searchKeywords() { return searchKeywords; }
+    public BigDecimal minPrice() { return minPrice; }
+    public BigDecimal maxPrice() { return maxPrice; }
+    public String stateFilter() { return stateFilter; }
+    public String regionFilter() { return regionFilter; }
+    public Boolean requireDelivery() { return requireDelivery; }
+    public ScrapingFrequency frequency() { return frequency; }
+}

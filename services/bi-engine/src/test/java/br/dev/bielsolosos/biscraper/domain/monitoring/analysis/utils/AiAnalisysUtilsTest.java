@@ -49,4 +49,31 @@ class AiAnalisysUtilsTest {
 
         assertThat(AiAnalisysUtils.sanitizeJson(raw)).isEqualTo(json);
     }
+
+    @Test
+    @DisplayName("Deve extrair JSON quando o LLM retornar texto conversacional antes e depois")
+    void shouldExtractJsonWithConversationalText() {
+        String json = "[{\"brand\": \"DELL\", \"ramSize\": 16}]";
+        String raw = "Tool getAdditionalInfo was executed successfully.\nHere is the analysis:\n```json\n" + json + "\n```\nHope this helps!";
+
+        assertThat(AiAnalisysUtils.sanitizeJson(raw)).isEqualTo(json);
+    }
+
+    @Test
+    @DisplayName("Deve extrair JSON puro mesmo com prefixo de Tool sem markdown")
+    void shouldExtractJsonWithToolPrefixWithoutMarkdown() {
+        String json = "[{\"brand\": \"DELL\"}]";
+        String raw = "Tool execution completed. Results:\n" + json;
+
+        assertThat(AiAnalisysUtils.sanitizeJson(raw)).isEqualTo(json);
+    }
+
+    @Test
+    @DisplayName("Deve extrair objeto JSON com texto conversacional")
+    void shouldExtractJsonObjectWithConversationalText() {
+        String json = "{\"brand\": \"DELL\", \"score\": 90}";
+        String raw = "I have evaluated the item:\n" + json + "\nThank you.";
+
+        assertThat(AiAnalisysUtils.sanitizeJson(raw)).isEqualTo(json);
+    }
 }

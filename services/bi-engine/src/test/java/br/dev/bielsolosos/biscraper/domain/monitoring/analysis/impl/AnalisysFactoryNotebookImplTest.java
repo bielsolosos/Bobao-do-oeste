@@ -77,11 +77,11 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "processorVendors", List.of("INTEL"),
                 "processorTiers", List.of("ADVANCED"),
                 "minimumProcessorGeneration", 11
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -136,9 +136,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "processorVendors", List.of("INTEL")
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -183,9 +183,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "minimumProcessorGeneration", 11
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -229,9 +229,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "minimumRamGb", 16
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -276,9 +276,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "minimumRamGb", 16
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -322,9 +322,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "ramTypes", List.of("DDR5", "LPDDR5")
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -368,9 +368,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "minimumStorageGb", 512
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -414,9 +414,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "minimumStorageGb", 512
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -461,9 +461,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "diskTypes", List.of("SSD_NVME", "SSD")
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -507,9 +507,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "needsDedicatedGpu", true
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -553,9 +553,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "screenResolutions", List.of("FULL_HD", "QHD_2K")
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 
@@ -598,9 +598,9 @@ class AnalisysFactoryNotebookImplTest {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
-        monitor.setExpectedSpecs(objectMapper.valueToTree(Map.of(
+        monitor.setExpectedSpecs(Map.of(
                 "brands", List.of("DELL", "LENOVO")
-        )));
+        ));
 
         AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
 

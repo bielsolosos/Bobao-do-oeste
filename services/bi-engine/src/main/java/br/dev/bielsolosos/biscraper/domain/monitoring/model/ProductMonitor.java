@@ -16,6 +16,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -62,7 +63,7 @@ public class ProductMonitor {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "expected_specs", columnDefinition = "jsonb")
-    private JsonNode expectedSpecs;
+    private Map<String, Object> expectedSpecs;
 
     @Column(name = "last_scraped_at")
     private OffsetDateTime lastScrapedAt;
