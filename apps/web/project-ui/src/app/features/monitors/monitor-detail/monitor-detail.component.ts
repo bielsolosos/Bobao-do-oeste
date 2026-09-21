@@ -26,6 +26,7 @@ import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header
 import { UiCodePanelComponent } from '../../../shared/components/ui-code-panel/ui-code-panel.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
 import { UiChartComponent } from '../../../shared/components/ui-chart/ui-chart.component';
+import { NotebookSpecsTableComponent } from '../components/notebook-specs-table/notebook-specs-table.component';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -45,6 +46,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     UiPageHeaderComponent,
     UiCodePanelComponent,
     UiChartComponent,
+    NotebookSpecsTableComponent,
   ],
   templateUrl: './monitor-detail.component.html',
 })
@@ -98,6 +100,10 @@ export class MonitorDetailComponent implements OnInit {
       .subscribe(() => this.loadListings());
   }
 
+  isNotebookMonitor = computed(() => {
+    return this.monitor()?.analysisType === 'NOTEBOOK';
+  });
+
   hasAiAnalysis = computed(() => {
     const m = this.monitor();
     return m !== null && m.analysisType !== 'NONE';
@@ -121,6 +127,15 @@ export class MonitorDetailComponent implements OnInit {
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>',
       },
     ];
+
+    if (this.isNotebookMonitor()) {
+      tabs.push({
+        id: 'notebook-specs',
+        label: 'Tabela de Specs',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+      });
+    }
+
     if (this.hasAiAnalysis()) {
       tabs.push({
         id: 'ai-logs',

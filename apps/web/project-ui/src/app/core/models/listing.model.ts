@@ -19,6 +19,7 @@ export interface ExtractedSpecs {
   isReproved?: boolean;
   reproveReason?: string;
   penalties?: string[];
+  evaluationNotes?: string[];
   processor?: string;
   ramGb?: number;
   storage?: string;
