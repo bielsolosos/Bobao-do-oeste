@@ -64,19 +64,21 @@ export class AiLogsListComponent implements OnInit {
   loadLogs() {
     this.state.set('loading');
     const status = this.statusFilter();
-    this.aiLogService.getAllAiLogs(this.page(), this.pageSize(), {
-      status: status === 'all' ? undefined : status,
-      q: this.keyword(),
-    }).subscribe({
-      next: (res) => {
-        this.logs.set(res.content ?? []);
-        this.page.set(res.number ?? 0);
-        this.totalElements.set(res.totalElements ?? 0);
-        this.totalPages.set(res.totalPages ?? 0);
-        this.state.set('ready');
-      },
-      error: () => this.state.set('error'),
-    });
+    this.aiLogService
+      .getAllAiLogs(this.page(), this.pageSize(), {
+        status: status === 'all' ? undefined : status,
+        q: this.keyword(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.logs.set(res.content ?? []);
+          this.page.set(res.number ?? 0);
+          this.totalElements.set(res.totalElements ?? 0);
+          this.totalPages.set(res.totalPages ?? 0);
+          this.state.set('ready');
+        },
+        error: () => this.state.set('error'),
+      });
   }
 
   onStatus(event: Event) {

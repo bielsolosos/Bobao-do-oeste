@@ -24,7 +24,14 @@ type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
           <path
             class="opacity-75"
             fill="currentColor"
@@ -65,13 +72,16 @@ export class UiButtonComponent {
         'bg-brand-amber-strong text-brand-950 hover:bg-brand-amber focus-visible:outline-brand-amber-strong border border-transparent',
       secondary:
         'bg-brand-950/5 text-brand-950 hover:bg-brand-950/10 focus-visible:outline-brand-700 border border-transparent',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600 border border-transparent',
+      danger:
+        'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600 border border-transparent',
       outline:
         'bg-surface text-brand-950 border border-brand-950/20 hover:bg-brand-950/5 focus-visible:outline-brand-700',
       ghost:
         'bg-transparent text-brand-950/70 hover:bg-brand-950/5 hover:text-brand-950 focus-visible:outline-brand-700 border border-transparent',
     };
 
-    return (sizes[this.size] ?? sizes['md']) + (this.fullWidth ? 'w-full ' : '') + variants[this.variant];
+    return (
+      (sizes[this.size] ?? sizes['md']) + (this.fullWidth ? 'w-full ' : '') + variants[this.variant]
+    );
   }
 }

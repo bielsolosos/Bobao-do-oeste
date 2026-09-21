@@ -6,7 +6,7 @@ import { PageResponse } from '../models/monitor.model';
 import { AiAnalysisLogResponse } from '../models/ai-log.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AiLogService {
   private http = inject(HttpClient);
@@ -23,11 +23,23 @@ export class AiLogService {
     return this.http.get<PageResponse<AiAnalysisLogResponse>>(this.apiUrl, { params });
   }
 
-  getMonitorAiLogs(monitorId: string, page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
-    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${environment.apiUrl}/product-monitors/${monitorId}/ai-logs?page=${page}&size=${size}`);
+  getMonitorAiLogs(
+    monitorId: string,
+    page = 0,
+    size = 20,
+  ): Observable<PageResponse<AiAnalysisLogResponse>> {
+    return this.http.get<PageResponse<AiAnalysisLogResponse>>(
+      `${environment.apiUrl}/product-monitors/${monitorId}/ai-logs?page=${page}&size=${size}`,
+    );
   }
 
-  getLogsByListingId(listingId: string, page = 0, size = 20): Observable<PageResponse<AiAnalysisLogResponse>> {
-    return this.http.get<PageResponse<AiAnalysisLogResponse>>(`${this.apiUrl}/by-listing/${listingId}?page=${page}&size=${size}`);
+  getLogsByListingId(
+    listingId: string,
+    page = 0,
+    size = 20,
+  ): Observable<PageResponse<AiAnalysisLogResponse>> {
+    return this.http.get<PageResponse<AiAnalysisLogResponse>>(
+      `${this.apiUrl}/by-listing/${listingId}?page=${page}&size=${size}`,
+    );
   }
 }

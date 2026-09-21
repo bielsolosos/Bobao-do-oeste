@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -92,7 +93,7 @@ public class ScrapedListing {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private JsonNode images;
+    private List<String> images;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -105,7 +106,7 @@ public class ScrapedListing {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "extracted_specs", columnDefinition = "jsonb")
-    private JsonNode extractedSpecs;
+    private Map<String, Object> extractedSpecs;
 
     @Column(name = "published_at")
     private OffsetDateTime publishedAt;

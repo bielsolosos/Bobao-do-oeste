@@ -1,12 +1,4 @@
-import {
-  Component,
-  ElementRef,
-  ViewChild,
-  effect,
-  inject,
-  input,
-  output,
-} from '@angular/core';
+import { Component, ElementRef, ViewChild, effect, inject, input, output } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 
 const FOCUSABLE_SELECTOR =
@@ -30,7 +22,9 @@ const FOCUSABLE_SELECTOR =
           aria-hidden="true"
         ></div>
 
-        <div class="flex min-h-full items-end justify-center p-3 text-center sm:items-center sm:p-6">
+        <div
+          class="flex min-h-full items-end justify-center p-3 text-center sm:items-center sm:p-6"
+        >
           <div
             #panel
             class="relative w-full rounded-2xl bg-surface text-left shadow-[var(--shadow-pop)] outline-none"
@@ -38,7 +32,9 @@ const FOCUSABLE_SELECTOR =
             tabindex="-1"
           >
             @if (title()) {
-              <div class="flex items-start justify-between gap-4 border-b border-brand-950/10 px-5 py-4 sm:px-6">
+              <div
+                class="flex items-start justify-between gap-4 border-b border-brand-950/10 px-5 py-4 sm:px-6"
+              >
                 <div>
                   <h2 [id]="titleId" class="text-lg font-semibold text-brand-950">{{ title() }}</h2>
                   @if (subtitle()) {
@@ -51,7 +47,14 @@ const FOCUSABLE_SELECTOR =
                   class="rounded-md p-1.5 text-brand-950/50 transition-colors hover:bg-brand-950/5 hover:text-brand-950"
                 >
                   <span class="sr-only">Fechar</span>
-                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    aria-hidden="true"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>

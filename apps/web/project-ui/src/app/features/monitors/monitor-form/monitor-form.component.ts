@@ -108,7 +108,11 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
   readonly processorVendorOptions: MultiSelectOption<ProcessorBrand>[] = [
     { label: 'Intel', value: 'INTEL', description: 'Core i3, i5, i7, i9 e Core Ultra' },
     { label: 'AMD', value: 'AMD', description: 'Ryzen 3, 5, 7, 9 e AI' },
-    { label: 'Apple Silicon', value: 'APPLE', description: 'Chips M1, M2, M3, M4 (Base, Pro, Max)' },
+    {
+      label: 'Apple Silicon',
+      value: 'APPLE',
+      description: 'Chips M1, M2, M3, M4 (Base, Pro, Max)',
+    },
     { label: 'Qualcomm', value: 'QUALCOMM', description: 'Snapdragon X Plus e X Elite (ARM)' },
   ];
 
@@ -122,41 +126,101 @@ export class MonitorFormComponent implements OnInit, ComponentWithPendingChanges
     {
       label: 'Intermediário / Produtividade',
       value: 'INTERMEDIATE',
-      description: 'Trabalho diário, multitarefa e programação (Core i5, Ryzen 5, M1/M2/M3 base, Ultra 5)',
+      description:
+        'Trabalho diário, multitarefa e programação (Core i5, Ryzen 5, M1/M2/M3 base, Ultra 5)',
       badge: 'i5 / R5 / M1',
     },
     {
       label: 'Alto Desempenho / Pesado',
       value: 'ADVANCED',
-      description: 'Jogos pesados, render 3D e edição de vídeo (Core i7/i9, Ryzen 7/9, M Pro/Max/Ultra)',
+      description:
+        'Jogos pesados, render 3D e edição de vídeo (Core i7/i9, Ryzen 7/9, M Pro/Max/Ultra)',
       badge: 'i7 / i9 / R7 / M Pro',
     },
   ];
 
   readonly ramTypeOptions: MultiSelectOption<RamType>[] = [
     { label: 'DDR4', value: 'DDR4', description: 'Padrão tradicional de mercado' },
-    { label: 'DDR5', value: 'DDR5', badge: 'Mais rápida', description: 'Alta velocidade e eficiência' },
-    { label: 'LPDDR5 / LPDDR5X', value: 'LPDDR5', badge: 'Ultrabooks / Mac', description: 'Baixo consumo de energia' },
+    {
+      label: 'DDR5',
+      value: 'DDR5',
+      badge: 'Mais rápida',
+      description: 'Alta velocidade e eficiência',
+    },
+    {
+      label: 'LPDDR5 / LPDDR5X',
+      value: 'LPDDR5',
+      badge: 'Ultrabooks / Mac',
+      description: 'Baixo consumo de energia',
+    },
     { label: 'LPDDR4 / LPDDR4X', value: 'LPDDR4', description: 'Ultrabooks compactos' },
     { label: 'DDR3', value: 'DDR3', badge: 'Antiga', description: 'Notebooks mais antigos' },
   ];
 
   readonly diskTypeOptions: MultiSelectOption<DiskType>[] = [
-    { label: 'SSD NVMe / M.2', value: 'SSD_NVME', badge: 'Ultra Rápido', description: 'Leituras ultra-rápidas acima de 2000MB/s' },
-    { label: 'SSD SATA', value: 'SSD_SATA', description: 'SSD convencional 2.5" de alta confiabilidade' },
+    {
+      label: 'SSD NVMe / M.2',
+      value: 'SSD_NVME',
+      badge: 'Ultra Rápido',
+      description: 'Leituras ultra-rápidas acima de 2000MB/s',
+    },
+    {
+      label: 'SSD SATA',
+      value: 'SSD_SATA',
+      description: 'SSD convencional 2.5" de alta confiabilidade',
+    },
     { label: 'SSD (Genérico)', value: 'SSD', description: 'Qualquer tecnologia SSD' },
-    { label: 'HD Mecânico', value: 'HDD', description: 'Disco rígido tradicional de grande capacidade' },
+    {
+      label: 'HD Mecânico',
+      value: 'HDD',
+      description: 'Disco rígido tradicional de grande capacidade',
+    },
     { label: 'eMMC Flash', value: 'EMMC', description: 'Armazenamento flash básico integrado' },
   ];
 
   readonly screenResolutionOptions: MultiSelectOption<ScreenResolution>[] = [
-    { label: 'Full HD (1080p)', value: 'FULL_HD', badge: '1920x1080', description: 'Padrão nítido mais comum' },
-    { label: '2K / QHD', value: 'QHD_2K', badge: '2560x1440', description: 'Alta definição e amplo espaço visual' },
-    { label: 'Retina / Liquid Retina', value: 'RETINA', badge: 'Apple', description: 'Telas de altíssima densidade de pixels' },
-    { label: 'WUXGA (16:10)', value: 'WUXGA', badge: '1920x1200', description: 'Excelente para produtividade vertical' },
-    { label: '2.5K / WQXGA (16:10)', value: 'WQXGA_2K', badge: '2560x1600', description: 'Display premium de trabalho e games' },
-    { label: '4K Ultra HD', value: 'UHD_4K', badge: '3840x2160', description: 'Resolução máxima para edição visual' },
-    { label: 'HD (720p)', value: 'HD', badge: '1366x768', description: 'Resolução básica de entrada' },
+    {
+      label: 'Full HD (1080p)',
+      value: 'FULL_HD',
+      badge: '1920x1080',
+      description: 'Padrão nítido mais comum',
+    },
+    {
+      label: '2K / QHD',
+      value: 'QHD_2K',
+      badge: '2560x1440',
+      description: 'Alta definição e amplo espaço visual',
+    },
+    {
+      label: 'Retina / Liquid Retina',
+      value: 'RETINA',
+      badge: 'Apple',
+      description: 'Telas de altíssima densidade de pixels',
+    },
+    {
+      label: 'WUXGA (16:10)',
+      value: 'WUXGA',
+      badge: '1920x1200',
+      description: 'Excelente para produtividade vertical',
+    },
+    {
+      label: '2.5K / WQXGA (16:10)',
+      value: 'WQXGA_2K',
+      badge: '2560x1600',
+      description: 'Display premium de trabalho e games',
+    },
+    {
+      label: '4K Ultra HD',
+      value: 'UHD_4K',
+      badge: '3840x2160',
+      description: 'Resolução máxima para edição visual',
+    },
+    {
+      label: 'HD (720p)',
+      value: 'HD',
+      badge: '1366x768',
+      description: 'Resolução básica de entrada',
+    },
   ];
 
   readonly ramQuickOptions = [4, 8, 16, 32, 64];

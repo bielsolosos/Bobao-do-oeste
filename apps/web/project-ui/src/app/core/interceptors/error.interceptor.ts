@@ -16,7 +16,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
         if (error.status >= 400 && error.status < 500) {
           title = 'Erro de Requisição';
-          message = error.error?.message || 'Os dados enviados são inválidos ou a ação não é permitida.';
+          message =
+            error.error?.message || 'Os dados enviados são inválidos ou a ação não é permitida.';
         } else if (error.status >= 500) {
           title = 'Erro Interno (500)';
           message = 'O servidor encontrou um erro ao processar sua requisição.';
@@ -29,6 +30,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       return throwError(() => error);
-    })
+    }),
   );
 };

@@ -2,10 +2,11 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper;
 
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record ScrapedListingResponse(
@@ -24,10 +25,10 @@ public record ScrapedListingResponse(
     String neighborhood,
     boolean hasDelivery,
     String deliveryType,
-    JsonNode images,
+    List<String> images,
     MatchTier matchTier,
     BigDecimal matchScore,
-    JsonNode extractedSpecs,
+    Map<String, Object> extractedSpecs,
     OffsetDateTime publishedAt,
     OffsetDateTime firstSeenAt,
     OffsetDateTime lastSeenAt

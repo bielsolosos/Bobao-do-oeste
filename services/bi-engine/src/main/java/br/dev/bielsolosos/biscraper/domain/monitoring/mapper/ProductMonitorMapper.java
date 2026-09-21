@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -27,9 +28,9 @@ public class ProductMonitorMapper {
             return null;
         }
 
-        JsonNode expectedSpecsNode = null;
+        Map<String, Object> expectedSpecsMap = null;
         if (request.analysisTypeFields() != null) {
-            expectedSpecsNode = objectMapper.valueToTree(request.analysisTypeFields());
+            expectedSpecsMap = request.analysisTypeFields().getFields();
         }
 
         String cron = request.frequency() != null ? request.frequency().getCronExpression() : null;
@@ -42,7 +43,7 @@ public class ProductMonitorMapper {
                 .targetVendor(request.vendor() != null ? request.vendor() : br.dev.bielsolosos.biscraper.core.enums.Vendor.OLX)
                 .active(true)
                 .cronExpression(cron)
-                .expectedSpecs(expectedSpecsNode)
+                .expectedSpecs(expectedSpecsMap)
                 .searchQueries(new ArrayList<>())
                 .listings(new ArrayList<>())
                 .build();
@@ -84,7 +85,7 @@ public class ProductMonitorMapper {
         }
 
         if (request.analysisTypeFields() != null) {
-            monitor.setExpectedSpecs(objectMapper.valueToTree(request.analysisTypeFields()));
+            monitor.setExpectedSpecs(request.analysisTypeFields().getFields());
         }
 
         if (request.searchKeywords() != null && !request.searchKeywords().isEmpty()) {

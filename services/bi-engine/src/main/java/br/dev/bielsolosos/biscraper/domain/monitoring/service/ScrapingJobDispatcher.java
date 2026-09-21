@@ -15,7 +15,6 @@ import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrap
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrapeClientResponse;
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeJobRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
@@ -51,7 +50,7 @@ public class ScrapingJobDispatcher {
         this.objectMapper = objectMapper;
         
         // DOCUMENTAÇÃO ARQUITETURAL: Por que REQUIRES_NEW?
-        // O método dispatchQuery frequentemente é chamado a partir de um contexto de agendamento (ScrapingScheduler)
+        // O método dispatchQuery frequentemente é chamado a partir de um contexto de agendamento (ScrapingSchedulerService)
         // que possui uma transação @Transactional(readOnly = true) para carregar lazy collections.
         // Se utilizássemos o comportamento padrão (Propagation.REQUIRED), o TransactionTemplate entraria de carona
         // na transação read-only do pai. Consequentemente, as operações de INSERT abaixo (WebhookEvent e ScrapingExecution)

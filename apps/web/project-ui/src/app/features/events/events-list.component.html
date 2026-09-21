@@ -64,10 +64,30 @@
           <table class="min-w-full divide-y divide-brand-950/10">
             <thead class="bg-brand-950/[0.02]">
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Recebido em</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Job / Request</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Tipo</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Status</th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Recebido em
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Job / Request
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Tipo
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-brand-950/5">
@@ -98,7 +118,9 @@
                     {{ event.eventType }}
                   </td>
                   <td class="px-6 py-4">
-                    <app-ui-badge [variant]="getStatusVariant(event.status)">{{ statusLabel(event.status) }}</app-ui-badge>
+                    <app-ui-badge [variant]="getStatusVariant(event.status)">{{
+                      statusLabel(event.status)
+                    }}</app-ui-badge>
                   </td>
                 </tr>
               }

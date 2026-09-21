@@ -8,9 +8,7 @@ import lombok.Data;
 import java.util.Map;
 
 @JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
-    property = "analysisType",
+    use = JsonTypeInfo.Id.DEDUCTION,
     defaultImpl = SimpleAnalisisTypeFields.class
 )
 @JsonSubTypes({

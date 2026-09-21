@@ -13,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Representa os campos e critérios estruturados de monitoramento especializado para Notebooks.
  * 
@@ -94,6 +98,61 @@ public class NotebookAnalysisTypeFields extends AnalysisTypeFields {
      */
     private Boolean needsDedicatedGpu;
 
+
+    
+    public NotebookAnalysisTypeFields(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            NotebookAnalysisTypeFields temp = mapper.convertValue(map, NotebookAnalysisTypeFields.class);
+
+            this.brands = temp.getBrands();
+            this.processorVendors = temp.getProcessorVendors();
+            this.processorTiers = temp.getProcessorTiers();
+            this.minimumProcessorGeneration = temp.getMinimumProcessorGeneration();
+            this.minimumRamGb = temp.getMinimumRamGb();
+            this.ramTypes = temp.getRamTypes();
+            this.minimumStorageGb = temp.getMinimumStorageGb();
+            this.diskTypes = temp.getDiskTypes();
+            this.screenResolutions = temp.getScreenResolutions();
+            this.needsDedicatedGpu = temp.getNeedsDedicatedGpu();
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao converter Map para NotebookAnalysisTypeFields", e);
+        }
+    }
+
+    public NotebookAnalysisTypeFields(JsonNode json) {
+        if (json == null || json.isMissingNode() || json.isNull()) {
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            NotebookAnalysisTypeFields temp = mapper.treeToValue(json, NotebookAnalysisTypeFields.class);
+
+            // Copia os valores convertidos para a instância atual
+            this.brands = temp.getBrands();
+            this.processorVendors = temp.getProcessorVendors();
+            this.processorTiers = temp.getProcessorTiers();
+            this.minimumProcessorGeneration = temp.getMinimumProcessorGeneration();
+            this.minimumRamGb = temp.getMinimumRamGb();
+            this.ramTypes = temp.getRamTypes();
+            this.minimumStorageGb = temp.getMinimumStorageGb();
+            this.diskTypes = temp.getDiskTypes();
+            this.screenResolutions = temp.getScreenResolutions();
+            this.needsDedicatedGpu = temp.getNeedsDedicatedGpu();
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao converter JsonNode para NotebookAnalysisTypeFields", e);
+        }
+    }
+    
     @Override
     public AnalysisType getAnalysisType() {
         return AnalysisType.NOTEBOOK;

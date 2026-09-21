@@ -30,11 +30,7 @@ export interface TabItem {
 
       <div class="hidden sm:block">
         <div class="border-b border-brand-950/10">
-          <nav
-            class="-mb-px flex gap-6 overflow-x-auto"
-            role="tablist"
-            aria-label="Seções"
-          >
+          <nav class="-mb-px flex gap-6 overflow-x-auto" role="tablist" aria-label="Seções">
             @for (tab of tabs; track tab.id) {
               <button
                 type="button"

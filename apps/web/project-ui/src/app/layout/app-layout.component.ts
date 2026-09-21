@@ -34,14 +34,22 @@ interface NavItem {
             aria-hidden="true"
           />
           <span class="min-w-0">
-            <span class="block truncate font-display text-base font-bold leading-tight text-white">Bobão do Oeste</span>
-            <span class="block truncate text-[11px] text-brand-brass">Monitor de oportunidades</span>
+            <span class="block truncate font-display text-base font-bold leading-tight text-white"
+              >Bobão do Oeste</span
+            >
+            <span class="block truncate text-[11px] text-brand-brass"
+              >Monitor de oportunidades</span
+            >
           </span>
         </a>
 
         <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5">
           <div>
-            <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">Produto</p>
+            <p
+              class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40"
+            >
+              Produto
+            </p>
             @for (item of productNav; track item.path) {
               <a
                 [routerLink]="item.path"
@@ -49,7 +57,11 @@ interface NavItem {
                 [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
                 class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
               >
-                <span class="mr-3 h-5 w-5 flex-shrink-0" [innerHTML]="item.icon" aria-hidden="true"></span>
+                <span
+                  class="mr-3 h-5 w-5 flex-shrink-0"
+                  [innerHTML]="item.icon"
+                  aria-hidden="true"
+                ></span>
                 {{ item.label }}
               </a>
             }
@@ -57,14 +69,22 @@ interface NavItem {
 
           @if (isAdmin()) {
             <div>
-              <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">Operação</p>
+              <p
+                class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40"
+              >
+                Operação
+              </p>
               @for (item of operationNav; track item.path) {
                 <a
                   [routerLink]="item.path"
                   routerLinkActive="bg-white/10 text-white border-brand-amber"
                   class="group mb-1 flex items-center rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
                 >
-                  <span class="mr-3 h-5 w-5 flex-shrink-0" [innerHTML]="item.icon" aria-hidden="true"></span>
+                  <span
+                    class="mr-3 h-5 w-5 flex-shrink-0"
+                    [innerHTML]="item.icon"
+                    aria-hidden="true"
+                  ></span>
                   {{ item.label }}
                 </a>
               }

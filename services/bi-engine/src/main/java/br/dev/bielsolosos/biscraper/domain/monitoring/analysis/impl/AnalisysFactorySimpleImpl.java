@@ -30,6 +30,7 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.AnalisysFactory;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.BatchAnalysisResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.ItemAnalysisResult;
+import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.utils.AiAnalisysUtils;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
@@ -138,7 +139,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             List<ScrapedListingDTO> batch,
             String userCriteria
     ) {
-        String itemsJson = formatBatchForPrompt(batch);
+        String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
         ProductMonitor monitor = execution != null ? execution.getProductMonitor() : null;
         String modelName = LlmModelEnum.GEMINI_2_5_FLASH_LITE.getModel();
 
@@ -299,16 +300,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             return null;
         }
         try {
-            String cleaned = rawContent.strip();
-            if (cleaned.startsWith("```json")) {
-                cleaned = cleaned.substring(7);
-            } else if (cleaned.startsWith("```")) {
-                cleaned = cleaned.substring(3);
-            }
-            if (cleaned.endsWith("```")) {
-                cleaned = cleaned.substring(0, cleaned.length() - 3);
-            }
-            return objectMapper.readValue(cleaned.strip(), BatchAnalysisResponse.class);
+            String cleaned = AiAnalisysUtils.sanitizeJson(rawContent);
+            return objectMapper.readValue(cleaned, BatchAnalysisResponse.class);
         } catch (Exception e) {
             log.warn("Falha ao desserializar JSON da Etapa 2: {}. Conteúdo bruto: {}", e.getMessage(), rawContent);
             return null;
@@ -327,10 +320,10 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
     private String extractUserCriteria(ProductMonitor monitor) {
         if (monitor == null) return "Avalie a relevância e o custo-benefício geral do produto.";
 
-        if (monitor.getExpectedSpecs() != null && monitor.getExpectedSpecs().has("prompt")) {
-            String prompt = monitor.getExpectedSpecs().get("prompt").asText();
-            if (prompt != null && !prompt.isBlank()) {
-                return prompt;
+        if (monitor.getExpectedSpecs() != null && monitor.getExpectedSpecs().containsKey("prompt")) {
+            Object promptObj = monitor.getExpectedSpecs().get("prompt");
+            if (promptObj != null && !promptObj.toString().isBlank()) {
+                return promptObj.toString();
             }
         }
 
@@ -338,42 +331,6 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         if (monitor.getName() != null) sb.append("Produto: ").append(monitor.getName()).append(". ");
         if (monitor.getDescription() != null) sb.append("Detalhes: ").append(monitor.getDescription()).append(".");
         return sb.length() > 0 ? sb.toString() : "Avalie a relevância e o custo-benefício geral do produto.";
-    }
-
-    /**
-     * Transforma os itens coletados em um payload compacto para o prompt, omitindo campos desnecessários/vazios.
-     */
-    private String formatBatchForPrompt(List<ScrapedListingDTO> batch) {
-        List<Map<String, Object>> list = new ArrayList<>(batch.size());
-        for (ScrapedListingDTO item : batch) {
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("vendor_listing_id", item.vendorListingId());
-            map.put("vendor", item.vendor() != null ? item.vendor().name() : "OLX");
-            if (item.url() != null && !item.url().isBlank()) {
-                map.put("url", item.url());
-            }
-            map.put("title", item.title());
-            if (item.price() != null) {
-                map.put("price", item.price());
-            }
-            if (item.hasDelivery()) {
-                map.put("has_delivery", true);
-            }
-            String loc = (item.city() != null ? item.city() : "") + (item.state() != null ? "/" + item.state() : "");
-            if (!loc.isBlank()) {
-                map.put("location", loc);
-            }
-            if (item.description() != null && !item.description().isBlank()) {
-                String desc = item.description().strip();
-                map.put("description", desc.length() > 450 ? desc.substring(0, 450) + "..." : desc);
-            }
-            list.add(map);
-        }
-        try {
-            return objectMapper.writeValueAsString(list);
-        } catch (Exception e) {
-            return list.toString();
-        }
     }
 
     private List<AnalisysResponse> createFallbackResponses(ScrapingExecution execution, List<ScrapedListingDTO> listings) {

@@ -19,7 +19,9 @@ export const adminGuard: CanActivateFn = () => {
   const source$ = user ? of(user) : authService.loadMe();
 
   return source$.pipe(
-    map((loaded) => (loaded?.roles?.includes('ROLE_ADMIN') ? true : router.createUrlTree(['/dashboard']))),
+    map((loaded) =>
+      loaded?.roles?.includes('ROLE_ADMIN') ? true : router.createUrlTree(['/dashboard']),
+    ),
     catchError(() => of(router.createUrlTree(['/dashboard']))),
   );
 };

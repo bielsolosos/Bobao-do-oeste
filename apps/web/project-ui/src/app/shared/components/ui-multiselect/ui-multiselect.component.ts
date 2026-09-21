@@ -112,11 +112,7 @@ export interface MultiSelectOption<T = unknown> {
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           }
@@ -129,11 +125,7 @@ export interface MultiSelectOption<T = unknown> {
             stroke="currentColor"
             stroke-width="2"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </div>
@@ -198,9 +190,10 @@ export interface MultiSelectOption<T = unknown> {
               </div>
             } @else {
               @for (opt of filteredOptions(); track trackByOption(opt)) {
-                <div
+                <button
+                  type="button"
                   (click)="toggleOption(opt)"
-                  class="flex cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-brand-950/5"
+                  class="flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-brand-950/5"
                   [class.bg-brand-amber/10]="isSelected(opt.value)"
                 >
                   <!-- Custom Checkbox -->
@@ -219,11 +212,7 @@ export interface MultiSelectOption<T = unknown> {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M5 13l4 4L19 7"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     }
                   </div>
@@ -234,9 +223,7 @@ export interface MultiSelectOption<T = unknown> {
                       <span
                         class="font-medium"
                         [ngClass]="
-                          isSelected(opt.value)
-                            ? 'text-brand-amber-strong'
-                            : 'text-brand-950'
+                          isSelected(opt.value) ? 'text-brand-amber-strong' : 'text-brand-950'
                         "
                       >
                         {{ opt.label }}
@@ -256,7 +243,7 @@ export interface MultiSelectOption<T = unknown> {
                       </span>
                     }
                   </div>
-                </div>
+                </button>
               }
             }
           </div>

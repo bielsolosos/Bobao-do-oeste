@@ -7,10 +7,7 @@ let uiFormFieldIdCounter = 0;
   standalone: true,
   template: `
     <div>
-      <label
-        [attr.for]="resolvedId()"
-        class="mb-1 block text-sm font-medium text-brand-950"
-      >
+      <label [attr.for]="resolvedId()" class="mb-1 block text-sm font-medium text-brand-950">
         {{ label() }}
         @if (required()) {
           <span class="text-red-600" aria-hidden="true">*</span>
@@ -29,10 +26,7 @@ let uiFormFieldIdCounter = 0;
           {{ error() }}
         </p>
       } @else if (hint()) {
-        <p
-          [id]="resolvedId() + '-hint'"
-          class="mt-1 text-xs text-brand-950/50"
-        >
+        <p [id]="resolvedId() + '-hint'" class="mt-1 text-xs text-brand-950/50">
           {{ hint() }}
         </p>
       }

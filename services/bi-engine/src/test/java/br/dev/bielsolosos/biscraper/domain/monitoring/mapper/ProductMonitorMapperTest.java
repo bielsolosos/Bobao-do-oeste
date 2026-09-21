@@ -4,6 +4,7 @@ import br.dev.bielsolosos.biscraper.core.abstractfields.NotebookAnalysisTypeFiel
 import br.dev.bielsolosos.biscraper.core.abstractfields.SimpleAnalisisTypeFields;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.DiskType;
+import br.dev.bielsolosos.biscraper.core.enums.NotebookBrand;
 import br.dev.bielsolosos.biscraper.core.enums.ScrapingFrequency;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -173,5 +175,84 @@ class ProductMonitorMapperTest {
         assertEquals(ScrapingFrequency.EVERY_30_MINUTES.getCronExpression(), entity.getCronExpression());
         assertEquals(1, entity.getSearchQueries().size());
         assertEquals("nova busca", entity.getSearchQueries().get(0).getQueryTerm());
+    }
+
+    @Test
+    @DisplayName("Deve deserializar ProductMonitorRequest com NOTEBOOK e converter para entidade com expectedSpecs preenchido")
+    void shouldDeserializeJsonAndMapToEntity() throws Exception {
+        String json = """
+                {
+                    "name": "Notebook Dell",
+                    "description": "Desc",
+                    "vendor": "OLX",
+                    "analysisType": "NOTEBOOK",
+                    "analysisTypeFields": {
+                        "brands": ["DELL"],
+                        "minimumRamGb": 16,
+                        "minimumStorageGb": 512,
+                        "needsDedicatedGpu": false
+                    },
+                    "searchKeywords": ["notebook dell"],
+                    "frequency": "HOURLY"
+                }
+                """;
+        ProductMonitorRequest req = objectMapper.readValue(json, ProductMonitorRequest.class);
+        assertNotNull(req.analysisTypeFields(), "analysisTypeFields não deveria ser nulo");
+        assertInstanceOf(NotebookAnalysisTypeFields.class, req.analysisTypeFields(), "Deveria ser NotebookAnalysisTypeFields");
+        NotebookAnalysisTypeFields nbFields = (NotebookAnalysisTypeFields) req.analysisTypeFields();
+        assertEquals(16, nbFields.getMinimumRamGb());
+        assertEquals(List.of(NotebookBrand.DELL), nbFields.getBrands());
+
+        ProductMonitor entity = mapper.toEntity(req, user);
+        assertNotNull(entity.getExpectedSpecs());
+        assertFalse(entity.getExpectedSpecs().isEmpty(), "expectedSpecs não deveria estar vazio");
+        assertEquals(16, entity.getExpectedSpecs().get("minimumRamGb"));
+    }
+
+    @Test
+    @DisplayName("Deve deserializar ProductMonitorRequest com SIMPLE e converter para entidade")
+    void shouldDeserializeJsonSimpleAndMapToEntity() throws Exception {
+        String json = """
+                {
+                    "name": "Busca iPhone",
+                    "description": "Desc",
+                    "vendor": "OLX",
+                    "analysisType": "SIMPLE",
+                    "analysisTypeFields": {
+                        "prompt": "Quero iPhone 13"
+                    },
+                    "searchKeywords": ["iphone 13"],
+                    "frequency": "HOURLY"
+                }
+                """;
+        ProductMonitorRequest req = objectMapper.readValue(json, ProductMonitorRequest.class);
+        assertNotNull(req.analysisTypeFields());
+        assertInstanceOf(SimpleAnalisisTypeFields.class, req.analysisTypeFields());
+        SimpleAnalisisTypeFields simpleFields = (SimpleAnalisisTypeFields) req.analysisTypeFields();
+        assertEquals("Quero iPhone 13", simpleFields.getPrompt());
+
+        ProductMonitor entity = mapper.toEntity(req, user);
+        assertNotNull(entity.getExpectedSpecs());
+        assertEquals("Quero iPhone 13", entity.getExpectedSpecs().get("prompt"));
+    }
+
+    @Test
+    @DisplayName("Deve deserializar ProductMonitorRequest com NONE e sem analysisTypeFields")
+    void shouldDeserializeJsonNoneAndMapToEntity() throws Exception {
+        String json = """
+                {
+                    "name": "Busca Geral",
+                    "description": "Desc",
+                    "vendor": "OLX",
+                    "analysisType": "NONE",
+                    "searchKeywords": ["notebook"],
+                    "frequency": "HOURLY"
+                }
+                """;
+        ProductMonitorRequest req = objectMapper.readValue(json, ProductMonitorRequest.class);
+        assertNull(req.analysisTypeFields());
+
+        ProductMonitor entity = mapper.toEntity(req, user);
+        assertNull(entity.getExpectedSpecs());
     }
 }

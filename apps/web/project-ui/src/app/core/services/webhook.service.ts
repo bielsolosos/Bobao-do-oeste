@@ -6,7 +6,7 @@ import { WebhookEventSummaryResponse, WebhookStatus } from '../models/webhook.mo
 import { PageResponse } from '../models/monitor.model'; // usando o mesmo PageResponse global
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WebhookService {
   private http = inject(HttpClient);
@@ -20,6 +20,8 @@ export class WebhookService {
     let params = new HttpParams().set('page', page).set('size', size);
     if (filters?.status) params = params.set('status', filters.status);
     if (filters?.q?.trim()) params = params.set('q', filters.q.trim());
-    return this.http.get<PageResponse<WebhookEventSummaryResponse>>(`${this.apiUrl}/events`, { params });
+    return this.http.get<PageResponse<WebhookEventSummaryResponse>>(`${this.apiUrl}/events`, {
+      params,
+    });
   }
 }

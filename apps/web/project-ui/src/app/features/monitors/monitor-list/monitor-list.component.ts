@@ -1,7 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ProductMonitorResponse, ScrapingFrequency, Vendor, AnalysisType } from '../../../core/models/monitor.model';
+import {
+  ProductMonitorResponse,
+  ScrapingFrequency,
+  Vendor,
+  AnalysisType,
+} from '../../../core/models/monitor.model';
 import { MonitorService } from '../../../core/services/monitor.service';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
 import { UiConfirmService } from '../../../shared/components/ui-confirm/ui-confirm.service';
@@ -43,12 +48,8 @@ export class MonitorListComponent implements OnInit {
   totalElements = signal(0);
   totalPages = signal(0);
 
-  hasResults = computed(
-    () => this.state() === 'ready' && this.monitors().length > 0,
-  );
-  isEmpty = computed(
-    () => this.state() === 'ready' && this.monitors().length === 0,
-  );
+  hasResults = computed(() => this.state() === 'ready' && this.monitors().length > 0);
+  isEmpty = computed(() => this.state() === 'ready' && this.monitors().length === 0);
 
   ngOnInit() {
     this.loadMonitors();
@@ -56,18 +57,16 @@ export class MonitorListComponent implements OnInit {
 
   loadMonitors() {
     this.state.set('loading');
-    this.monitorService
-      .getMonitors(this.page(), this.pageSize())
-      .subscribe({
-        next: (res) => {
-          this.monitors.set(res.content ?? []);
-          this.totalElements.set(res.totalElements ?? 0);
-          this.totalPages.set(res.totalPages ?? 0);
-          this.page.set(res.number ?? 0);
-          this.state.set('ready');
-        },
-        error: () => this.state.set('error'),
-      });
+    this.monitorService.getMonitors(this.page(), this.pageSize()).subscribe({
+      next: (res) => {
+        this.monitors.set(res.content ?? []);
+        this.totalElements.set(res.totalElements ?? 0);
+        this.totalPages.set(res.totalPages ?? 0);
+        this.page.set(res.number ?? 0);
+        this.state.set('ready');
+      },
+      error: () => this.state.set('error'),
+    });
   }
 
   retry() {

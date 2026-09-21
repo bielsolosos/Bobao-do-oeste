@@ -8,15 +8,7 @@ import {
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import {
-  BehaviorSubject,
-  catchError,
-  filter,
-  Observable,
-  switchMap,
-  take,
-  throwError,
-} from 'rxjs';
+import { BehaviorSubject, catchError, filter, Observable, switchMap, take, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface RefreshResponse {
@@ -73,29 +65,27 @@ export class AuthSession {
       return;
     }
 
-    http
-      .post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, { refreshToken })
-      .subscribe({
-        next: (res) => {
-          if (res?.token) {
-            localStorage.setItem('jwt_token', res.token);
-            if (res.refreshToken) {
-              localStorage.setItem('refresh_token', res.refreshToken);
-            }
-            this.tokenSubject.next(res.token);
-            onSuccess(res);
-          } else {
-            this.forceLogout();
-            onFailure(new Error('Refresh response missing token'));
+    http.post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, { refreshToken }).subscribe({
+      next: (res) => {
+        if (res?.token) {
+          localStorage.setItem('jwt_token', res.token);
+          if (res.refreshToken) {
+            localStorage.setItem('refresh_token', res.refreshToken);
           }
-          this.isRefreshing = false;
-        },
-        error: (err) => {
+          this.tokenSubject.next(res.token);
+          onSuccess(res);
+        } else {
           this.forceLogout();
-          onFailure(err);
-          this.isRefreshing = false;
-        },
-      });
+          onFailure(new Error('Refresh response missing token'));
+        }
+        this.isRefreshing = false;
+      },
+      error: (err) => {
+        this.forceLogout();
+        onFailure(err);
+        this.isRefreshing = false;
+      },
+    });
   }
 }
 
@@ -110,11 +100,7 @@ const retryWithFreshToken = (
   session.token$.pipe(
     filter((token): token is string => token !== null),
     take(1),
-    switchMap((token) =>
-      next(
-        req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }),
-      ),
-    ),
+    switchMap((token) => next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }))),
   );
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
