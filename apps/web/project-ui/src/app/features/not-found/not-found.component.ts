@@ -6,7 +6,9 @@ import { RouterModule } from '@angular/router';
   standalone: true,
   imports: [RouterModule],
   template: `
-    <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
+    <div
+      class="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center"
+    >
       <img
         src="assets/brand/marketplace-intelligence-mark.svg"
         alt=""

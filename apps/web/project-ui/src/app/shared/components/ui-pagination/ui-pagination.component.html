@@ -4,7 +4,9 @@
   <div class="flex items-center justify-between gap-3 sm:justify-start">
     <p class="text-sm text-brand-950/70">
       Página
-      <span class="font-semibold text-brand-950">{{ totalElements > 0 ? currentPage + 1 : 0 }}</span>
+      <span class="font-semibold text-brand-950">{{
+        totalElements > 0 ? currentPage + 1 : 0
+      }}</span>
       de
       <span class="font-semibold text-brand-950">{{ totalPages }}</span>
       <span class="hidden sm:inline"> ({{ totalElements }} resultados)</span>
@@ -32,7 +34,11 @@
       class="inline-flex items-center gap-1 rounded-lg border border-brand-950/15 px-3 py-2 text-sm font-medium text-brand-950/70 transition-colors hover:bg-brand-950/5 disabled:cursor-not-allowed disabled:opacity-40"
     >
       <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+        <path
+          fill-rule="evenodd"
+          d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+          clip-rule="evenodd"
+        />
       </svg>
       <span class="hidden sm:inline">Anterior</span>
     </button>
@@ -68,7 +74,11 @@
     >
       <span class="hidden sm:inline">Próxima</span>
       <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+        <path
+          fill-rule="evenodd"
+          d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+          clip-rule="evenodd"
+        />
       </svg>
     </button>
   </nav>

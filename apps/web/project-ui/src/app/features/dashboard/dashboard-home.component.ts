@@ -41,9 +41,7 @@ export class DashboardHomeComponent implements OnInit {
   lastUpdatedAt = signal<Date | null>(null);
   isRefreshing = signal(false);
 
-  hasNoMonitors = computed(
-    () => this.monitorsState() === 'ready' && this.monitors() === 0,
-  );
+  hasNoMonitors = computed(() => this.monitorsState() === 'ready' && this.monitors() === 0);
 
   queueHealthy = computed(() => {
     const status = this.queueStatus();

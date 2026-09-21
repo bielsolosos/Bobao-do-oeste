@@ -33,13 +33,7 @@ export interface MonitorSearchQueryResponse {
 }
 
 export type ScreenResolution =
-  | 'HD'
-  | 'FULL_HD'
-  | 'WUXGA'
-  | 'QHD_2K'
-  | 'WQXGA_2K'
-  | 'UHD_4K'
-  | 'RETINA';
+  'HD' | 'FULL_HD' | 'WUXGA' | 'QHD_2K' | 'WQXGA_2K' | 'UHD_4K' | 'RETINA';
 
 export type DiskType = 'SSD' | 'SSD_NVME' | 'SSD_SATA' | 'HDD' | 'EMMC';
 
@@ -60,14 +54,7 @@ export type NotebookBrand =
   | 'ALIENWARE'
   | 'OTHER';
 
-export type RamType =
-  | 'DDR1'
-  | 'DDR2'
-  | 'DDR3'
-  | 'DDR4'
-  | 'DDR5'
-  | 'LPDDR4'
-  | 'LPDDR5';
+export type RamType = 'DDR1' | 'DDR2' | 'DDR3' | 'DDR4' | 'DDR5' | 'LPDDR4' | 'LPDDR5';
 
 export type ProcessorTier = 'ENTRY' | 'INTERMEDIATE' | 'ADVANCED';
 

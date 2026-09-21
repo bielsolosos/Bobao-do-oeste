@@ -18,7 +18,9 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
           aria-hidden="true"
           class="h-full w-full object-cover"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-brand-950 via-brand-950/40 to-transparent"></div>
+        <div
+          class="absolute inset-0 bg-gradient-to-t from-brand-950 via-brand-950/40 to-transparent"
+        ></div>
         <div class="absolute bottom-0 left-0 right-0 p-10">
           <img
             src="assets/brand/marketplace-intelligence-mark.svg"
@@ -44,7 +46,9 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
               aria-hidden="true"
             />
             <p class="page-eyebrow">Área restrita</p>
-            <h1 class="mt-1 font-display text-2xl font-bold text-brand-950">Entrar na plataforma</h1>
+            <h1 class="mt-1 font-display text-2xl font-bold text-brand-950">
+              Entrar na plataforma
+            </h1>
             <p class="mt-1 text-sm text-brand-950/60">
               Informe suas credenciais para continuar a caçada.
             </p>
@@ -61,7 +65,9 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
             }
 
             <div>
-              <label for="login-username" class="mb-1 block text-sm font-medium text-brand-950">Usuário</label>
+              <label for="login-username" class="mb-1 block text-sm font-medium text-brand-950"
+                >Usuário</label
+              >
               <input
                 id="login-username"
                 type="text"
@@ -80,7 +86,9 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
             </div>
 
             <div>
-              <label for="login-password" class="mb-1 block text-sm font-medium text-brand-950">Senha</label>
+              <label for="login-password" class="mb-1 block text-sm font-medium text-brand-950"
+                >Senha</label
+              >
               <div class="relative">
                 <input
                   id="login-password"
@@ -98,13 +106,34 @@ import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.ser
                   [attr.aria-pressed]="showPassword()"
                   class="absolute inset-y-0 right-0 flex items-center px-3 text-brand-950/50 hover:text-brand-950"
                 >
-                  <span class="sr-only">{{ showPassword() ? 'Ocultar senha' : 'Mostrar senha' }}</span>
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <span class="sr-only">{{
+                    showPassword() ? 'Ocultar senha' : 'Mostrar senha'
+                  }}</span>
+                  <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    aria-hidden="true"
+                  >
                     @if (showPassword()) {
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                      />
                     } @else {
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     }
                   </svg>
                 </button>
@@ -168,22 +197,24 @@ export class LoginComponent {
 
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
 
-    this.authService.login(
-      {
-        username: this.loginForm.value.username ?? '',
-        password: this.loginForm.value.password ?? '',
-      },
-      returnUrl,
-    ).subscribe({
-      next: () => this.toast.success('Sucesso', 'Bem-vindo de volta!'),
-      error: (err) => {
-        this.isLoading.set(false);
-        if (err.status === 401 || err.status === 403) {
-          this.errorMessage.set('Usuário ou senha incorretos.');
-        } else {
-          this.errorMessage.set('Falha ao conectar com o servidor.');
-        }
-      },
-    });
+    this.authService
+      .login(
+        {
+          username: this.loginForm.value.username ?? '',
+          password: this.loginForm.value.password ?? '',
+        },
+        returnUrl,
+      )
+      .subscribe({
+        next: () => this.toast.success('Sucesso', 'Bem-vindo de volta!'),
+        error: (err) => {
+          this.isLoading.set(false);
+          if (err.status === 401 || err.status === 403) {
+            this.errorMessage.set('Usuário ou senha incorretos.');
+          } else {
+            this.errorMessage.set('Falha ao conectar com o servidor.');
+          }
+        },
+      });
   }
 }

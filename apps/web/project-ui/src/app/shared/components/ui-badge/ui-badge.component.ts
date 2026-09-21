@@ -2,22 +2,17 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export type BadgeVariant =
-  | 'success'
-  | 'warning'
-  | 'danger'
-  | 'info'
-  | 'neutral'
-  | 'high'
-  | 'medium'
-  | 'low'
-  | 'brand';
+  'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'high' | 'medium' | 'low' | 'brand';
 
 @Component({
   selector: 'app-ui-badge',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <span [ngClass]="getClasses()" class="inline-flex items-center justify-center border font-medium">
+    <span
+      [ngClass]="getClasses()"
+      class="inline-flex items-center justify-center border font-medium"
+    >
       <ng-content></ng-content>
     </span>
   `,

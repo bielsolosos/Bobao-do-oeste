@@ -16,7 +16,7 @@ export interface LoginCredentials {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private http = inject(HttpClient);
@@ -33,7 +33,7 @@ export class AuthService {
 
   login(credentials: LoginCredentials, redirectTo: string = '/'): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
-      tap(response => {
+      tap((response) => {
         if (response.token) {
           localStorage.setItem('jwt_token', response.token);
           if (response.refreshToken) {
@@ -45,21 +45,21 @@ export class AuthService {
             this.router.navigateByUrl(redirectTo);
           });
         }
-      })
+      }),
     );
   }
 
   loadMe(): Observable<UserResponse | null> {
     return this.http.get<UserResponse>(`${environment.apiUrl}/me`).pipe(
-      tap(user => {
+      tap((user) => {
         this.currentUser.set(user);
       }),
-      catchError(err => {
+      catchError((err) => {
         console.error('Erro ao carregar usuário (F5 / me):', err);
         // O interceptor trata 401/403. Não deslogamos aqui para não derrubar o usuário
         // em falhas transitórias de rede ao recarregar a página.
         return of(null);
-      })
+      }),
     );
   }
 

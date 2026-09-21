@@ -22,7 +22,9 @@ export class UiToastService {
     const current = this.toasts();
 
     // Evita avalanches quando a mesma falha é reportada por interceptor e componente.
-    const isDuplicate = current.some((t) => t.type === type && t.title === title && t.message === message);
+    const isDuplicate = current.some(
+      (t) => t.type === type && t.title === title && t.message === message,
+    );
     if (isDuplicate) return;
 
     const id = `toast-${++this.counter}`;

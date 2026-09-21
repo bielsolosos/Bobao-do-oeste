@@ -21,33 +21,43 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/dashboard-home.component').then((m) => m.DashboardHomeComponent),
+          import('./features/dashboard/dashboard-home.component').then(
+            (m) => m.DashboardHomeComponent,
+          ),
         title: 'Visão geral · Bobão do Oeste',
       },
       {
         path: 'monitors',
         loadComponent: () =>
-          import('./features/monitors/monitor-list/monitor-list.component').then((m) => m.MonitorListComponent),
+          import('./features/monitors/monitor-list/monitor-list.component').then(
+            (m) => m.MonitorListComponent,
+          ),
         title: 'Monitores · Bobão do Oeste',
       },
       {
         path: 'monitors/new',
         loadComponent: () =>
-          import('./features/monitors/monitor-form/monitor-form.component').then((m) => m.MonitorFormComponent),
+          import('./features/monitors/monitor-form/monitor-form.component').then(
+            (m) => m.MonitorFormComponent,
+          ),
         canDeactivate: [pendingChangesGuard],
         title: 'Novo monitor · Bobão do Oeste',
       },
       {
         path: 'monitors/edit/:id',
         loadComponent: () =>
-          import('./features/monitors/monitor-form/monitor-form.component').then((m) => m.MonitorFormComponent),
+          import('./features/monitors/monitor-form/monitor-form.component').then(
+            (m) => m.MonitorFormComponent,
+          ),
         canDeactivate: [pendingChangesGuard],
         title: 'Editar monitor · Bobão do Oeste',
       },
       {
         path: 'monitors/:id',
         loadComponent: () =>
-          import('./features/monitors/monitor-detail/monitor-detail.component').then((m) => m.MonitorDetailComponent),
+          import('./features/monitors/monitor-detail/monitor-detail.component').then(
+            (m) => m.MonitorDetailComponent,
+          ),
         title: 'Detalhe do monitor · Bobão do Oeste',
       },
       {

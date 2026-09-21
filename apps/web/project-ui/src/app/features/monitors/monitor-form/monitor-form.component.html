@@ -1,7 +1,11 @@
 <app-ui-page-header
   eyebrow="Catálogo"
   [title]="isEditMode ? 'Editar monitor' : 'Novo monitor'"
-  [subtitle]="isEditMode ? 'Atualize os parâmetros desta regra.' : 'Configure uma regra para raspar e analisar anúncios.'"
+  [subtitle]="
+    isEditMode
+      ? 'Atualize os parâmetros desta regra.'
+      : 'Configure uma regra para raspar e analisar anúncios.'
+  "
 >
   <app-ui-button variant="outline" (clicked)="cancel()">Cancelar</app-ui-button>
   <app-ui-button
@@ -50,11 +54,7 @@
           />
         </app-ui-form-field>
 
-        <app-ui-form-field
-          fieldId="monitor-vendor"
-          label="Marketplace"
-          [required]="true"
-        >
+        <app-ui-form-field fieldId="monitor-vendor" label="Marketplace" [required]="true">
           <select
             id="monitor-vendor"
             formControlName="vendor"
@@ -84,9 +84,13 @@
     </app-ui-card>
 
     <app-ui-card title="Palavras-chave" subtitle="Termos que serão buscados no marketplace.">
-      <div class="flex flex-wrap items-center gap-2 rounded-lg border border-brand-950/15 bg-surface p-2 focus-within:border-brand-amber-strong focus-within:ring-2 focus-within:ring-brand-amber-strong">
+      <div
+        class="flex flex-wrap items-center gap-2 rounded-lg border border-brand-950/15 bg-surface p-2 focus-within:border-brand-amber-strong focus-within:ring-2 focus-within:ring-brand-amber-strong"
+      >
         @for (keyword of keywords(); track keyword) {
-          <span class="inline-flex items-center gap-1 rounded-full bg-brand-amber/15 px-3 py-1 text-xs font-semibold text-brand-amber-strong">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-brand-amber/15 px-3 py-1 text-xs font-semibold text-brand-amber-strong"
+          >
             {{ keyword }}
             <button
               type="button"
@@ -94,7 +98,14 @@
               class="text-brand-amber-strong hover:text-brand-950"
               [attr.aria-label]="'Remover palavra-chave ' + keyword"
             >
-              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <svg
+                class="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -110,7 +121,9 @@
           [attr.aria-label]="'Adicionar palavra-chave'"
         />
       </div>
-      <p class="mt-2 text-xs text-brand-950/50">Cada palavra-chave é buscada de forma independente.</p>
+      <p class="mt-2 text-xs text-brand-950/50">
+        Cada palavra-chave é buscada de forma independente.
+      </p>
     </app-ui-card>
 
     <app-ui-card title="Regras de coleta" subtitle="Frequência e faixa de preço aceitas.">
@@ -129,11 +142,7 @@
 
         <div></div>
 
-        <app-ui-form-field
-          fieldId="monitor-min-price"
-          label="Preço mínimo (R$)"
-          hint="Opcional."
-        >
+        <app-ui-form-field fieldId="monitor-min-price" label="Preço mínimo (R$)" hint="Opcional.">
           <input
             id="monitor-min-price"
             formControlName="minPrice"
@@ -144,11 +153,7 @@
           />
         </app-ui-form-field>
 
-        <app-ui-form-field
-          fieldId="monitor-max-price"
-          label="Preço máximo (R$)"
-          hint="Opcional."
-        >
+        <app-ui-form-field fieldId="monitor-max-price" label="Preço máximo (R$)" hint="Opcional.">
           <input
             id="monitor-max-price"
             formControlName="maxPrice"
@@ -174,11 +179,7 @@
           />
         </app-ui-form-field>
 
-        <app-ui-form-field
-          fieldId="monitor-region"
-          label="Região / cidade"
-          hint="Opcional."
-        >
+        <app-ui-form-field fieldId="monitor-region" label="Região / cidade" hint="Opcional.">
           <input
             id="monitor-region"
             formControlName="regionFilter"
@@ -189,13 +190,20 @@
         </app-ui-form-field>
 
         <label class="flex items-center gap-2 text-sm text-brand-950 sm:col-span-2">
-          <input type="checkbox" formControlName="requireDelivery" class="h-4 w-4 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong" />
+          <input
+            type="checkbox"
+            formControlName="requireDelivery"
+            class="h-4 w-4 rounded border-brand-950/30 text-brand-amber-strong focus:ring-brand-amber-strong"
+          />
           Exigir entrega (descartar anúncios apenas para retirada)
         </label>
       </div>
     </app-ui-card>
 
-    <app-ui-card title="Inteligência artificial & Análise" subtitle="Como o Gemini avalia e classifica cada anúncio coletado.">
+    <app-ui-card
+      title="Inteligência artificial & Análise"
+      subtitle="Como o Gemini avalia e classifica cada anúncio coletado."
+    >
       <app-ui-form-field
         fieldId="monitor-analysis"
         label="Estratégia de análise"
@@ -217,7 +225,10 @@
       <!-- PAINEL DE PROMPT PERSONALIZADO (SIMPLE)    -->
       <!-- ========================================== -->
       @if (analysisTypeCtrl.value === 'SIMPLE') {
-        <div class="mt-4 rounded-xl border border-radar/30 bg-radar/5 p-4" formGroupName="simpleFields">
+        <div
+          class="mt-4 rounded-xl border border-radar/30 bg-radar/5 p-4"
+          formGroupName="simpleFields"
+        >
           <app-ui-form-field
             fieldId="monitor-prompt"
             label="Regras de negócio / Prompt do usuário"
@@ -238,16 +249,34 @@
       <!-- PAINEL ESPECIALIZADO DE NOTEBOOKS          -->
       <!-- ========================================== -->
       @if (analysisTypeCtrl.value === 'NOTEBOOK') {
-        <div class="mt-6 space-y-6 rounded-2xl border border-brand-amber/30 bg-brand-amber/5 p-5" formGroupName="notebookFields">
+        <div
+          class="mt-6 space-y-6 rounded-2xl border border-brand-amber/30 bg-brand-amber/5 p-5"
+          formGroupName="notebookFields"
+        >
           <div class="flex items-center gap-2 border-b border-brand-amber/20 pb-3">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-amber/20 text-brand-amber-strong">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-amber/20 text-brand-amber-strong"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
             </span>
             <div>
               <h4 class="text-sm font-semibold text-brand-950">Critérios Técnicos de Notebook</h4>
-              <p class="text-xs text-brand-950/60">Selecione os requisitos de hardware aceitos para guiar o Gemini na triagem automática.</p>
+              <p class="text-xs text-brand-950/60">
+                Selecione os requisitos de hardware aceitos para guiar o Gemini na triagem
+                automática.
+              </p>
             </div>
           </div>
 
@@ -265,8 +294,10 @@
 
           <!-- 2. Seção de Processador (CPU) -->
           <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-4">
-            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Processamento & CPU</h5>
-            
+            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">
+              Processamento & CPU
+            </h5>
+
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <app-ui-form-field
                 label="Fabricante do Processador"
@@ -307,7 +338,9 @@
 
           <!-- 3. Memória RAM -->
           <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-4">
-            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Memória RAM</h5>
+            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">
+              Memória RAM
+            </h5>
 
             <div>
               <label class="mb-1.5 block text-xs font-medium text-brand-950">RAM Mínima</label>
@@ -353,10 +386,14 @@
 
           <!-- 4. Armazenamento -->
           <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-4">
-            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Armazenamento & Disco</h5>
+            <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">
+              Armazenamento & Disco
+            </h5>
 
             <div>
-              <label class="mb-1.5 block text-xs font-medium text-brand-950">Capacidade Mínima</label>
+              <label class="mb-1.5 block text-xs font-medium text-brand-950"
+                >Capacidade Mínima</label
+              >
               <div class="flex flex-wrap items-center gap-2">
                 @for (opt of storageQuickOptions; track opt.value) {
                   <button
@@ -400,17 +437,23 @@
           <!-- 5. Tela & Placa de Vídeo -->
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-2">
-              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Tela & Resolução</h5>
+              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">
+                Tela & Resolução
+              </h5>
               <app-ui-multiselect
                 formControlName="screenResolutions"
                 [options]="screenResolutionOptions"
                 placeholder="Full HD, 2K, Retina..."
               ></app-ui-multiselect>
-              <p class="text-[11px] text-brand-950/50">Deixe vazio para aceitar qualquer resolução.</p>
+              <p class="text-[11px] text-brand-950/50">
+                Deixe vazio para aceitar qualquer resolução.
+              </p>
             </div>
 
             <div class="rounded-xl border border-brand-950/10 bg-surface/80 p-4 space-y-2">
-              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">Placa de Vídeo (GPU)</h5>
+              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-950/70">
+                Placa de Vídeo (GPU)
+              </h5>
               <select
                 formControlName="needsDedicatedGpu"
                 class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
@@ -419,7 +462,9 @@
                 <option [ngValue]="true">Exigir GPU Dedicada (NVIDIA / Radeon)</option>
                 <option [ngValue]="false">Não exigir (Integrada / Apple Silicon ok)</option>
               </select>
-              <p class="text-[11px] text-brand-950/50">Essencial para notebooks gamers e render 3D.</p>
+              <p class="text-[11px] text-brand-950/50">
+                Essencial para notebooks gamers e render 3D.
+              </p>
             </div>
           </div>
         </div>

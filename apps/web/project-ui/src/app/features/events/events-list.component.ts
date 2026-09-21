@@ -57,19 +57,21 @@ export class EventsListComponent implements OnInit {
 
   loadEvents() {
     this.state.set('loading');
-    this.webhookService.getEvents(this.page(), this.pageSize(), {
-      status: this.statusFilter() || undefined,
-      q: this.keyword(),
-    }).subscribe({
-      next: (res) => {
-        this.events.set(res.content ?? []);
-        this.page.set(res.number ?? 0);
-        this.totalElements.set(res.totalElements ?? 0);
-        this.totalPages.set(res.totalPages ?? 0);
-        this.state.set('ready');
-      },
-      error: () => this.state.set('error'),
-    });
+    this.webhookService
+      .getEvents(this.page(), this.pageSize(), {
+        status: this.statusFilter() || undefined,
+        q: this.keyword(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.events.set(res.content ?? []);
+          this.page.set(res.number ?? 0);
+          this.totalElements.set(res.totalElements ?? 0);
+          this.totalPages.set(res.totalPages ?? 0);
+          this.state.set('ready');
+        },
+        error: () => this.state.set('error'),
+      });
   }
 
   onStatus(event: Event) {

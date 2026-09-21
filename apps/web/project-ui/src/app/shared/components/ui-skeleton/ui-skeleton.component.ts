@@ -5,7 +5,12 @@ import { Component, Input, computed } from '@angular/core';
   standalone: true,
   template: `
     @if (variant === 'table') {
-      <div class="divide-y divide-brand-950/10" role="status" aria-busy="true" aria-label="Carregando">
+      <div
+        class="divide-y divide-brand-950/10"
+        role="status"
+        aria-busy="true"
+        aria-label="Carregando"
+      >
         @for (row of rowsArray(); track $index) {
           <div class="flex items-center gap-4 px-6 py-5">
             <div class="h-10 w-10 shrink-0 animate-pulse rounded-lg bg-brand-950/10"></div>

@@ -60,32 +60,79 @@
           <table class="min-w-full divide-y divide-brand-950/10">
             <thead class="bg-brand-950/[0.02]">
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Quando</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Monitor</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Modelo / vendor</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Tokens (p/g/total)</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Duração</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50">Status</th>
-                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-brand-950/50">Detalhes</th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Quando
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Monitor
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Modelo / vendor
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Tokens (p/g/total)
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Duração
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
+                  Detalhes
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-brand-950/5">
               @for (log of logs(); track log.id) {
                 <tr class="transition-colors hover:bg-brand-950/[0.02]">
-                  <td class="px-6 py-4 text-sm text-brand-950/80">{{ log.createdAt | date: 'dd/MM HH:mm:ss' }}</td>
-                  <td class="px-6 py-4 text-sm font-medium text-brand-950">{{ log.productMonitorName || '—' }}</td>
-                  <td class="px-6 py-4 text-sm text-brand-950/80">{{ log.modelName }} <span class="text-xs text-brand-950/50">· {{ log.vendor }}</span></td>
-                  <td class="px-6 py-4 text-xs font-mono text-brand-950/80">
-                    {{ log.promptTokens ?? '—' }} / {{ log.generationTokens ?? '—' }} / <strong class="text-brand-950">{{ log.totalTokens ?? '—' }}</strong>
+                  <td class="px-6 py-4 text-sm text-brand-950/80">
+                    {{ log.createdAt | date: 'dd/MM HH:mm:ss' }}
                   </td>
-                  <td class="px-6 py-4 text-sm text-brand-950/80">{{ formatDuration(log.durationMs) }}</td>
+                  <td class="px-6 py-4 text-sm font-medium text-brand-950">
+                    {{ log.productMonitorName || '—' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-brand-950/80">
+                    {{ log.modelName }}
+                    <span class="text-xs text-brand-950/50">· {{ log.vendor }}</span>
+                  </td>
+                  <td class="px-6 py-4 text-xs font-mono text-brand-950/80">
+                    {{ log.promptTokens ?? '—' }} / {{ log.generationTokens ?? '—' }} /
+                    <strong class="text-brand-950">{{ log.totalTokens ?? '—' }}</strong>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-brand-950/80">
+                    {{ formatDuration(log.durationMs) }}
+                  </td>
                   <td class="px-6 py-4">
                     <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
                       {{ log.status === 'SUCCESS' ? 'Sucesso' : 'Erro' }}
                     </app-ui-badge>
                   </td>
                   <td class="px-6 py-4 text-right">
-                    <app-ui-button variant="ghost" size="sm" (clicked)="openDetailModal(log)">Ver</app-ui-button>
+                    <app-ui-button variant="ghost" size="sm" (clicked)="openDetailModal(log)"
+                      >Ver</app-ui-button
+                    >
                   </td>
                 </tr>
               }
@@ -126,7 +173,9 @@
         <dd class="text-brand-950">{{ log.vendor }}</dd>
       </div>
       <div>
-        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Itens analisados</dt>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">
+          Itens analisados
+        </dt>
         <dd class="text-brand-950">{{ log.itemsCount }}</dd>
       </div>
       <div>
@@ -135,7 +184,10 @@
       </div>
       <div>
         <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Tokens</dt>
-        <dd class="text-brand-950">prompt {{ log.promptTokens ?? '—' }} · geração {{ log.generationTokens ?? '—' }} · total {{ log.totalTokens ?? '—' }}</dd>
+        <dd class="text-brand-950">
+          prompt {{ log.promptTokens ?? '—' }} · geração {{ log.generationTokens ?? '—' }} · total
+          {{ log.totalTokens ?? '—' }}
+        </dd>
       </div>
       <div>
         <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Quando</dt>
@@ -144,18 +196,33 @@
     </dl>
 
     @if (log.status === 'ERROR' && log.errorMessage) {
-      <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+      <div
+        class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        role="alert"
+      >
         {{ log.errorMessage }}
       </div>
     }
 
     <h3 class="mt-6 text-sm font-semibold text-brand-950">System prompt</h3>
-    <app-ui-code-panel class="mt-2" label="System prompt" [content]="log.systemPrompt || '(vazio)'"></app-ui-code-panel>
+    <app-ui-code-panel
+      class="mt-2"
+      label="System prompt"
+      [content]="log.systemPrompt || '(vazio)'"
+    ></app-ui-code-panel>
 
     <h3 class="mt-6 text-sm font-semibold text-brand-950">User prompt</h3>
-    <app-ui-code-panel class="mt-2" label="User prompt" [content]="log.userPrompt || '(vazio)'"></app-ui-code-panel>
+    <app-ui-code-panel
+      class="mt-2"
+      label="User prompt"
+      [content]="log.userPrompt || '(vazio)'"
+    ></app-ui-code-panel>
 
     <h3 class="mt-6 text-sm font-semibold text-brand-950">Resposta do modelo</h3>
-    <app-ui-code-panel class="mt-2" label="Resposta" [content]="formatJson(log.rawResponse) || '(vazio)'"></app-ui-code-panel>
+    <app-ui-code-panel
+      class="mt-2"
+      label="Resposta"
+      [content]="formatJson(log.rawResponse) || '(vazio)'"
+    ></app-ui-code-panel>
   }
 </app-ui-dialog>
