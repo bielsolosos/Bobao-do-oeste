@@ -67,10 +67,20 @@ public class MonitorMetricsService {
         PriceBucketCountsDto counts;
 
         if (monitorId != null) {
-            getAndValidateMonitor(monitorId, me);
-            counts = scrapedListingRepository.getPriceBucketsByMonitorId(monitorId);
+            ProductMonitor monitor = getAndValidateMonitor(monitorId, me);
+            if (monitor.getAnalysisType() == br.dev.bielsolosos.biscraper.core.enums.AnalysisType.NONE) {
+                counts = scrapedListingRepository.getPriceBucketsByMonitorIdAll(monitorId);
+            } else {
+                counts = scrapedListingRepository.getPriceBucketsByMonitorId(monitorId);
+                if (counts == null || counts.total() == 0) {
+                    counts = scrapedListingRepository.getPriceBucketsByMonitorIdAll(monitorId);
+                }
+            }
         } else {
             counts = scrapedListingRepository.getPriceBucketsByUserId(me.getId());
+            if (counts == null || counts.total() == 0) {
+                counts = scrapedListingRepository.getPriceBucketsByUserIdAll(me.getId());
+            }
         }
 
         return (counts != null) ? counts.toResponse() : PriceBucketCountsDto.empty().toResponse();
@@ -82,10 +92,20 @@ public class MonitorMetricsService {
         List<br.dev.bielsolosos.biscraper.domain.monitoring.repository.projection.SpecsAndTitleProjection> rows;
 
         if (monitorId != null) {
-            getAndValidateMonitor(monitorId, me);
-            rows = scrapedListingRepository.findSpecsAndTitleByMonitorId(monitorId);
+            ProductMonitor monitor = getAndValidateMonitor(monitorId, me);
+            if (monitor.getAnalysisType() == br.dev.bielsolosos.biscraper.core.enums.AnalysisType.NONE) {
+                rows = scrapedListingRepository.findSpecsAndTitleByMonitorIdAll(monitorId);
+            } else {
+                rows = scrapedListingRepository.findSpecsAndTitleByMonitorId(monitorId);
+                if (rows.isEmpty()) {
+                    rows = scrapedListingRepository.findSpecsAndTitleByMonitorIdAll(monitorId);
+                }
+            }
         } else {
             rows = scrapedListingRepository.findSpecsAndTitleByUserId(me.getId());
+            if (rows.isEmpty()) {
+                rows = scrapedListingRepository.findSpecsAndTitleByUserIdAll(me.getId());
+            }
         }
 
         Map<String, Long> brandCounts = new HashMap<>();
@@ -121,10 +141,20 @@ public class MonitorMetricsService {
 
         List<br.dev.bielsolosos.biscraper.domain.monitoring.repository.projection.TimelineCountProjection> rows;
         if (monitorId != null) {
-            getAndValidateMonitor(monitorId, me);
-            rows = scrapedListingRepository.countTimelineByMonitorId(monitorId, startDate);
+            ProductMonitor monitor = getAndValidateMonitor(monitorId, me);
+            if (monitor.getAnalysisType() == br.dev.bielsolosos.biscraper.core.enums.AnalysisType.NONE) {
+                rows = scrapedListingRepository.countTimelineByMonitorIdAll(monitorId, startDate);
+            } else {
+                rows = scrapedListingRepository.countTimelineByMonitorId(monitorId, startDate);
+                if (rows.isEmpty()) {
+                    rows = scrapedListingRepository.countTimelineByMonitorIdAll(monitorId, startDate);
+                }
+            }
         } else {
             rows = scrapedListingRepository.countTimelineByUserId(me.getId(), startDate);
+            if (rows.isEmpty()) {
+                rows = scrapedListingRepository.countTimelineByUserIdAll(me.getId(), startDate);
+            }
         }
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");

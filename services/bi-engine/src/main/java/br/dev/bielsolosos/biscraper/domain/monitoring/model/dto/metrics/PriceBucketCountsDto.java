@@ -10,6 +10,10 @@ public record PriceBucketCountsDto(
         long between5000And8000,
         long above8000
 ) {
+    public long total() {
+        return under1500 + between1500And3000 + between3000And5000 + between5000And8000 + above8000;
+    }
+
     public PriceDistributionResponse toResponse() {
         return new PriceDistributionResponse(List.of(
                 new PriceDistributionResponse.PriceBucket("Até R$ 1.500", BigDecimal.ZERO, BigDecimal.valueOf(1500), under1500),
