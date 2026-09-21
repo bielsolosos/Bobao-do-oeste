@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +19,8 @@ public class ScraperQueueController {
 
     private final ScraperHttpClient scraperHttpClient;
 
-    @Operation(summary = "Obter status em tempo real da fila de execução do Scraper Python")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Obter status em tempo real da fila de execução do Scraper Python", security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/queue-status")
     public ResponseEntity<ScraperQueueStatusResponse> getQueueStatus() {
         return ResponseEntity.ok(scraperHttpClient.getQueueStatus());
