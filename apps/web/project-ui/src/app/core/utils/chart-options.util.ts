@@ -14,8 +14,8 @@ interface TooltipParam {
 
 export class ChartOptionsUtil {
   static buildDonutOptions(data: TierMetricsResponse): EChartsCoreOption {
-    const analyzedTotal = (data.high || 0) + (data.medium || 0) + (data.low || 0);
-    const hasData = analyzedTotal > 0;
+    const total = data.total || 0;
+    const hasData = total > 0;
 
     return {
       tooltip: {
@@ -23,7 +23,7 @@ export class ChartOptionsUtil {
         formatter: (paramData: unknown) => {
           const params = paramData as TooltipParam;
           const val = Number(params.value) || 0;
-          const percent = analyzedTotal > 0 ? ((val / analyzedTotal) * 100).toFixed(1) : '0';
+          const percent = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
           return `<div class="font-sans text-xs">
             <span class="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style="background-color: ${params.color ?? '#F59E0B'};"></span>
             <strong>${params.name}</strong>: ${val} (${percent}%)
@@ -74,8 +74,13 @@ export class ChartOptionsUtil {
                 { value: data.high, name: 'Alta Relevância', itemStyle: { color: '#10B981' } },
                 { value: data.medium, name: 'Média Relevância', itemStyle: { color: '#F59E0B' } },
                 { value: data.low, name: 'Baixa Relevância', itemStyle: { color: '#F43F5E' } },
+                {
+                  value: data.none,
+                  name: 'Descartada / Sem Análise',
+                  itemStyle: { color: '#94A3B8' },
+                },
               ].filter((item) => item.value > 0)
-            : [{ value: 1, name: 'Nenhum item analisado', itemStyle: { color: '#E2E8F0' } }],
+            : [{ value: 1, name: 'Sem dados', itemStyle: { color: '#E2E8F0' } }],
         },
       ],
     };

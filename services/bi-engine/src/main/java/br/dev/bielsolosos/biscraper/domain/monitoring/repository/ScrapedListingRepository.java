@@ -42,18 +42,18 @@ public interface ScrapedListingRepository
     @Query("SELECT new br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.metrics.OverviewStatsDto(" +
             "COUNT(s), " +
             "COUNT(CASE WHEN s.matchTier = br.dev.bielsolosos.biscraper.core.enums.MatchTier.HIGH THEN 1 END), " +
-            "COALESCE(MIN(CASE WHEN s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE THEN s.currentPrice ELSE NULL END), MIN(s.currentPrice)), " +
-            "COALESCE(MAX(CASE WHEN s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE THEN s.currentPrice ELSE NULL END), MAX(s.currentPrice)), " +
-            "COALESCE(AVG(CASE WHEN s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE THEN s.currentPrice ELSE NULL END), AVG(s.currentPrice))) " +
+            "MIN(s.currentPrice), " +
+            "MAX(s.currentPrice), " +
+            "AVG(s.currentPrice)) " +
             "FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId")
     OverviewStatsDto getOverviewStatsByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT new br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.metrics.OverviewStatsDto(" +
             "COUNT(s), " +
             "COUNT(CASE WHEN s.matchTier = br.dev.bielsolosos.biscraper.core.enums.MatchTier.HIGH THEN 1 END), " +
-            "COALESCE(MIN(CASE WHEN s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE THEN s.currentPrice ELSE NULL END), MIN(s.currentPrice)), " +
-            "COALESCE(MAX(CASE WHEN s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE THEN s.currentPrice ELSE NULL END), MAX(s.currentPrice)), " +
-            "COALESCE(AVG(CASE WHEN s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE THEN s.currentPrice ELSE NULL END), AVG(s.currentPrice))) " +
+            "MIN(s.currentPrice), " +
+            "MAX(s.currentPrice), " +
+            "AVG(s.currentPrice)) " +
             "FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId")
     OverviewStatsDto getOverviewStatsByMonitorId(@Param("productMonitorId") UUID productMonitorId);
 
@@ -81,7 +81,7 @@ public interface ScrapedListingRepository
             "COUNT(CASE WHEN s.currentPrice > 3000 AND s.currentPrice <= 5000 THEN 1 END), " +
             "COUNT(CASE WHEN s.currentPrice > 5000 AND s.currentPrice <= 8000 THEN 1 END), " +
             "COUNT(CASE WHEN s.currentPrice > 8000 THEN 1 END)) " +
-            "FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId AND s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE")
+            "FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId")
     PriceBucketCountsDto getPriceBucketsByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT new br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.metrics.PriceBucketCountsDto(" +
@@ -90,52 +90,20 @@ public interface ScrapedListingRepository
             "COUNT(CASE WHEN s.currentPrice > 3000 AND s.currentPrice <= 5000 THEN 1 END), " +
             "COUNT(CASE WHEN s.currentPrice > 5000 AND s.currentPrice <= 8000 THEN 1 END), " +
             "COUNT(CASE WHEN s.currentPrice > 8000 THEN 1 END)) " +
-            "FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId")
-    PriceBucketCountsDto getPriceBucketsByUserIdAll(@Param("userId") UUID userId);
-
-    @Query("SELECT new br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.metrics.PriceBucketCountsDto(" +
-            "COUNT(CASE WHEN s.currentPrice <= 1500 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 1500 AND s.currentPrice <= 3000 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 3000 AND s.currentPrice <= 5000 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 5000 AND s.currentPrice <= 8000 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 8000 THEN 1 END)) " +
-            "FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId AND s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE")
+            "FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId")
     PriceBucketCountsDto getPriceBucketsByMonitorId(@Param("productMonitorId") UUID productMonitorId);
 
-    @Query("SELECT new br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.metrics.PriceBucketCountsDto(" +
-            "COUNT(CASE WHEN s.currentPrice <= 1500 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 1500 AND s.currentPrice <= 3000 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 3000 AND s.currentPrice <= 5000 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 5000 AND s.currentPrice <= 8000 THEN 1 END), " +
-            "COUNT(CASE WHEN s.currentPrice > 8000 THEN 1 END)) " +
-            "FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId")
-    PriceBucketCountsDto getPriceBucketsByMonitorIdAll(@Param("productMonitorId") UUID productMonitorId);
-
-    @Query("SELECT s.extractedSpecs AS extractedSpecs, s.title AS title FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId AND s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE")
+    @Query("SELECT s.extractedSpecs AS extractedSpecs, s.title AS title FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId")
     List<SpecsAndTitleProjection> findSpecsAndTitleByUserId(@Param("userId") UUID userId);
 
-    @Query("SELECT s.extractedSpecs AS extractedSpecs, s.title AS title FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId")
-    List<SpecsAndTitleProjection> findSpecsAndTitleByUserIdAll(@Param("userId") UUID userId);
-
-    @Query("SELECT s.extractedSpecs AS extractedSpecs, s.title AS title FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId AND s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE")
+    @Query("SELECT s.extractedSpecs AS extractedSpecs, s.title AS title FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId")
     List<SpecsAndTitleProjection> findSpecsAndTitleByMonitorId(@Param("productMonitorId") UUID productMonitorId);
 
-    @Query("SELECT s.extractedSpecs AS extractedSpecs, s.title AS title FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId")
-    List<SpecsAndTitleProjection> findSpecsAndTitleByMonitorIdAll(@Param("productMonitorId") UUID productMonitorId);
-
-    @Query("SELECT CAST(s.firstSeenAt AS date) AS date, COUNT(s) AS count FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId AND s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE AND s.firstSeenAt >= :startDate GROUP BY CAST(s.firstSeenAt AS date) ORDER BY CAST(s.firstSeenAt AS date) ASC")
+    @Query("SELECT CAST(s.firstSeenAt AS date) AS date, COUNT(s) AS count FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId AND s.firstSeenAt >= :startDate GROUP BY CAST(s.firstSeenAt AS date) ORDER BY CAST(s.firstSeenAt AS date) ASC")
     List<TimelineCountProjection> countTimelineByUserId(@Param("userId") UUID userId,
             @Param("startDate") OffsetDateTime startDate);
 
-    @Query("SELECT CAST(s.firstSeenAt AS date) AS date, COUNT(s) AS count FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId AND s.firstSeenAt >= :startDate GROUP BY CAST(s.firstSeenAt AS date) ORDER BY CAST(s.firstSeenAt AS date) ASC")
-    List<TimelineCountProjection> countTimelineByUserIdAll(@Param("userId") UUID userId,
-            @Param("startDate") OffsetDateTime startDate);
-
-    @Query("SELECT CAST(s.firstSeenAt AS date) AS date, COUNT(s) AS count FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId AND s.matchTier <> br.dev.bielsolosos.biscraper.core.enums.MatchTier.NONE AND s.firstSeenAt >= :startDate GROUP BY CAST(s.firstSeenAt AS date) ORDER BY CAST(s.firstSeenAt AS date) ASC")
-    List<TimelineCountProjection> countTimelineByMonitorId(@Param("productMonitorId") UUID productMonitorId,
-            @Param("startDate") OffsetDateTime startDate);
-
     @Query("SELECT CAST(s.firstSeenAt AS date) AS date, COUNT(s) AS count FROM ScrapedListing s WHERE s.productMonitor.id = :productMonitorId AND s.firstSeenAt >= :startDate GROUP BY CAST(s.firstSeenAt AS date) ORDER BY CAST(s.firstSeenAt AS date) ASC")
-    List<TimelineCountProjection> countTimelineByMonitorIdAll(@Param("productMonitorId") UUID productMonitorId,
+    List<TimelineCountProjection> countTimelineByMonitorId(@Param("productMonitorId") UUID productMonitorId,
             @Param("startDate") OffsetDateTime startDate);
 }
