@@ -45,10 +45,15 @@ import lombok.extern.slf4j.Slf4j;
 public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
     private static final Pattern INTEL_CORE_GEN_PATTERN = Pattern
-            .compile("(?i)(?:i[3579]|core)[ -]?(\\d{1,2})\\d{2,3}");
-    private static final Pattern GEN_NUM_PATTERN = Pattern.compile("(?i)(\\d{1,2})\\s*(?:ª|o|th)?\\s*ger");
-    private static final Pattern RYZEN_GEN_PATTERN = Pattern.compile("(?i)ryzen\\s*[3579]\\s*(\\d{4})");
-    private static final Pattern APPLE_M_PATTERN = Pattern.compile("(?i)m(\\d)");
+            .compile("(?i)(?:i[3579]|core[ -]i[3579])[ -]?(\\d{1,2})\\d{2,3}");
+    private static final Pattern GEN_NUM_PATTERN = Pattern
+            .compile("(?i)(\\d{1,2})\\s*(?:ª|º|°|o|th)?\\s*(?:ger(?:a[cç][aã]o)?|gen(?:eration)?)");
+    private static final Pattern RYZEN_GEN_PATTERN = Pattern
+            .compile("(?i)ryzen\\s*[3579]?\\s*(\\d{4})");
+    private static final Pattern CORE_ULTRA_PATTERN = Pattern
+            .compile("(?i)ultra\\s*[579]?\\s*(\\d)\\d{2}");
+    private static final Pattern APPLE_M_PATTERN = Pattern
+            .compile("(?i)m(\\d)");
 
     private static final int BATCH_SIZE = 15;
 
@@ -59,8 +64,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE);
 
     private static final String SYSTEM_PROMPT_TEMPLATE = """
-            Você é um agente especialista na extração precisa de dados técnicos de Notebooks em marketplaces.
-            Seu objetivo exclusivo é EXTRAIR os dados técnicos reais do equipamento a partir do resumo ou de ferramentas.
+            Você é um agente especialista em extração rigorosa e factualmente exata de dados técnicos de Notebooks em marketplaces (OLX, Mercado Livre, etc.).
+            Seu objetivo exclusivo é EXTRAIR os dados técnicos reais do equipamento anunciado a partir do resumo ou de ferramentas.
 
             OBJETIVO E ESCOPO DA BUSCA DO USUÁRIO:
             \"\"\"
@@ -70,23 +75,54 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             FORMATO DO RESUMO DOS ANÚNCIOS:
             %s
 
-            DIRETRIZES RÍGIDAS DE TRIAGEM E USO DE TOOLS ('getAdditionalInfo' e 'getAdditionalInfoAndImages'):
+            ========================================================================================
+            DIRETRIZES FUNDAMENTAIS ANTI-ALUCINAÇÃO E ANTI-ANCORAGEM (LEI MÁXIMA):
+            ========================================================================================
+            1. NÃO PROJETE OS TERMOS DE BUSCA DO USUÁRIO NOS ANÚNCIOS:
+               - O "OBJETIVO E ESCOPO DA BUSCA DO USUÁRIO" acima descreve APENAS os termos que o usuário digitou na barra de busca do marketplace para filtrar itens.
+               - Esses termos NÃO definem o anúncio! Plataformas de marketplace retornam anúncios variados que muitas vezes NÃO têm o processador pesquisado ou omitiram essa especificação no título.
+               - NUNCA assuma, deduza ou complete que um anúncio possui determinado processador, geração, RAM ou SSD só porque o termo de busca do usuário continha isso.
+               - Se um anúncio disser "Notebook Dell Inspiron 15 8GB 256GB SSD" sem citar o processador (e nenhuma tool foi acionada), os campos 'processorBrand', 'processorModel' e 'processGeneration' DEVEM ser null. NUNCA invente ou adivinhe a CPU!
+
+            2. DESAMBIGUAÇÃO RIGOROSA: CÓDIGO DE CARCAÇA/CHASSIS NÃO É PROCESSADOR:
+               - Anúncios frequentemente trazem códigos do modelo da carcaça do notebook. NUNCA confunda código de carcaça com modelo ou geração de processador!
+               - EXEMPLOS DE CARCAÇAS (NÃO são processadores nem gerações):
+                 * Dell: 'Inspiron 3501', 'Inspiron 3511', 'Inspiron 3520', 'Inspiron 5502', 'Inspiron 5510', 'Inspiron 5402', 'G15 5515', 'G15 5520', 'Latitude 3420', 'Vostro 3500'. (Ex: 'Dell 3501' -> 3501 é a carcaça Dell, NÃO é Core i3 nem geração 35 ou 3!).
+                 * Acer: 'Nitro 5', 'Nitro V15', 'Aspire 3 (A315)', 'Aspire 5 (A515)', 'Predator Helios'. (Ex: 'Acer Nitro 5 i7 10750H' -> o processador é 'Core i7-10750H'. 'Nitro 5' é apenas o nome da linha gamer da Acer, NÃO é Ryzen 5 nem i5!).
+                 * Lenovo: 'IdeaPad 3', 'IdeaPad 1', 'IdeaPad Gaming 3', 'ThinkPad E14', 'Legion 5'. (Ex: 'Lenovo IdeaPad 3 Ryzen 7 5700U' -> o processador é 'Ryzen 7 5700U'. 'IdeaPad 3' NÃO é Core i3!).
+                 * Samsung: 'Book NP550XDA', 'Galaxy Book2 NP750XED', 'Essentials E30'.
+                 * Asus: 'VivoBook X515', 'TUF Gaming F15 FX506'.
+               - PROCESSADORES REAIS (formatos aceitos para 'processorModel'):
+                 * Intel: 'Core i3-1115G4', 'Core i5-1135G7', 'Core i7-10750H', 'Core i7-8550U', 'Core i5-12450H', 'Core i7-13700H', 'Core Ultra 7 155H', 'Celeron N4020', 'Pentium Gold 7505', etc.
+                 * AMD: 'Ryzen 3 3200U', 'Ryzen 5 5500U', 'Ryzen 7 5700U', 'Ryzen 5 7530U', 'Ryzen 7 6800H', 'Ryzen 9 7940HS', 'Athlon 3000G', etc.
+                 * Apple: 'M1', 'M1 Pro', 'M1 Max', 'M2', 'M2 Pro', 'M3', 'M3 Pro', 'M3 Max', 'M4'.
+                 * Qualcomm: 'Snapdragon X Elite', 'Snapdragon X Plus'.
+
+            3. REGRAS DE EXTRAÇÃO DA GERAÇÃO ('processGeneration'):
+               - Intel Core: Extraia o número inteiro da geração a partir do código do modelo (ex: 'i5-1135G7' -> 11, 'i7-10750H' -> 10, 'i7-8550U' -> 8, 'i5-7200U' -> 7, 'i5-12450H' -> 12, 'i7-13700H' -> 13) ou se explicitamente escrito (ex: 'i5 11ª geração' -> 11). Se for Core Ultra Série 1 (ex: Ultra 7 155H), use 1.
+               - AMD Ryzen: Extraia a família de geração (ex: 'Ryzen 5 5500U' -> 5000 ou 5, 'Ryzen 7 7730U' -> 7000 ou 7, 'Ryzen 5 3500U' -> 3000 ou 3).
+               - Apple: 'M1' -> 1, 'M2' -> 2, 'M3' -> 3, 'M4' -> 4.
+               - NUNCA extraia geração a partir do número da carcaça do notebook (ex: 'Inspiron 3501' NÃO tem geração 3 nem 35; se o processador for apenas 'Core i5' sem modelo exato, 'processGeneration' DEVE ser null).
+
+            ========================================================================================
+            DIRETRIZES DE TRIAGEM E USO DE TOOLS ('getAdditionalInfo' e 'getAdditionalInfoAndImages'):
+            ========================================================================================
             1. NÃO CHAME TOOLS PARA PRODUTOS FORA DO ESCOPO: Se o anúncio for claramente de marca incompatível com o que o usuário busca (ex: usuário busca DELL, mas o anúncio é Apple MacBook, Lenovo, Sony, etc.), ou for peças/carcaças/sucatas/acessórios, APENAS extraia os dados básicos presentes no título/resumo. NUNCA acione tools para produtos incompatíveis.
             2. USO CIRÚRGICO DE TOOLS: Acione a tool 'getAdditionalInfo' EXCLUSIVAMENTE para anúncios candidatos que pertençam à marca/linha desejada MAS cujos detalhes vitais (ex: geração/modelo exato do processador, RAM ou capacidade de SSD) estejam ausentes ou incompletos no título/resumo.
             3. DADOS JÁ CLAROS NO RESUMO: Se o título/descrição inicial já contiver os dados necessários (ex: 'Notebook Dell Inspiron i5 1135G7 16GB SSD 512GB'), NÃO acione nenhuma tool.
-            4. Se for analisar imagens de candidatos válidos, atente-se a adesivos no palmrest (adesivos ao lado do touchpad indicando Intel Core i3/i5/i7, AMD Ryzen, geração, GeForce, etc.).
+            4. Se for analisar imagens de candidatos válidos com 'getAdditionalInfoAndImages', atente-se a fotos da tela de 'Sobre o Computador / Propriedades do Sistema' e adesivos no palmrest (adesivos ao lado do touchpad indicando Intel Core i3/i5/i7, AMD Ryzen, geração, GeForce, etc.).
 
             CAMPOS A EXTRAIR POR ANÚNCIO:
             - brand: Marca do Notebook (APPLE, DELL, LENOVO, ACER, ASUS, HP, SAMSUNG, AVELL, LG, VAIO, MSI, ALIENWARE, OTHER)
             - processorBrand: Fabricante do processador (INTEL, AMD, APPLE, QUALCOMM)
-            - processorModel: Nome/modelo do processador (ex: 'Core i5-1135G7', 'Ryzen 5 5500U', 'i5 7ª geração', 'M1 Pro', 'Celeron N4020')
-            - processGeneration: Número da geração se identificada (ex: 11, 7, 5000, 1)
-            - ramSize: Quantidade total de memória RAM em Gigabytes (ex: 8, 16, 32)
-            - ramType: Tipo da memória RAM (DDR3, DDR4, DDR5, LPDDR4, LPDDR5)
-            - storageSizeGb: Tamanho do armazenamento principal em Gigabytes (ex: 128, 256, 512, 1024 para 1TB)
-            - diskType: Tipo de disco (SSD, SSD_NVME, SSD_SATA, HDD, EMMC)
-            - screenResolution: Resolução da tela (HD, FULL_HD, WUXGA, QHD_2K, WQXGA_2K, UHD_4K, RETINA)
-            - hasGpu: Se possui placa de vídeo dedicada (true se tiver GeForce GTX/RTX, Radeon dedicada; false se integrada)
+            - processorModel: Nome/modelo do processador (ex: 'Core i5-1135G7', 'Ryzen 5 5500U', 'Core i5', 'M1 Pro', 'Celeron N4020') ou null
+            - processGeneration: Número inteiro da geração (ex: 11, 10, 8, 7, 5000, 1) ou null se não identificada
+            - ramSize: Quantidade total de memória RAM em Gigabytes (ex: 8, 16, 32) ou null
+            - ramType: Tipo da memória RAM (DDR3, DDR4, DDR5, LPDDR4, LPDDR5) ou null
+            - storageSizeGb: Tamanho do armazenamento principal em Gigabytes (ex: 128, 256, 512, 1024 para 1TB) ou null
+            - diskType: Tipo de disco (SSD, SSD_NVME, SSD_SATA, HDD, EMMC) ou null
+            - screenResolution: Resolução da tela (HD, FULL_HD, WUXGA, QHD_2K, WQXGA_2K, UHD_4K, RETINA) ou null
+            - hasGpu: Se possui placa de vídeo dedicada (true se tiver GeForce GTX/RTX, Radeon dedicada; false se integrada) ou null
 
             FORMATO DO ESQUEMA DE SAÍDA:
             %s
@@ -791,49 +827,72 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
     }
 
     private Integer extractGeneration(ProcessorBrand brand, Integer explicitGen, String model) {
+        // 1. Tenta extrair deterministicamente do modelo do processador primeiro via regex
+        if (model != null && !model.isBlank()) {
+            // Intel Core (ex: i5-1135G7 -> 11, i7 8550U -> 8, i3 1005G1 -> 10, i7 13700H -> 13)
+            Matcher intelMatcher = INTEL_CORE_GEN_PATTERN.matcher(model);
+            if (intelMatcher.find()) {
+                try {
+                    int gen = Integer.parseInt(intelMatcher.group(1));
+                    if (gen >= 1 && gen <= 15) {
+                        return gen;
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            // Core Ultra (ex: Ultra 7 155H -> 1, Ultra 7 258V -> 2)
+            Matcher ultraMatcher = CORE_ULTRA_PATTERN.matcher(model);
+            if (ultraMatcher.find()) {
+                try {
+                    return Integer.parseInt(ultraMatcher.group(1));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            // Padrão explícito de texto (ex: 11ª geração, 7 ger, 10th gen, 12º gen)
+            Matcher genMatcher = GEN_NUM_PATTERN.matcher(model);
+            if (genMatcher.find()) {
+                try {
+                    int gen = Integer.parseInt(genMatcher.group(1));
+                    if (gen >= 1 && gen <= 15) {
+                        return gen;
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            // AMD Ryzen (ex: Ryzen 5 5500U -> 5, Ryzen 7 7730U -> 7, Ryzen 3500U -> 3)
+            Matcher ryzenMatcher = RYZEN_GEN_PATTERN.matcher(model);
+            if (ryzenMatcher.find()) {
+                try {
+                    int fullNumber = Integer.parseInt(ryzenMatcher.group(1));
+                    return fullNumber / 1000;
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            // Apple Silicon (ex: M1 -> 1, M2 -> 2, M3 -> 3, M4 -> 4)
+            Matcher appleMatcher = APPLE_M_PATTERN.matcher(model);
+            if (appleMatcher.find()) {
+                try {
+                    return Integer.parseInt(appleMatcher.group(1));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        // 2. Se não extraído por regex, valida o explicitGen fornecido
         if (explicitGen != null && explicitGen > 0) {
-            return explicitGen;
-        }
-        if (model == null || model.isBlank()) {
-            return null;
-        }
-
-        // 1. Tenta padrão Intel Core (ex: i5-1135G7 -> 11, i7 8550U -> 8, i3 1005G1 ->
-        // 10)
-        Matcher intelMatcher = INTEL_CORE_GEN_PATTERN.matcher(model);
-        if (intelMatcher.find()) {
-            try {
-                return Integer.parseInt(intelMatcher.group(1));
-            } catch (NumberFormatException ignored) {
+            // Se for geração inteira direta (1 a 15)
+            if (explicitGen <= 15) {
+                return explicitGen;
             }
-        }
-
-        // 2. Tenta padrão explícito (ex: 11ª geração, 7 ger, 10th gen)
-        Matcher genMatcher = GEN_NUM_PATTERN.matcher(model);
-        if (genMatcher.find()) {
-            try {
-                return Integer.parseInt(genMatcher.group(1));
-            } catch (NumberFormatException ignored) {
+            // Se for família AMD Ryzen em milhares (ex: 5000, 7000)
+            if (brand == ProcessorBrand.AMD && explicitGen >= 1000 && explicitGen <= 9000) {
+                return explicitGen / 1000;
             }
-        }
-
-        // 3. Tenta padrão AMD Ryzen (ex: Ryzen 5 5500U -> 5)
-        Matcher ryzenMatcher = RYZEN_GEN_PATTERN.matcher(model);
-        if (ryzenMatcher.find()) {
-            try {
-                int fullNumber = Integer.parseInt(ryzenMatcher.group(1));
-                return fullNumber / 1000;
-            } catch (NumberFormatException ignored) {
-            }
-        }
-
-        // 4. Tenta Apple Silicon (ex: M1 -> 1, M2 -> 2)
-        Matcher appleMatcher = APPLE_M_PATTERN.matcher(model);
-        if (appleMatcher.find()) {
-            try {
-                return Integer.parseInt(appleMatcher.group(1));
-            } catch (NumberFormatException ignored) {
-            }
+            // Códigos de chassi como 3501, 5510, 35 são descartados como ruído
         }
 
         return null;

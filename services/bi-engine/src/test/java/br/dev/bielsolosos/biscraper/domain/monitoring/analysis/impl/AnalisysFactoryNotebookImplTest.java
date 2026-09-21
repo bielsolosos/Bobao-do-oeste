@@ -638,6 +638,101 @@ class AnalisysFactoryNotebookImplTest {
     }
 
     @Test
+    @DisplayName("Deve extrair corretamente geração de diferentes processadores (Intel 11th-14th, Core Ultra, Ryzen, Apple M, texto explícito)")
+    void shouldExtractGenerationAccuratelyForVariousProcessors() {
+        when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
+        when(chatClientBuilder.build()).thenReturn(chatClient);
+
+        monitor.setExpectedSpecs(Map.of(
+                "minimumProcessorGeneration", 11
+        ));
+
+        AnalisysFactoryNotebookImpl factory = new AnalisysFactoryNotebookImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
+
+        ScrapedListingDTO item1 = createListing("item-1", "Dell Inspiron 3501 i5-1135G7 16GB", BigDecimal.valueOf(2800));
+        ScrapedListingDTO item2 = createListing("item-2", "Lenovo IdeaPad Gaming 3 Ryzen 7 5700U 16GB", BigDecimal.valueOf(3200));
+        ScrapedListingDTO item3 = createListing("item-3", "Asus TUF i7-13700H 16GB", BigDecimal.valueOf(4500));
+        ScrapedListingDTO item4 = createListing("item-4", "Acer Swift Core Ultra 7 155H", BigDecimal.valueOf(5000));
+        ScrapedListingDTO item5 = createListing("item-5", "Dell Inspiron 3501", BigDecimal.valueOf(2000));
+
+        String jsonAiResponse = """
+                [
+                    {
+                        "brand": "DELL",
+                        "processorBrand": "INTEL",
+                        "processorModel": "Core i5-1135G7",
+                        "processGeneration": null,
+                        "ramSize": 16
+                    },
+                    {
+                        "brand": "LENOVO",
+                        "processorBrand": "AMD",
+                        "processorModel": "Ryzen 7 5700U",
+                        "processGeneration": null,
+                        "ramSize": 16
+                    },
+                    {
+                        "brand": "ASUS",
+                        "processorBrand": "INTEL",
+                        "processorModel": "Core i7-13700H",
+                        "processGeneration": null,
+                        "ramSize": 16
+                    },
+                    {
+                        "brand": "ACER",
+                        "processorBrand": "INTEL",
+                        "processorModel": "Core Ultra 7 155H",
+                        "processGeneration": null,
+                        "ramSize": 16
+                    },
+                    {
+                        "brand": "DELL",
+                        "processorBrand": null,
+                        "processorModel": "Inspiron 3501",
+                        "processGeneration": 3501,
+                        "ramSize": 8
+                    }
+                ]
+                """;
+
+        org.springframework.ai.chat.model.ChatResponse mockResponse = mock(org.springframework.ai.chat.model.ChatResponse.class);
+        org.springframework.ai.chat.model.Generation generation = mock(org.springframework.ai.chat.model.Generation.class);
+        org.springframework.ai.chat.messages.AssistantMessage message = mock(org.springframework.ai.chat.messages.AssistantMessage.class);
+
+        when(mockResponse.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn(jsonAiResponse);
+
+        org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
+        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(callSpec.chatResponse()).thenReturn(mockResponse);
+
+        List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1, item2, item3, item4, item5));
+
+        assertEquals(5, results.size());
+
+        // Item 1: i5-1135G7 -> Gen 11
+        assertEquals(11, results.get(0).params().get("processGeneration"));
+        assertEquals("INTERMEDIATE", results.get(0).params().get("processorTier"));
+
+        // Item 2: Ryzen 7 5700U -> Gen 5
+        assertEquals(5, results.get(1).params().get("processGeneration"));
+        assertEquals("ADVANCED", results.get(1).params().get("processorTier"));
+
+        // Item 3: i7-13700H -> Gen 13
+        assertEquals(13, results.get(2).params().get("processGeneration"));
+        assertEquals("ADVANCED", results.get(2).params().get("processorTier"));
+
+        // Item 4: Ultra 7 155H -> Gen 1
+        assertEquals(1, results.get(3).params().get("processGeneration"));
+        assertEquals("ADVANCED", results.get(3).params().get("processorTier"));
+
+        // Item 5: Dell Inspiron 3501 com explicitGen 3501 -> descartado como ruído de chassi (null)
+        assertNull(results.get(4).params().get("processGeneration"));
+        assertNull(results.get(4).params().get("processorTier"));
+    }
+
+    @Test
     @DisplayName("Deve retornar lista vazia quando ChatClient não estiver disponível")
     void shouldFallbackWhenChatClientUnavailable() {
         when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
