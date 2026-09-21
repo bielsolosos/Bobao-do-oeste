@@ -1,5 +1,5 @@
 (function(window) {
   window.env = window.env || {};
-  // Host padrão local. O frontend acrescenta /api/v1 centralmente.
-  window.env.apiUrl = 'http://localhost:8080';
+  // Deixe vazio em desenvolvimento para que o resolveApiUrl() detecte dinamicamente o host acessado (localhost ou Tailscale IP/Host)
+  window.env.apiUrl = '';
 })(this);
