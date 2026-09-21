@@ -1,7 +1,7 @@
 <app-ui-page-header
   eyebrow="Catálogo"
   title="Detalhe do monitor"
-  subtitle="Acompanhe as oportunidades capturadas e a configuração da regra."
+  subtitle="Acompanhe as oportunidades capturadas, métricas analíticas e a configuração da regra."
 >
   <app-ui-button variant="outline" (clicked)="router.navigate(['/monitors'])">Voltar</app-ui-button>
   @if (monitor()) {
@@ -55,6 +55,101 @@
 ></app-ui-tabs>
 
 @if (activeTabId === 'listings') {
+  <!-- Monitor Analytics & Charts Header -->
+  <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Total Anúncios -->
+    <article class="surface-card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Total Anúncios</p>
+      <div class="mt-1 flex items-baseline gap-2">
+        @if (metricsOverview(); as ov) {
+          <span class="text-2xl font-bold text-brand-950">{{ ov.totalListings }}</span>
+        } @else {
+          <span class="inline-block h-6 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        }
+      </div>
+    </article>
+
+    <!-- Alta Relevância -->
+    <article class="surface-card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Alta Relevância</p>
+      <div class="mt-1 flex items-baseline gap-2">
+        @if (metricsOverview(); as ov) {
+          <span class="text-2xl font-bold text-emerald-600">{{ ov.highRelevanceCount }}</span>
+          @if (ov.totalListings > 0) {
+            <span class="text-xs font-medium text-emerald-700">
+              ({{ (ov.highRelevanceCount / ov.totalListings) * 100 | number: '1.0-0' }}%)
+            </span>
+          }
+        } @else {
+          <span class="inline-block h-6 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        }
+      </div>
+    </article>
+
+    <!-- Menor Preço -->
+    <article class="surface-card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Menor Preço</p>
+      <div class="mt-1 flex items-baseline gap-2">
+        @if (metricsOverview(); as ov) {
+          @if (ov.minPrice !== null) {
+            <span class="text-xl font-bold text-brand-950">
+              {{ ov.minPrice | currency: 'BRL' : 'symbol' : '1.0-0' }}
+            </span>
+          } @else {
+            <span class="text-base font-medium text-brand-950/40">--</span>
+          }
+        } @else {
+          <span class="inline-block h-6 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        }
+      </div>
+    </article>
+
+    <!-- Preço Médio -->
+    <article class="surface-card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Preço Médio</p>
+      <div class="mt-1 flex items-baseline gap-2">
+        @if (metricsOverview(); as ov) {
+          @if (ov.avgPrice !== null) {
+            <span class="text-xl font-bold text-brand-950">
+              {{ ov.avgPrice | currency: 'BRL' : 'symbol' : '1.0-0' }}
+            </span>
+          } @else {
+            <span class="text-base font-medium text-brand-950/40">--</span>
+          }
+        } @else {
+          <span class="inline-block h-6 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        }
+      </div>
+    </article>
+  </div>
+
+  <!-- Charts Block (Donut + Histograma) -->
+  <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <section class="surface-card p-4">
+      <h3 class="font-display text-sm font-bold text-brand-950">Distribuição de Relevância</h3>
+      <p class="text-xs text-brand-950/50">Aderência aos critérios configurados</p>
+      <div class="mt-2">
+        <app-ui-chart
+          [options]="donutOptions()"
+          [loading]="metricsState() === 'loading'"
+          height="240px"
+        />
+      </div>
+    </section>
+
+    <section class="surface-card p-4">
+      <h3 class="font-display text-sm font-bold text-brand-950">Faixas de Preço</h3>
+      <p class="text-xs text-brand-950/50">Concentração de valores encontrados</p>
+      <div class="mt-2">
+        <app-ui-chart
+          [options]="priceOptions()"
+          [loading]="metricsState() === 'loading'"
+          height="240px"
+        />
+      </div>
+    </section>
+  </div>
+
   <app-ui-card [noPadding]="true">
     @switch (listingsState()) {
       @case ('loading') {
@@ -203,7 +298,7 @@
                             </div>
                           }
                         </div>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                           <a
                             [href]="item.url"
                             target="_blank"
@@ -213,27 +308,67 @@
                             {{ item.title }}
                             <span class="sr-only">(abre em nova aba)</span>
                           </a>
-                          @if (hasAiAnalysis() && item.extractedSpecs?.summary) {
-                            <p
-                              class="mt-1 line-clamp-2 rounded border border-brand-950/10 bg-brand-950/[0.02] p-2 text-xs italic text-brand-950/60"
-                            >
-                              {{ item.extractedSpecs?.summary }}
-                            </p>
+
+                          <!-- Hardware Tech Specs Chips -->
+                          @if (item.extractedSpecs; as specs) {
+                            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              @if (specs.processorModel) {
+                                <span
+                                  class="rounded bg-brand-950/5 px-2 py-0.5 text-[11px] font-semibold text-brand-950/80"
+                                >
+                                  {{ specs.processorModel }}
+                                  @if (specs.processGeneration) {
+                                    · {{ specs.processGeneration }}ª Gen
+                                  }
+                                </span>
+                              }
+                              @if (specs.ramSize) {
+                                <span
+                                  class="rounded bg-brand-950/5 px-2 py-0.5 text-[11px] font-semibold text-brand-950/80"
+                                >
+                                  {{ specs.ramSize }}GB {{ specs.ramType || 'RAM' }}
+                                </span>
+                              }
+                              @if (specs.storageSizeGb) {
+                                <span
+                                  class="rounded bg-brand-950/5 px-2 py-0.5 text-[11px] font-semibold text-brand-950/80"
+                                >
+                                  {{ specs.storageSizeGb }}GB {{ specs.diskType || 'SSD' }}
+                                </span>
+                              }
+                              @if (specs.hasGpu) {
+                                <span
+                                  class="rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
+                                >
+                                  GPU Dedicada
+                                </span>
+                              }
+                              @if (specs.isReproved) {
+                                <span
+                                  class="rounded bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold text-rose-700"
+                                >
+                                  Reprovado: {{ specs.reproveReason || 'Critérios incompatíveis' }}
+                                </span>
+                              }
+                            </div>
                           }
-                          @if (item.hasDelivery) {
-                            <app-ui-badge variant="success" size="xs" rounded="md"
-                              >Entrega disponível</app-ui-badge
-                            >
-                          }
-                          @if (hasAiAnalysis()) {
-                            <button
-                              type="button"
-                              (click)="openListingAiLogs(item)"
-                              class="mt-1 text-[11px] font-semibold text-radar hover:underline"
-                            >
-                              Ver dossiê de IA →
-                            </button>
-                          }
+
+                          <div class="mt-2 flex flex-wrap items-center gap-3">
+                            @if (item.hasDelivery) {
+                              <app-ui-badge variant="success" size="xs" rounded="md">
+                                Entrega disponível
+                              </app-ui-badge>
+                            }
+                            @if (hasAiAnalysis()) {
+                              <button
+                                type="button"
+                                (click)="openListingAiLogs(item)"
+                                class="text-[11px] font-semibold text-radar hover:underline"
+                              >
+                                Ver dossiê de IA →
+                              </button>
+                            }
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -253,7 +388,7 @@
                           {{ getTierLabel(item.matchTier) }}
                         </app-ui-badge>
                         @if (item.matchScore > 0) {
-                          <p class="mt-1 text-[10px] text-brand-950/50">
+                          <p class="mt-1 text-[10px] font-bold text-brand-950/60">
                             Score: {{ item.matchScore }}%
                           </p>
                         }
@@ -332,7 +467,7 @@
                       <button
                         type="button"
                         (click)="openListingAiLogs(item)"
-                        class="mt-1 text-[11px] font-semibold text-radar hover:underline"
+                        class="mt-1 block text-[11px] font-semibold text-radar hover:underline"
                       >
                         Ver dossiê de IA →
                       </button>
@@ -357,11 +492,55 @@
   </app-ui-card>
 }
 
-@if (activeTabId === 'ai-logs' && hasAiAnalysis()) {
-  <app-ui-card title="Histórico de análises" subtitle="Chamadas do Gemini para este monitor.">
+@if (activeTabId === 'config') {
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <app-ui-card
+      title="Parâmetros de busca"
+      subtitle="Critérios utilizados para coletar os anúncios"
+    >
+      @if (monitor(); as m) {
+        <dl class="space-y-3 text-sm">
+          <div>
+            <dt class="font-semibold text-brand-950/70">Palavras-chave configuradas</dt>
+            <dd class="mt-1 flex flex-wrap gap-1">
+              @for (q of m.searchQueries; track q.id) {
+                <span class="rounded bg-brand-950/5 px-2 py-0.5 text-xs text-brand-950">
+                  {{ q.queryTerm }}
+                </span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt class="font-semibold text-brand-950/70">Frequência</dt>
+            <dd class="text-brand-950">{{ m.frequency || 'Manual' }}</dd>
+          </div>
+          <div>
+            <dt class="font-semibold text-brand-950/70">Vendor Alvo</dt>
+            <dd class="text-brand-950">{{ m.targetVendor }}</dd>
+          </div>
+        </dl>
+      }
+    </app-ui-card>
+
+    <app-ui-card title="Critérios de IA" subtitle="Parâmetros para classificação e pontuação">
+      @if (monitor(); as m) {
+        @if (m.analysisType === 'NONE') {
+          <p class="text-sm text-brand-950/60">
+            Este monitor não possui análise inteligente ativada.
+          </p>
+        } @else {
+          <app-ui-code-panel [content]="formatJson(m.expectedSpecs)" />
+        }
+      }
+    </app-ui-card>
+  </div>
+}
+
+@if (activeTabId === 'ai-logs') {
+  <app-ui-card [noPadding]="true">
     @switch (aiLogsState()) {
       @case ('loading') {
-        <app-ui-state-panel variant="loading" title="Carregando logs..." />
+        <app-ui-state-panel variant="loading" title="Carregando logs de IA..." />
       }
       @case ('error') {
         <app-ui-state-panel
@@ -374,50 +553,47 @@
         @if (aiLogs().length === 0) {
           <app-ui-state-panel
             variant="empty"
-            title="Nenhuma análise registrada"
-            message="Aguarde a próxima coleta para ver o histórico."
+            title="Nenhum log de IA encontrado"
+            message="Logs são gerados conforme a IA analisa os anúncios coletados."
           />
         } @else {
-          <ul class="divide-y divide-brand-950/5">
+          <div class="divide-y divide-brand-950/10">
             @for (log of aiLogs(); track log.id) {
-              <li class="py-4">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="text-sm font-semibold text-brand-950">
-                    Execução #{{ log.id.slice(0, 8) }}
-                  </p>
-                  <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
-                    {{ log.status === 'SUCCESS' ? 'Sucesso' : 'Erro' }}
-                  </app-ui-badge>
+              <div class="p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs font-semibold text-brand-950">{{
+                      log.modelName
+                    }}</span>
+                    <app-ui-badge
+                      [variant]="log.status === 'SUCCESS' ? 'success' : 'neutral'"
+                      size="xs"
+                    >
+                      {{ log.status }}
+                    </app-ui-badge>
+                  </div>
+                  <span class="text-xs text-brand-950/50">
+                    {{ log.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}
+                  </span>
                 </div>
-                <p class="mt-1 text-xs text-brand-950/50">
-                  {{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }} · {{ log.modelName }}
-                  @if (log.totalTokens) {
-                    · {{ log.totalTokens }} tokens
-                  }
-                </p>
-                @if (log.status === 'ERROR' && log.errorMessage) {
-                  <p class="mt-2 text-sm text-red-700">{{ log.errorMessage }}</p>
+                @if (log.rawResponse) {
+                  <pre
+                    class="mt-2 max-h-32 overflow-y-auto rounded bg-brand-950/5 p-2 font-mono text-[11px] text-brand-950/80"
+                    >{{ log.rawResponse }}</pre>
                 }
-              </li>
+              </div>
             }
-          </ul>
+          </div>
         }
       }
     }
   </app-ui-card>
 }
 
-@if (activeTabId === 'config') {
-  <app-ui-card title="Configuração" subtitle="JSON bruto do payload do monitor.">
-    <app-ui-code-panel [content]="formatJson(monitor())"></app-ui-code-panel>
-  </app-ui-card>
-}
-
+<!-- Modal Dossiê IA do Anúncio -->
 <app-ui-dialog
   [open]="isListingAiLogsModalOpen()"
-  [title]="'Dossiê de IA'"
-  [subtitle]="selectedListingTitle()"
-  panelClass="sm:max-w-2xl"
+  [title]="'Dossiê de IA: ' + selectedListingTitle()"
   (closed)="closeListingAiLogs()"
 >
   @if (isLoadingListingLogs()) {
@@ -425,42 +601,29 @@
   } @else if (selectedListingLogs().length === 0) {
     <app-ui-state-panel
       variant="empty"
-      title="Nenhuma análise registrada"
-      message="Este anúncio ainda não foi analisado pela IA."
+      title="Nenhum log encontrado para este anúncio"
+      message="Este anúncio foi coletado sem registro de IA correspondente."
     />
   } @else {
-    <ul class="space-y-4">
-      @for (log of selectedListingLogs(); track log.id) {
-        <li class="rounded-lg border border-brand-950/10 p-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-sm font-semibold text-brand-950">
-              {{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }}
-            </p>
-            <app-ui-badge [variant]="log.status === 'SUCCESS' ? 'success' : 'danger'">
-              {{ log.status === 'SUCCESS' ? 'Sucesso' : 'Erro' }}
-            </app-ui-badge>
+    <div class="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+      @for (l of selectedListingLogs(); track l.id) {
+        <div class="rounded-lg border border-brand-950/10 p-3 bg-brand-950/[0.01]">
+          <div
+            class="flex items-center justify-between text-xs text-brand-950/60 pb-2 border-b border-brand-950/5"
+          >
+            <span
+              >Modelo: <strong class="text-brand-950">{{ l.modelName }}</strong></span
+            >
+            <span
+              >Duração: <strong class="text-brand-950">{{ l.durationMs }}ms</strong></span
+            >
           </div>
-          <p class="mt-1 text-xs text-brand-950/50">
-            {{ log.modelName }} · {{ log.vendor }} · {{ log.itemsCount }} itens
-            @if (log.durationMs) {
-              · {{ log.durationMs }}ms
-            }
-            @if (log.totalTokens) {
-              · {{ log.totalTokens }} tokens
-            }
-          </p>
-          @if (log.status === 'ERROR' && log.errorMessage) {
-            <p class="mt-2 text-sm text-red-700">{{ log.errorMessage }}</p>
+          @if (l.rawResponse) {
+            <p class="mt-2 text-xs font-semibold text-brand-950/70">Resposta Estruturada:</p>
+            <app-ui-code-panel [content]="l.rawResponse" />
           }
-          @if (log.rawResponse) {
-            <app-ui-code-panel
-              class="mt-3"
-              label="Resposta do modelo"
-              [content]="formatJson(log.rawResponse)"
-            ></app-ui-code-panel>
-          }
-        </li>
+        </div>
       }
-    </ul>
+    </div>
   }
 </app-ui-dialog>

@@ -46,7 +46,13 @@ class WebhookControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(webhookController).build();
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
+        mockMvc = MockMvcBuilders.standaloneSetup(webhookController)
+                .setCustomArgumentResolvers(new org.springframework.data.web.PageableHandlerMethodArgumentResolver())
+                .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
     }
 
     @Test
@@ -71,5 +77,18 @@ class WebhookControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(webhookScrapperService).processScrappingEvent(any(WebhookIncomingPayload.class));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/webhooks/events - Deve retornar página de eventos")
+    void listEventsSuccess() throws Exception {
+        org.springframework.data.domain.Page<br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent> page =
+                new org.springframework.data.domain.PageImpl<>(Collections.emptyList(), org.springframework.data.domain.PageRequest.of(0, 20), 0);
+        org.mockito.Mockito.doReturn(page).when(webhookEventRepository)
+                .findAll(org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<br.dev.bielsolosos.biscraper.domain.monitoring.model.WebhookEvent>>any(), any(org.springframework.data.domain.Pageable.class));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/webhooks/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
     }
 }

@@ -1,7 +1,7 @@
 <app-ui-page-header
   eyebrow="Operação"
-  title="Visão geral"
-  subtitle="Resumo da sua operação de caça a oportunidades"
+  title="Visão Geral & Métricas"
+  subtitle="Central de inteligência e acompanhamento de oportunidades capturadas"
 >
   <app-ui-button variant="secondary" (clicked)="loadMetrics()" [loading]="isRefreshing()">
     Atualizar métricas
@@ -37,78 +37,225 @@
   </div>
 }
 
+<!-- 4 KPI Cards -->
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <!-- Total Anúncios -->
   <article class="surface-card p-5">
     <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">
-      Total de Monitores
+      Total de Anúncios
     </p>
     <div class="mt-2 flex items-baseline gap-2">
-      @if (monitorsState() === 'ready') {
-        <span class="text-3xl font-bold text-brand-950">{{ monitors() }}</span>
-      } @else if (monitorsState() === 'error') {
+      @if (overviewState() === 'ready' && overview(); as ov) {
+        <span class="text-3xl font-bold text-brand-950">{{ ov.totalListings }}</span>
+        <span class="text-xs text-brand-950/50">capturados</span>
+      } @else if (overviewState() === 'error') {
         <span class="text-2xl font-semibold text-brand-950/40">--</span>
         <span class="text-xs text-red-600">indisponível</span>
       } @else {
-        <span class="inline-block h-8 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        <span class="inline-block h-8 w-20 animate-pulse rounded bg-brand-950/10"></span>
       }
     </div>
     <a
       routerLink="/monitors"
       class="mt-3 inline-block text-sm font-medium text-brand-amber-strong hover:underline"
     >
-      Ver monitores →
+      Ver monitores ({{ monitors() }}) →
     </a>
   </article>
 
+  <!-- Oportunidades Alta Relevância -->
   <article class="surface-card p-5">
-    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">
-      Anúncios Extraídos
+    <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">
+      Alta Relevância (Match)
     </p>
     <div class="mt-2 flex items-baseline gap-2">
-      @if (listingsState() === 'ready') {
-        <span class="text-3xl font-bold text-brand-950">{{ listings() }}</span>
-      } @else if (listingsState() === 'error') {
+      @if (overviewState() === 'ready' && overview(); as ov) {
+        <span class="text-3xl font-bold text-emerald-600">{{ ov.highRelevanceCount }}</span>
+        @if (ov.totalListings > 0) {
+          <span class="text-xs font-medium text-emerald-700">
+            ({{ (ov.highRelevanceCount / ov.totalListings) * 100 | number: '1.0-1' }}%)
+          </span>
+        }
+      } @else if (overviewState() === 'error') {
         <span class="text-2xl font-semibold text-brand-950/40">--</span>
-        <span class="text-xs text-red-600">indisponível</span>
       } @else {
         <span class="inline-block h-8 w-16 animate-pulse rounded bg-brand-950/10"></span>
       }
     </div>
-    <p class="mt-3 text-xs text-brand-950/50">Total capturado</p>
+    <p class="mt-3 text-xs text-brand-950/50">Atendem aos critérios da IA</p>
   </article>
 
+  <!-- Menor Preço -->
   <article class="surface-card p-5">
-    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">
-      Webhooks Recebidos
-    </p>
+    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Menor Preço</p>
     <div class="mt-2 flex items-baseline gap-2">
-      @if (webhooksState() === 'ready') {
-        <span class="text-3xl font-bold text-brand-950">{{ webhooks() }}</span>
-      } @else if (webhooksState() === 'error') {
+      @if (overviewState() === 'ready' && overview(); as ov) {
+        @if (ov.minPrice !== null) {
+          <span class="text-2xl font-bold text-brand-950">
+            {{ ov.minPrice | currency: 'BRL' : 'symbol' : '1.0-0' }}
+          </span>
+        } @else {
+          <span class="text-xl font-medium text-brand-950/40">Sem dados</span>
+        }
+      } @else if (overviewState() === 'error') {
         <span class="text-2xl font-semibold text-brand-950/40">--</span>
-        <span class="text-xs text-red-600">indisponível</span>
       } @else {
-        <span class="inline-block h-8 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        <span class="inline-block h-8 w-24 animate-pulse rounded bg-brand-950/10"></span>
       }
     </div>
-    <a
-      routerLink="/events"
-      class="mt-3 inline-block text-sm font-medium text-brand-amber-strong hover:underline"
-    >
-      Ver eventos →
-    </a>
+    <p class="mt-3 text-xs text-brand-950/50">Melhor oferta encontrada</p>
   </article>
 
+  <!-- Preço Médio -->
   <article class="surface-card p-5">
-    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Fila do Scraper</p>
+    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Preço Médio</p>
+    <div class="mt-2 flex items-baseline gap-2">
+      @if (overviewState() === 'ready' && overview(); as ov) {
+        @if (ov.avgPrice !== null) {
+          <span class="text-2xl font-bold text-brand-950">
+            {{ ov.avgPrice | currency: 'BRL' : 'symbol' : '1.0-0' }}
+          </span>
+        } @else {
+          <span class="text-xl font-medium text-brand-950/40">Sem dados</span>
+        }
+      } @else if (overviewState() === 'error') {
+        <span class="text-2xl font-semibold text-brand-950/40">--</span>
+      } @else {
+        <span class="inline-block h-8 w-24 animate-pulse rounded bg-brand-950/10"></span>
+      }
+    </div>
+    <p class="mt-3 text-xs text-brand-950/50">Média geral dos itens</p>
+  </article>
+</div>
+
+<!-- 4 Charts Grid -->
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <!-- Chart 1: Donut de Relevância -->
+  <section class="surface-card p-5">
+    <div class="flex items-center justify-between border-b border-brand-950/10 pb-3">
+      <div>
+        <h3 class="font-display text-base font-bold text-brand-950">Distribuição de Relevância</h3>
+        <p class="text-xs text-brand-950/50">
+          Avaliação de aderência aos filtros e critérios dos monitores
+        </p>
+      </div>
+      @if (tiersState() === 'ready' && tiers(); as t) {
+        <span
+          class="rounded-full bg-brand-950/5 px-2.5 py-0.5 text-xs font-semibold text-brand-950/70"
+        >
+          {{ t.total }} itens
+        </span>
+      }
+    </div>
+    <div class="pt-4">
+      @if (tiersState() === 'error') {
+        <app-ui-state-panel
+          variant="error"
+          title="Erro ao carregar distribuição"
+          (retry)="loadMetrics()"
+        />
+      } @else {
+        <app-ui-chart
+          [options]="donutOptions()"
+          [loading]="tiersState() === 'loading'"
+          height="280px"
+        />
+      }
+    </div>
+  </section>
+
+  <!-- Chart 2: Linha do Tempo de Capturas -->
+  <section class="surface-card p-5">
+    <div class="flex items-center justify-between border-b border-brand-950/10 pb-3">
+      <div>
+        <h3 class="font-display text-base font-bold text-brand-950">Evolução de Capturas</h3>
+        <p class="text-xs text-brand-950/50">Volume de anúncios descobertos nos últimos 14 dias</p>
+      </div>
+    </div>
+    <div class="pt-4">
+      @if (timelineState() === 'error') {
+        <app-ui-state-panel
+          variant="error"
+          title="Erro ao carregar linha do tempo"
+          (retry)="loadMetrics()"
+        />
+      } @else {
+        <app-ui-chart
+          [options]="timelineOptions()"
+          [loading]="timelineState() === 'loading'"
+          height="280px"
+        />
+      }
+    </div>
+  </section>
+
+  <!-- Chart 3: Histograma de Preços -->
+  <section class="surface-card p-5">
+    <div class="flex items-center justify-between border-b border-brand-950/10 pb-3">
+      <div>
+        <h3 class="font-display text-base font-bold text-brand-950">
+          Distribuição por Faixas de Preço
+        </h3>
+        <p class="text-xs text-brand-950/50">Concentração de valor dos anúncios capturados</p>
+      </div>
+    </div>
+    <div class="pt-4">
+      @if (pricesState() === 'error') {
+        <app-ui-state-panel
+          variant="error"
+          title="Erro ao carregar faixas de preço"
+          (retry)="loadMetrics()"
+        />
+      } @else {
+        <app-ui-chart
+          [options]="priceOptions()"
+          [loading]="pricesState() === 'loading'"
+          height="280px"
+        />
+      }
+    </div>
+  </section>
+
+  <!-- Chart 4: Top Marcas -->
+  <section class="surface-card p-5">
+    <div class="flex items-center justify-between border-b border-brand-950/10 pb-3">
+      <div>
+        <h3 class="font-display text-base font-bold text-brand-950">Marcas Mais Frequentes</h3>
+        <p class="text-xs text-brand-950/50">Fabricantes identificados nos anúncios monitorados</p>
+      </div>
+    </div>
+    <div class="pt-4">
+      @if (brandsState() === 'error') {
+        <app-ui-state-panel
+          variant="error"
+          title="Erro ao carregar marcas"
+          (retry)="loadMetrics()"
+        />
+      } @else {
+        <app-ui-chart
+          [options]="brandOptions()"
+          [loading]="brandsState() === 'loading'"
+          height="280px"
+        />
+      }
+    </div>
+  </section>
+</div>
+
+<!-- Queue and Webhooks Status Footer -->
+<div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <article class="surface-card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">
+      Status do Scraper
+    </p>
     <div class="mt-2 flex items-baseline gap-2">
       @if (queueState() === 'ready' && queueStatus(); as status) {
         <span
-          class="text-3xl font-bold"
+          class="text-2xl font-bold"
           [class.text-brand-amber-strong]="status.total_pending_jobs > 0"
           [class.text-brand-950]="status.total_pending_jobs === 0"
         >
-          {{ status.total_pending_jobs }}
+          {{ status.total_pending_jobs }} pendentes
         </span>
         <span
           class="rounded-full px-2 py-0.5 text-xs font-semibold"
@@ -117,26 +264,37 @@
           [class.bg-emerald-100]="status.total_pending_jobs === 0"
           [class.text-emerald-900]="status.total_pending_jobs === 0"
         >
-          {{ status.total_pending_jobs > 0 ? 'Processando' : 'Ocioso' }}
+          {{ status.total_pending_jobs > 0 ? 'Em execução' : 'Fila livre' }}
         </span>
-      } @else if (queueState() === 'error') {
-        <span class="text-2xl font-semibold text-brand-950/40">--</span>
-        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900"
-          >Indisponível</span
-        >
       } @else {
-        <span class="inline-block h-8 w-16 animate-pulse rounded bg-brand-950/10"></span>
+        <span class="inline-block h-8 w-24 animate-pulse rounded bg-brand-950/10"></span>
       }
     </div>
     @if (queueState() === 'ready' && queueStatus(); as status) {
       <p class="mt-3 text-xs text-brand-950/50">
-        Fila: <strong class="text-brand-950">{{ status.queued_jobs }}</strong> · Rodando:
-        <strong class="text-brand-950">{{ status.running_jobs }}</strong> · Webhooks pendentes:
+        Fila: <strong class="text-brand-950">{{ status.queued_jobs }}</strong> · Em processamento:
+        <strong class="text-brand-950">{{ status.running_jobs }}</strong> · Webhooks:
         <strong class="text-brand-950">{{ status.pending_webhooks }}</strong>
       </p>
-    } @else if (queueState() === 'error') {
-      <p class="mt-3 text-xs font-medium text-amber-700">Dados indisponíveis no momento.</p>
     }
+  </article>
+
+  <article class="surface-card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">
+      Webhooks de Integração
+    </p>
+    <div class="mt-2 flex items-baseline gap-2">
+      <span class="text-2xl font-bold text-brand-950">Ativo</span>
+      <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900">
+        Pronto
+      </span>
+    </div>
+    <a
+      routerLink="/events"
+      class="mt-3 inline-block text-sm font-medium text-brand-amber-strong hover:underline"
+    >
+      Auditar eventos de webhook →
+    </a>
   </article>
 </div>
 
@@ -147,8 +305,8 @@
       Crie seu primeiro monitor
     </h2>
     <p class="mt-1 max-w-xl text-sm text-brand-950/60">
-      Monitores inteligentes varrem a OLX e o Mercado Livre em busca das condições que você define.
-      Você recebe a notificação quando a oportunidade aparece.
+      Monitores inteligentes varrem marketplaces em busca das condições que você define. Você recebe
+      a notificação quando a oportunidade aparece.
     </p>
     <a
       routerLink="/monitors/new"

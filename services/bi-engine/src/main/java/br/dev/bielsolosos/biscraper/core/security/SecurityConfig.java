@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -32,8 +33,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ROUTES = {
-            "/api/v1/auth/**",
-            "/api/v1/webhooks/**",
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh",
             "/docs/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
@@ -41,7 +42,6 @@ public class SecurityConfig {
             "/actuator/health",
             "/actuator/info"
     };
-
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -55,9 +55,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/scraper")
+                        .permitAll()
                         .requestMatchers(PUBLIC_ROUTES).permitAll()
-                        .anyRequest().authenticated()
-                );
+                        .anyRequest().authenticated());
 
         return http.build();
     }
@@ -68,7 +69,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(properties.getCors().getAllowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_LENGTH, HttpHeaders.CONTENT_TYPE));
+        config.setExposedHeaders(
+                List.of(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_LENGTH, HttpHeaders.CONTENT_TYPE));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -87,7 +89,6 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
