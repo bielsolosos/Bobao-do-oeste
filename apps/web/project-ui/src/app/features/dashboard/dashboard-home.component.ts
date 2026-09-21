@@ -2,12 +2,22 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MonitorService } from '../../core/services/monitor.service';
+import { MonitorMetricsService } from '../../core/services/monitor-metrics.service';
 import { WebhookService } from '../../core/services/webhook.service';
 import { ScraperQueueStatusResponse } from '../../core/models/monitor.model';
+import {
+  MetricsOverviewResponse,
+  TierMetricsResponse,
+  PriceDistributionResponse,
+  BrandDistributionResponse,
+  TimelineMetricsResponse,
+} from '../../core/models/metrics.model';
+import { ChartOptionsUtil } from '../../core/utils/chart-options.util';
 import { UiPageHeaderComponent } from '../../shared/components/ui-page-header/ui-page-header.component';
 import { UiStatePanelComponent } from '../../shared/components/ui-state-panel/ui-state-panel.component';
 import { UiToastService } from '../../shared/components/ui-toast/ui-toast.service';
 import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
+import { UiChartComponent } from '../../shared/components/ui-chart/ui-chart.component';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -20,22 +30,33 @@ type LoadState = 'loading' | 'ready' | 'error';
     UiPageHeaderComponent,
     UiStatePanelComponent,
     UiButtonComponent,
+    UiChartComponent,
   ],
   templateUrl: './dashboard-home.component.html',
 })
 export class DashboardHomeComponent implements OnInit {
   private monitorService = inject(MonitorService);
+  private metricsService = inject(MonitorMetricsService);
   private webhookService = inject(WebhookService);
   private toast = inject(UiToastService);
 
   monitors = signal(0);
-  listings = signal(0);
-  webhooks = signal(0);
   queueStatus = signal<ScraperQueueStatusResponse | null>(null);
 
+  // Modular Metrics Signals
+  overview = signal<MetricsOverviewResponse | null>(null);
+  tiers = signal<TierMetricsResponse | null>(null);
+  prices = signal<PriceDistributionResponse | null>(null);
+  brands = signal<BrandDistributionResponse | null>(null);
+  timeline = signal<TimelineMetricsResponse | null>(null);
+
+  // State Signals
   monitorsState = signal<LoadState>('loading');
-  listingsState = signal<LoadState>('loading');
-  webhooksState = signal<LoadState>('loading');
+  overviewState = signal<LoadState>('loading');
+  tiersState = signal<LoadState>('loading');
+  pricesState = signal<LoadState>('loading');
+  brandsState = signal<LoadState>('loading');
+  timelineState = signal<LoadState>('loading');
   queueState = signal<LoadState>('loading');
 
   lastUpdatedAt = signal<Date | null>(null);
@@ -43,9 +64,25 @@ export class DashboardHomeComponent implements OnInit {
 
   hasNoMonitors = computed(() => this.monitorsState() === 'ready' && this.monitors() === 0);
 
-  queueHealthy = computed(() => {
-    const status = this.queueStatus();
-    return this.queueState() === 'ready' && status !== null && status.total_pending_jobs === 0;
+  // ECharts Computed Options
+  donutOptions = computed(() => {
+    const t = this.tiers();
+    return t ? ChartOptionsUtil.buildDonutOptions(t) : null;
+  });
+
+  priceOptions = computed(() => {
+    const p = this.prices();
+    return p ? ChartOptionsUtil.buildPriceHistogramOptions(p) : null;
+  });
+
+  brandOptions = computed(() => {
+    const b = this.brands();
+    return b ? ChartOptionsUtil.buildBrandBarOptions(b) : null;
+  });
+
+  timelineOptions = computed(() => {
+    const tl = this.timeline();
+    return tl ? ChartOptionsUtil.buildTimelineOptions(tl) : null;
   });
 
   ngOnInit() {
@@ -65,24 +102,54 @@ export class DashboardHomeComponent implements OnInit {
       error: () => this.monitorsState.set('error'),
     });
 
-    this.listingsState.set('loading');
-    this.monitorService.getAllListings(0, 1).subscribe({
+    this.overviewState.set('loading');
+    this.metricsService.getOverview().subscribe({
       next: (res) => {
-        this.listings.set(res.totalElements);
-        this.listingsState.set('ready');
+        this.overview.set(res);
+        this.overviewState.set('ready');
         this.markUpdated();
       },
-      error: () => this.listingsState.set('error'),
+      error: () => this.overviewState.set('error'),
     });
 
-    this.webhooksState.set('loading');
-    this.webhookService.getEvents(0, 1).subscribe({
+    this.tiersState.set('loading');
+    this.metricsService.getTiers().subscribe({
       next: (res) => {
-        this.webhooks.set(res.totalElements);
-        this.webhooksState.set('ready');
+        this.tiers.set(res);
+        this.tiersState.set('ready');
         this.markUpdated();
       },
-      error: () => this.webhooksState.set('error'),
+      error: () => this.tiersState.set('error'),
+    });
+
+    this.pricesState.set('loading');
+    this.metricsService.getPrices().subscribe({
+      next: (res) => {
+        this.prices.set(res);
+        this.pricesState.set('ready');
+        this.markUpdated();
+      },
+      error: () => this.pricesState.set('error'),
+    });
+
+    this.brandsState.set('loading');
+    this.metricsService.getBrands().subscribe({
+      next: (res) => {
+        this.brands.set(res);
+        this.brandsState.set('ready');
+        this.markUpdated();
+      },
+      error: () => this.brandsState.set('error'),
+    });
+
+    this.timelineState.set('loading');
+    this.metricsService.getTimeline(undefined, 14).subscribe({
+      next: (res) => {
+        this.timeline.set(res);
+        this.timelineState.set('ready');
+        this.markUpdated();
+      },
+      error: () => this.timelineState.set('error'),
     });
 
     this.queueState.set('loading');

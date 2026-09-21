@@ -6,6 +6,19 @@ export interface ExtractedSpecs {
   summary?: string;
   brand?: string;
   model?: string;
+  processorBrand?: string;
+  processorModel?: string;
+  processGeneration?: number;
+  processorTier?: string;
+  ramSize?: number;
+  ramType?: string;
+  storageSizeGb?: number;
+  diskType?: string;
+  screenResolution?: string;
+  hasGpu?: boolean;
+  isReproved?: boolean;
+  reproveReason?: string;
+  penalties?: string[];
   processor?: string;
   ramGb?: number;
   storage?: string;
@@ -18,7 +31,6 @@ export interface ExtractedSpecs {
   cons?: string[];
   estimatedMarketValue?: number;
   dealVerdict?: string;
-  [key: string]: unknown;
 }
 
 export interface ScrapedListingResponse {

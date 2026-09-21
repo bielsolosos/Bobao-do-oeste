@@ -4,9 +4,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, Subject } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MonitorService } from '../../../core/services/monitor.service';
+import { MonitorMetricsService } from '../../../core/services/monitor-metrics.service';
 import { AiLogService } from '../../../core/services/ai-log.service';
 import { ProductMonitorResponse } from '../../../core/models/monitor.model';
 import { ScrapedListingResponse, MatchTier } from '../../../core/models/listing.model';
+import {
+  MetricsOverviewResponse,
+  TierMetricsResponse,
+  PriceDistributionResponse,
+} from '../../../core/models/metrics.model';
+import { ChartOptionsUtil } from '../../../core/utils/chart-options.util';
 import { AiAnalysisLogResponse } from '../../../core/models/ai-log.model';
 import { UiCardComponent } from '../../../shared/components/ui-card/ui-card.component';
 import { UiBadgeComponent } from '../../../shared/components/ui-badge/ui-badge.component';
@@ -18,6 +25,7 @@ import { UiButtonComponent } from '../../../shared/components/ui-button/ui-butto
 import { UiPageHeaderComponent } from '../../../shared/components/ui-page-header/ui-page-header.component';
 import { UiCodePanelComponent } from '../../../shared/components/ui-code-panel/ui-code-panel.component';
 import { UiToastService } from '../../../shared/components/ui-toast/ui-toast.service';
+import { UiChartComponent } from '../../../shared/components/ui-chart/ui-chart.component';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -36,11 +44,13 @@ type LoadState = 'loading' | 'error' | 'ready';
     UiButtonComponent,
     UiPageHeaderComponent,
     UiCodePanelComponent,
+    UiChartComponent,
   ],
   templateUrl: './monitor-detail.component.html',
 })
 export class MonitorDetailComponent implements OnInit {
   private monitorService = inject(MonitorService);
+  private metricsService = inject(MonitorMetricsService);
   private aiLogService = inject(AiLogService);
   private route = inject(ActivatedRoute);
   public router = inject(Router);
@@ -55,6 +65,12 @@ export class MonitorDetailComponent implements OnInit {
   listings = signal<ScrapedListingResponse[]>([]);
   listingsState = signal<LoadState>('loading');
   brokenImages = signal<Set<string>>(new Set());
+
+  // Metrics Signals
+  metricsOverview = signal<MetricsOverviewResponse | null>(null);
+  metricsTiers = signal<TierMetricsResponse | null>(null);
+  metricsPrices = signal<PriceDistributionResponse | null>(null);
+  metricsState = signal<LoadState>('loading');
 
   aiLogs = signal<AiAnalysisLogResponse[]>([]);
   aiLogsState = signal<LoadState>('loading');
@@ -87,6 +103,16 @@ export class MonitorDetailComponent implements OnInit {
     return m !== null && m.analysisType !== 'NONE';
   });
 
+  donutOptions = computed(() => {
+    const t = this.metricsTiers();
+    return t ? ChartOptionsUtil.buildDonutOptions(t) : null;
+  });
+
+  priceOptions = computed(() => {
+    const p = this.metricsPrices();
+    return p ? ChartOptionsUtil.buildPriceHistogramOptions(p) : null;
+  });
+
   visibleTabs = computed<TabItem[]>(() => {
     const tabs: TabItem[] = [
       {
@@ -117,6 +143,7 @@ export class MonitorDetailComponent implements OnInit {
 
     if (this.monitorId) {
       this.loadMonitorInfo();
+      this.loadMetrics();
       this.loadListings();
     }
   }
@@ -129,6 +156,28 @@ export class MonitorDetailComponent implements OnInit {
         this.monitorState.set('ready');
       },
       error: () => this.monitorState.set('error'),
+    });
+  }
+
+  loadMetrics() {
+    this.metricsState.set('loading');
+
+    this.metricsService.getOverview(this.monitorId).subscribe({
+      next: (res) => this.metricsOverview.set(res),
+      error: () => console.warn('Erro ao carregar overview de métricas do monitor'),
+    });
+
+    this.metricsService.getTiers(this.monitorId).subscribe({
+      next: (res) => this.metricsTiers.set(res),
+      error: () => console.warn('Erro ao carregar tiers do monitor'),
+    });
+
+    this.metricsService.getPrices(this.monitorId).subscribe({
+      next: (res) => {
+        this.metricsPrices.set(res);
+        this.metricsState.set('ready');
+      },
+      error: () => this.metricsState.set('error'),
     });
   }
 
