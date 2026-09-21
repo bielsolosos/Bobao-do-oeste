@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = false)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
 public class NotebookAnalysisTypeFields extends AnalysisTypeFields {
 
     /**
