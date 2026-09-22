@@ -16,6 +16,7 @@ public record ProductMonitorResponse(
     AnalysisType analysisType,
     Vendor targetVendor,
     boolean active,
+    boolean requiredDelivery,
     ScrapingFrequency frequency,
     String cronExpression,
     Map<String, Object> expectedSpecs,

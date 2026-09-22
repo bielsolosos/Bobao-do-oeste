@@ -116,6 +116,7 @@ class ProductMonitorServiceTest {
                 AnalysisType.SIMPLE,
                 Vendor.OLX,
                 true,
+                true,
                 ScrapingFrequency.DAILY,
                 ScrapingFrequency.DAILY.getCronExpression(),
                 null,

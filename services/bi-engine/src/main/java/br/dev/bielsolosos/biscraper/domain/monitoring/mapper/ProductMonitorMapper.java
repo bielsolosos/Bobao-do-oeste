@@ -7,7 +7,6 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.MonitorS
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorRequest;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.monitor.ProductMonitorResponse;
 import br.dev.bielsolosos.biscraper.domain.users.model.User;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -35,6 +34,8 @@ public class ProductMonitorMapper {
 
         String cron = request.frequency() != null ? request.frequency().getCronExpression() : null;
 
+        boolean requiredDelivery = Boolean.TRUE.equals(request.requireDelivery()) || Boolean.TRUE.equals(request.requiredDelivery());
+
         ProductMonitor monitor = ProductMonitor.builder()
                 .user(user)
                 .name(request.name())
@@ -42,6 +43,7 @@ public class ProductMonitorMapper {
                 .analysisType(request.analysisType())
                 .targetVendor(request.vendor() != null ? request.vendor() : br.dev.bielsolosos.biscraper.core.enums.Vendor.OLX)
                 .active(true)
+                .requiredDelivery(requiredDelivery)
                 .cronExpression(cron)
                 .expectedSpecs(expectedSpecsMap)
                 .searchQueries(new ArrayList<>())
@@ -56,7 +58,7 @@ public class ProductMonitorMapper {
                         .maxPrice(request.maxPrice())
                         .stateFilter(request.stateFilter())
                         .regionFilter(request.regionFilter())
-                        .requireDelivery(Boolean.TRUE.equals(request.requireDelivery()))
+                        .requireDelivery(requiredDelivery)
                         .maxPages(1)
                         .active(true)
                         .build();
@@ -84,11 +86,17 @@ public class ProductMonitorMapper {
             monitor.setCronExpression(request.frequency().getCronExpression());
         }
 
+        if (request.requireDelivery() != null || request.requiredDelivery() != null) {
+            boolean reqDel = Boolean.TRUE.equals(request.requiredDelivery()) || Boolean.TRUE.equals(request.requireDelivery());
+            monitor.setRequiredDelivery(reqDel);
+        }
+
         if (request.analysisTypeFields() != null) {
             monitor.setExpectedSpecs(request.analysisTypeFields().getFields());
         }
 
         if (request.searchKeywords() != null && !request.searchKeywords().isEmpty()) {
+            boolean reqDel = monitor.isRequiredDelivery();
             monitor.clearSearchQueries();
             for (String keyword : request.searchKeywords()) {
                 MonitorSearchQuery query = MonitorSearchQuery.builder()
@@ -97,7 +105,7 @@ public class ProductMonitorMapper {
                         .maxPrice(request.maxPrice())
                         .stateFilter(request.stateFilter())
                         .regionFilter(request.regionFilter())
-                        .requireDelivery(Boolean.TRUE.equals(request.requireDelivery()))
+                        .requireDelivery(reqDel)
                         .maxPages(1)
                         .active(true)
                         .build();
@@ -124,6 +132,7 @@ public class ProductMonitorMapper {
                 entity.getAnalysisType(),
                 entity.getTargetVendor(),
                 entity.isActive(),
+                entity.isRequiredDelivery(),
                 ScrapingFrequency.fromCronExpression(entity.getCronExpression()),
                 entity.getCronExpression(),
                 entity.getExpectedSpecs(),

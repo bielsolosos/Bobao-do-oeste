@@ -117,7 +117,7 @@ public class ScrapingJobDispatcher {
                     query.getCategorySlug(),
                     query.getMinPrice(),
                     query.getMaxPrice(),
-                    query.isRequireDelivery(),
+                    query.getProductMonitor().isRequiredDelivery(),
                     query.getMaxPages(),
                     false
             );

@@ -58,6 +58,10 @@ public class ProductMonitor {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    @Builder.Default
+    @Column(name = "required_delivery", nullable = false)
+    private boolean requiredDelivery = false;
+
     @Column(name = "cron_expression", length = 50)
     private String cronExpression;
 

@@ -4,6 +4,7 @@ import br.dev.bielsolosos.biscraper.core.abstractfields.AnalysisTypeFields;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.ScrapingFrequency;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -50,7 +51,10 @@ public class ProductMonitorRequest {
 
     private String stateFilter;
     private String regionFilter;
+
+    @JsonAlias({"requiredDelivery", "require_delivery", "required_delivery"})
     private Boolean requireDelivery;
+
     private ScrapingFrequency frequency;
 
     // Métodos de conveniência no estilo record
@@ -65,5 +69,6 @@ public class ProductMonitorRequest {
     public String stateFilter() { return stateFilter; }
     public String regionFilter() { return regionFilter; }
     public Boolean requireDelivery() { return requireDelivery; }
+    public Boolean requiredDelivery() { return requireDelivery; }
     public ScrapingFrequency frequency() { return frequency; }
 }

@@ -70,9 +70,11 @@ class ProductMonitorMapperTest {
         assertEquals("Descrição iPhone", entity.getDescription());
         assertEquals(Vendor.OLX, entity.getTargetVendor());
         assertEquals(AnalysisType.SIMPLE, entity.getAnalysisType());
+        assertTrue(entity.isRequiredDelivery());
         assertEquals(ScrapingFrequency.DAILY.getCronExpression(), entity.getCronExpression());
         assertEquals(2, entity.getSearchQueries().size());
         assertEquals("iphone 13", entity.getSearchQueries().get(0).getQueryTerm());
+        assertTrue(entity.getSearchQueries().get(0).isRequireDelivery());
         assertEquals(user, entity.getUser());
         assertNotNull(entity.getExpectedSpecs());
     }
@@ -108,7 +110,9 @@ class ProductMonitorMapperTest {
         assertNotNull(entity);
         assertEquals(AnalysisType.NOTEBOOK, entity.getAnalysisType());
         assertEquals(Vendor.MERCADO_LIVRE, entity.getTargetVendor());
+        assertFalse(entity.isRequiredDelivery());
         assertEquals(1, entity.getSearchQueries().size());
+        assertFalse(entity.getSearchQueries().get(0).isRequireDelivery());
         assertNotNull(entity.getExpectedSpecs());
     }
 
@@ -122,6 +126,7 @@ class ProductMonitorMapperTest {
                 .analysisType(AnalysisType.SIMPLE)
                 .targetVendor(Vendor.OLX)
                 .active(true)
+                .requiredDelivery(true)
                 .cronExpression(ScrapingFrequency.HOURLY.getCronExpression())
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -135,6 +140,7 @@ class ProductMonitorMapperTest {
         assertEquals("Desc Teste", response.description());
         assertEquals(ScrapingFrequency.HOURLY, response.frequency());
         assertTrue(response.active());
+        assertTrue(response.requiredDelivery());
     }
 
     @Test
@@ -146,6 +152,7 @@ class ProductMonitorMapperTest {
                 .description("Desc Antiga")
                 .analysisType(AnalysisType.SIMPLE)
                 .targetVendor(Vendor.OLX)
+                .requiredDelivery(true)
                 .cronExpression(ScrapingFrequency.DAILY.getCronExpression())
                 .build();
 
@@ -172,9 +179,11 @@ class ProductMonitorMapperTest {
         assertEquals("Nome Novo", entity.getName());
         assertEquals("Desc Nova", entity.getDescription());
         assertEquals(Vendor.MERCADO_LIVRE, entity.getTargetVendor());
+        assertFalse(entity.isRequiredDelivery());
         assertEquals(ScrapingFrequency.EVERY_30_MINUTES.getCronExpression(), entity.getCronExpression());
         assertEquals(1, entity.getSearchQueries().size());
         assertEquals("nova busca", entity.getSearchQueries().get(0).getQueryTerm());
+        assertFalse(entity.getSearchQueries().get(0).isRequireDelivery());
     }
 
     @Test
@@ -254,5 +263,29 @@ class ProductMonitorMapperTest {
 
         ProductMonitor entity = mapper.toEntity(req, user);
         assertNull(entity.getExpectedSpecs());
+    }
+
+    @Test
+    @DisplayName("Deve deserializar ProductMonitorRequest com requiredDelivery como true")
+    void shouldDeserializeJsonWithRequiredDelivery() throws Exception {
+        String json = """
+                {
+                    "name": "Monitor Entrega",
+                    "description": "Desc",
+                    "vendor": "OLX",
+                    "analysisType": "NONE",
+                    "searchKeywords": ["notebook"],
+                    "requiredDelivery": true,
+                    "frequency": "HOURLY"
+                }
+                """;
+        ProductMonitorRequest req = objectMapper.readValue(json, ProductMonitorRequest.class);
+        assertTrue(req.requiredDelivery());
+        assertTrue(req.requireDelivery());
+
+        ProductMonitor entity = mapper.toEntity(req, user);
+        assertTrue(entity.isRequiredDelivery());
+        assertEquals(1, entity.getSearchQueries().size());
+        assertTrue(entity.getSearchQueries().get(0).isRequireDelivery());
     }
 }
