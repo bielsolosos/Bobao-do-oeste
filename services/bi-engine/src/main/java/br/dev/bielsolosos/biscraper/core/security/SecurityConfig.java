@@ -40,7 +40,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/actuator/health",
-            "/actuator/info"
+            "/actuator/info",
+            // TODO: Restringir o endpoint do Prometheus a rede interna do Alloy no Coolify.
+            "/actuator/prometheus"
     };
 
     private final CustomUserDetailsService userDetailsService;
