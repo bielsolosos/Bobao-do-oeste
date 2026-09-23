@@ -494,7 +494,7 @@ increase(node_vmstat_oom_kill{service="raspberry-host"}[1h])
 {application="infrastructure", service="kernel"} |~ "(?i)(out of memory|oom|killed process)"
 ```
 
-O Alloy do Raspberry consegue coletar o endpoint HTTP do BI Engine, mas não acessa os logs nem as métricas do container remoto. Para observar CPU, memória, OOM e logs do container Java, é necessário executar outro Alloy na VPS do Coolify.
+O Alloy do Raspberry consegue coletar o endpoint HTTP do BI Engine, mas não acessa os logs nem as métricas do container remoto. Para observar os logs do container Java, execute outro Alloy na VPS do Coolify com [`deploy/observability/coolify-docker-logs.alloy`](deploy/observability/coolify-docker-logs.alloy). CPU, memória total e OOM do container também precisam ser coletados nessa VPS.
 
 > **TODO:** substituir o Grafana Cloud por uma stack de observabilidade self-hosted e totalmente open source. O Grafana Cloud permanece como a solução provisória encontrada para atender às necessidades atuais de métricas, logs e dashboards.
 

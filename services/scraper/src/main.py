@@ -57,16 +57,17 @@ async def log_requests(request: Request, call_next):
     try:
         response = await observe_request(request, call_next)
         duration_ms = (time.perf_counter() - start_time) * 1000
-        logger.info(
-            "HTTP request completed",
-            extra={
-                "http_method": method,
-                "http_path": url_path,
-                "http_status": response.status_code,
-                "duration_ms": round(duration_ms, 2),
-                "client_address": client_ip,
-            },
-        )
+        if url_path != "/metrics":
+            logger.info(
+                "HTTP request completed",
+                extra={
+                    "http_method": method,
+                    "http_path": url_path,
+                    "http_status": response.status_code,
+                    "duration_ms": round(duration_ms, 2),
+                    "client_address": client_ip,
+                },
+            )
         return response
     except Exception as exc:
         duration_ms = (time.perf_counter() - start_time) * 1000

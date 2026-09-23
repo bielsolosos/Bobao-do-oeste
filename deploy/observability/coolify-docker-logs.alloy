@@ -1,0 +1,59 @@
+// Install this snippet on the Coolify VPS, not on the Raspberry host.
+// It expects loki.write.grafana_cloud_loki to exist in the local Alloy config.
+
+discovery.docker "observed_containers" {
+	host             = "unix:///var/run/docker.sock"
+	refresh_interval = "15s"
+}
+
+discovery.relabel "observed_containers" {
+	targets = discovery.docker.observed_containers.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_bielsolosos_observability_logs"]
+		regex         = "true"
+		action        = "keep"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_bielsolosos_observability_application"]
+		target_label  = "application"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_bielsolosos_observability_service"]
+		target_label  = "service"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container"
+	}
+}
+
+loki.process "docker_application_logs" {
+	stage.json {
+		expressions = {
+			level = "level",
+		}
+	}
+
+	stage.labels {
+		values = {
+			level = "",
+		}
+	}
+
+	forward_to = [loki.write.grafana_cloud_loki.receiver]
+}
+
+loki.source.docker "observed_containers" {
+	host    = "unix:///var/run/docker.sock"
+	targets = discovery.relabel.observed_containers.output
+	labels  = {
+		host        = "vps",
+		environment = "production",
+	}
+	forward_to = [loki.process.docker_application_logs.receiver]
+}

@@ -220,6 +220,30 @@ O Alloy do Raspberry continua coletando `/actuator/prometheus` do Java pelo ende
 
 Logs, memoria total do container, CPU do container e OOM do Java exigem um Alloy na VPS, porque o Docker socket do Coolify so existe naquele host. A imagem Java ja possui labels estaveis e logs JSON para esse segundo agente.
 
+O snippet `deploy/observability/coolify-docker-logs.alloy` deve ser instalado no Alloy da VPS do Coolify. Ele descobre containers pelo Docker socket e mantem apenas imagens com `com.bielsolosos.observability.logs=true`, como o BI Engine.
+
+Na VPS, o usuario do Alloy precisa acessar o socket:
+
+```bash
+sudo usermod -aG docker alloy
+sudo systemctl restart alloy
+```
+
+Depois de anexar o snippet ao `/etc/alloy/config.alloy` dessa VPS:
+
+```bash
+sudo alloy fmt --write /etc/alloy/config.alloy
+sudo alloy validate /etc/alloy/config.alloy
+sudo systemctl restart alloy
+sudo journalctl -u alloy --since "5 minutes ago" --no-pager
+```
+
+Consulta dos logs Java:
+
+```logql
+{application="projeto-scrap", service="bi-engine"}
+```
+
 Nao defina `max_memory_restart` no PM2 antes de obter uma linha de base. Depois, configure o limite acima do pico normal e crie um alerta antes de atingi-lo.
 
 ## 8. Dashboards e metricas do Spring AI

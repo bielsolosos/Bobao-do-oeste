@@ -102,8 +102,14 @@ prometheus.scrape "scraper_process" {
 loki.process "application_logs" {
 	stage.json {
 		expressions = {
-			level = "level",
+			level     = "level",
+			timestamp = "@timestamp",
 		}
+	}
+
+	stage.timestamp {
+		source = "timestamp"
+		format = "RFC3339Nano"
 	}
 
 	stage.labels {
