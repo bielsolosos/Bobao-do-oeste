@@ -54,16 +54,32 @@ async def log_requests(request: Request, call_next):
     method = request.method
     url_path = request.url.path
 
-    logger.info(f"--> [REQ] {method} {url_path} (from: {client_ip})")
-
     try:
         response = await observe_request(request, call_next)
         duration_ms = (time.perf_counter() - start_time) * 1000
-        logger.info(f"<-- [RES] {method} {url_path} | Status: {response.status_code} ({duration_ms:.2f}ms)")
+        logger.info(
+            "HTTP request completed",
+            extra={
+                "http_method": method,
+                "http_path": url_path,
+                "http_status": response.status_code,
+                "duration_ms": round(duration_ms, 2),
+                "client_address": client_ip,
+            },
+        )
         return response
     except Exception as exc:
         duration_ms = (time.perf_counter() - start_time) * 1000
-        logger.error(f"<-- [ERR] {method} {url_path} | Exception: {exc} ({duration_ms:.2f}ms)")
+        logger.exception(
+            "HTTP request failed",
+            extra={
+                "http_method": method,
+                "http_path": url_path,
+                "duration_ms": round(duration_ms, 2),
+                "client_address": client_ip,
+                "error_type": type(exc).__name__,
+            },
+        )
         raise
 
 
