@@ -8,6 +8,7 @@ from src.api.router import main_router
 from src.core.config import settings
 from src.core.database import init_db
 from src.core.logger import logger
+from src.core.metrics import observe_request, prometheus_response
 from src.core.workers.cache_cleanup import get_cache_cleanup_worker
 from src.core.workers.scrape import get_scrape_worker
 from src.core.workers.webhook import get_webhook_worker
@@ -56,7 +57,7 @@ async def log_requests(request: Request, call_next):
     logger.info(f"--> [REQ] {method} {url_path} (from: {client_ip})")
 
     try:
-        response = await call_next(request)
+        response = await observe_request(request, call_next)
         duration_ms = (time.perf_counter() - start_time) * 1000
         logger.info(f"<-- [RES] {method} {url_path} | Status: {response.status_code} ({duration_ms:.2f}ms)")
         return response
@@ -87,6 +88,12 @@ async def health_check():
         "app": settings.APP_NAME,
         "env": settings.APP_ENV,
     }
+
+
+# TODO: Restringir o endpoint do Prometheus a rede interna do Alloy no Coolify.
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    return prometheus_response()
 
 
 if __name__ == "__main__":

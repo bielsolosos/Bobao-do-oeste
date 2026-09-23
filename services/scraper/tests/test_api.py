@@ -21,6 +21,23 @@ async def test_health_check_is_public():
 
 
 @pytest.mark.asyncio
+async def test_metrics_are_public_and_include_http_metrics():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        await ac.get("/health")
+        await ac.get("/api/v1/executions/identifier-for-metrics")
+        response = await ac.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "scraper_http_requests_total" in response.text
+    assert 'route="/health"' in response.text
+    assert 'route="/api/v1/executions/{execution_id}"' in response.text
+    assert 'route="/api/v1/executions/identifier-for-metrics"' not in response.text
+    assert 'route="/metrics"' not in response.text
+    assert "python_info" in response.text
+
+
+@pytest.mark.asyncio
 async def test_unauthorized_access_fails():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get("/api/v1/executions")
