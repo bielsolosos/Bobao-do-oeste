@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "marketplace-scraper",
+      name: "scrap",
       cwd: __dirname,
       script: "./run_api.sh",
       interpreter: "bash",

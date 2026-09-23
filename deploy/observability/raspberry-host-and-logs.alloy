@@ -118,7 +118,7 @@ loki.process "application_logs" {
 loki.source.file "scraper" {
 	targets = [
 		{
-			__path__    = "/home/bielsolosos/.pm2/logs/marketplace-scraper-*.log",
+			__path__    = "/home/bielsolosos/.pm2/logs/scrap-*.log",
 			application = "projeto-scrap",
 			service     = "scraper",
 			host        = "raspberry",

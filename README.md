@@ -437,7 +437,7 @@ A stack de observabilidade utiliza Prometheus e Loki no Grafana Cloud, com Grafa
 
 ### Scraper no PM2
 
-O PM2 é o único supervisor do scraper; não é necessário criar uma unit systemd adicional. A configuração versionada mantém o nome `marketplace-scraper`, necessário para o Alloy localizar os arquivos de log:
+O PM2 é o único supervisor do scraper; não é necessário criar uma unit systemd adicional. A configuração versionada mantém o nome real `scrap`, necessário para o Alloy localizar `~/.pm2/logs/scrap-out.log` e `scrap-error.log`:
 
 ```bash
 cd services/scraper
@@ -469,7 +469,12 @@ As ACLs necessárias e o procedimento completo estão no [guia de observabilidad
 
 ### Dashboard e consultas
 
-Importe [`docs/grafana/observability-test-dashboard.json`](docs/grafana/observability-test-dashboard.json) no Grafana e selecione os data sources Prometheus e Loki solicitados durante a importação.
+Importe as dashboards no Grafana e selecione o data source Prometheus solicitado durante a importação:
+
+- [`docs/grafana/observability-test-dashboard.json`](docs/grafana/observability-test-dashboard.json): visão geral de HTTP, Python, JVM, PostgreSQL, Raspberry e processos.
+- [`docs/grafana/spring-ai-and-boot-dashboard.json`](docs/grafana/spring-ai-and-boot-dashboard.json): tokens, chamadas, latência, ferramentas do Spring AI e métricas automáticas adicionais do Spring Boot.
+
+As séries `gen_ai_*` somente aparecem depois que ao menos uma chamada real ao Gemini termina. O Micrometer contabiliza tokens de entrada, saída e total, mas não calcula custo financeiro; isso exige aplicar externamente a tabela de preços do modelo.
 
 Exemplos de consultas:
 
