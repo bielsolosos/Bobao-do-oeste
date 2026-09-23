@@ -30,6 +30,7 @@ O usuário cadastra um monitor com termos de busca, faixa de preço, frequência
 - [APIs e acessos](#apis-e-acessos)
 - [Testes e qualidade](#testes-e-qualidade)
 - [Deploy](#deploy)
+- [Observabilidade](#observabilidade)
 - [Segurança](#segurança)
 - [Escopo atual e limitações](#escopo-atual-e-limitações)
 - [Documentação técnica](#documentação-técnica)
@@ -424,6 +425,74 @@ Os três módulos possuem Dockerfiles próprios e podem ser publicados de forma 
 
 O [`docker-compose.yml`](docker-compose.yml) atual é voltado ao desenvolvimento e contém apenas PostgreSQL e scraper ativos. Os blocos antigos de BI Engine e web permanecem como scaffold e ainda precisam ser atualizados antes de habilitar uma stack completa por Compose.
 
+## Observabilidade
+
+A stack de observabilidade utiliza Prometheus e Loki no Grafana Cloud, com Grafana Alloy como coletor. No ambiente atual, o scraper roda diretamente no Raspberry sob supervisão do PM2, enquanto o BI Engine roda em container no Coolify/VPS.
+
+| Origem | Métricas | Logs |
+| :--- | :--- | :--- |
+| Scraper | HTTP em `/metrics` e processos Python/Chromium pelo process exporter | JSON nos arquivos gerenciados pelo PM2 |
+| Raspberry | CPU, memória, swap, disco, temperatura, pressure e OOM pelo unix exporter | Journal do kernel |
+| BI Engine | Spring Actuator em `/actuator/prometheus` | JSON no stdout do container |
+
+### Scraper no PM2
+
+O PM2 é o único supervisor do scraper; não é necessário criar uma unit systemd adicional. A configuração versionada mantém o nome `marketplace-scraper`, necessário para o Alloy localizar os arquivos de log:
+
+```bash
+cd services/scraper
+uv sync
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+Depois de atualizar o código ou as dependências:
+
+```bash
+pm2 reload ecosystem.config.cjs --update-env
+pm2 save
+```
+
+### Alloy no Raspberry
+
+O arquivo [`deploy/observability/raspberry-host-and-logs.alloy`](deploy/observability/raspberry-host-and-logs.alloy) complementa a configuração gerada pelo Grafana Cloud. Ele espera que `/etc/alloy/config.alloy` já contenha os componentes `prometheus.remote_write.metrics_service` e `loki.write.grafana_cloud_loki`.
+
+Após conceder ao usuário `alloy` acesso de leitura aos logs do PM2, anexe o snippet ao arquivo principal e valide a configuração:
+
+```bash
+sudo alloy validate /etc/alloy/config.alloy
+sudo systemctl restart alloy
+sudo systemctl status alloy
+```
+
+As ACLs necessárias e o procedimento completo estão no [guia de observabilidade do Raspberry](docs/OBSERVABILITY_RASPBERRY.md). Credenciais do Grafana Cloud não devem ser adicionadas ao repositório.
+
+### Dashboard e consultas
+
+Importe [`docs/grafana/observability-test-dashboard.json`](docs/grafana/observability-test-dashboard.json) no Grafana e selecione os data sources Prometheus e Loki solicitados durante a importação.
+
+Exemplos de consultas:
+
+```promql
+namedprocess_namegroup_memory_bytes{service="scraper-process",groupname="scraper",memtype="resident"}
+```
+
+```promql
+increase(node_vmstat_oom_kill{service="raspberry-host"}[1h])
+```
+
+```logql
+{application="projeto-scrap", service="scraper", level="ERROR"} | json
+```
+
+```logql
+{application="infrastructure", service="kernel"} |~ "(?i)(out of memory|oom|killed process)"
+```
+
+O Alloy do Raspberry consegue coletar o endpoint HTTP do BI Engine, mas não acessa os logs nem as métricas do container remoto. Para observar CPU, memória, OOM e logs do container Java, é necessário executar outro Alloy na VPS do Coolify.
+
+> **TODO:** substituir o Grafana Cloud por uma stack de observabilidade self-hosted e totalmente open source. O Grafana Cloud permanece como a solução provisória encontrada para atender às necessidades atuais de métricas, logs e dashboards.
+
 ## Segurança
 
 Controles já implementados:
@@ -469,8 +538,8 @@ O SQLite atende ao MVP e oferece recuperação simples de filas, mas não substi
 - [README do BI Engine](services/bi-engine/README.md)
 - [README do scraper](services/scraper/README.md)
 - [README da SPA](apps/web/project-ui/README.md)
+- [Observabilidade com Grafana Cloud, Alloy, Prometheus e Loki](docs/OBSERVABILITY_RASPBERRY.md)
 - [Scraping e anti-detecção](services/scraper/docs/SCRAPING_GUIDE.md)
 - [Fila de execução e workers](services/scraper/docs/QUEUE_GUIDE.md)
 - [Entrega de webhooks](services/scraper/docs/WEBHOOK_GUIDE.md)
 - [Deep scraping e cache de imagens](services/scraper/docs/DETAIL_AND_IMAGE_CACHE_GUIDE.md)
-
