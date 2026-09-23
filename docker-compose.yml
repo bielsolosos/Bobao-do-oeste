@@ -39,6 +39,15 @@ services:
       BASIC_AUTH_USERNAME: "admin"
       BASIC_AUTH_PASSWORD: "admin"
       SCRAPE_WORKER_CONCURRENCY: "1"
+    labels:
+      com.bielsolosos.observability.logs: "true"
+      com.bielsolosos.observability.application: "projeto-scrap"
+      com.bielsolosos.observability.service: "scraper"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./services/scraper/data:/app/data
 

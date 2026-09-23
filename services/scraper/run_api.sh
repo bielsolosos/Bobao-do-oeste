@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 echo "==================================================="
 echo "  Starting Marketplace Scraper FastAPI Service"
 echo "  Docs: http://localhost:8001/docs"
 echo "==================================================="
 
-uv run uvicorn src.main:app --reload --host 127.0.0.1 --port 8001
+exec uv run uvicorn src.main:app --host 127.0.0.1 --port 8001 --no-access-log

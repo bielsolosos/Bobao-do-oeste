@@ -5,6 +5,10 @@
 
 FROM mcr.microsoft.com/playwright/python:v1.50.0-noble
 
+LABEL com.bielsolosos.observability.logs="true" \
+      com.bielsolosos.observability.application="projeto-scrap" \
+      com.bielsolosos.observability.service="scraper"
+
 # Instalar o gerenciador UV da Astral
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -42,4 +46,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8001/health || exit 1
 
 # Inicialização via Uvicorn
-ENTRYPOINT ["/app/.venv/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
+ENTRYPOINT ["/app/.venv/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001", "--no-access-log"]

@@ -15,6 +15,10 @@ RUN ./mvnw clean package -DskipTests
 # Estágio 2: Runtime leve
 FROM docker.io/library/eclipse-temurin:21-jre-alpine
 
+LABEL com.bielsolosos.observability.logs="true" \
+      com.bielsolosos.observability.application="projeto-scrap" \
+      com.bielsolosos.observability.service="bi-engine"
+
 WORKDIR /app
 
 # Usuário não-root por segurança
