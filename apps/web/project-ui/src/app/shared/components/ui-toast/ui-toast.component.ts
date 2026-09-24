@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 
 import { UiToastService } from './ui-toast.service';
 
+//TODO esse cara deveria ser uma parte do layout ou core. tem regras e serviços aqui. E tem lógica nele. Shared/components tem que ser dumb components
 @Component({
   selector: 'app-ui-toast-container',
   standalone: true,

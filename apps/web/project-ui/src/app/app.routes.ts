@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { adminGuard, guestGuard } from './core/guards/role.guard';
 import { pendingChangesGuard } from './core/guards/pending-changes.guard';
+import { adminGuard, guestGuard } from './core/guards/role.guard';
 import { LoginComponent } from './features/auth/login/login.component';
 import { NotFoundComponent } from './features/not-found/not-found.component';
 import { AppLayoutComponent } from './layout/app-layout.component';
@@ -13,6 +13,7 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     title: 'Entrar · Bobão do Oeste',
   },
+  //TODO aqui nesse path daqui também tem que passar o título da barra de cima do componente AppLayoutComponent.
   {
     path: '',
     component: AppLayoutComponent,

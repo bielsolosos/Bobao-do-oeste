@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
 
@@ -22,10 +22,11 @@ interface NavItem {
       <!-- Desktop Sidebar -->
       <aside
         class="z-[var(--z-nav)] hidden h-full flex-shrink-0 flex-col bg-brand-900 text-white shadow-xl transition-all duration-300 ease-in-out md:flex"
-        [class.w-64]="!isSidebarCollapsed()"
+        [class.w-]="!isSidebarCollapsed()"
         [class.w-20]="isSidebarCollapsed()"
         aria-label="Navegação lateral"
       >
+        64
         <!-- Brand Header -->
         <a
           routerLink="/dashboard"
@@ -54,10 +55,7 @@ interface NavItem {
         </a>
 
         <!-- Nav Items -->
-        <nav
-          class="flex-1 space-y-6 overflow-y-auto px-3 py-5"
-          [class.px-2]="isSidebarCollapsed()"
-        >
+        <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5" [class.px-2]="isSidebarCollapsed()">
           <div>
             @if (!isSidebarCollapsed()) {
               <p
@@ -137,8 +135,14 @@ interface NavItem {
           <button
             type="button"
             (click)="toggleSidebar()"
-            [attr.aria-label]="isSidebarCollapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'"
-            [title]="isSidebarCollapsed() ? 'Expandir menu lateral (Ctrl+B)' : 'Recolher menu lateral (Ctrl+B)'"
+            [attr.aria-label]="
+              isSidebarCollapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'
+            "
+            [title]="
+              isSidebarCollapsed()
+                ? 'Expandir menu lateral (Ctrl+B)'
+                : 'Recolher menu lateral (Ctrl+B)'
+            "
             class="flex w-full items-center rounded-lg py-2 text-xs font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-amber"
             [class.justify-center]="isSidebarCollapsed()"
             [class.px-3]="!isSidebarCollapsed()"
@@ -152,7 +156,11 @@ interface NavItem {
               stroke="currentColor"
               stroke-width="2"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l-7.5 7.5 7.5 7.5m6-15l-7.5 7.5 7.5 7.5" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M11.25 4.5l-7.5 7.5 7.5 7.5m6-15l-7.5 7.5 7.5 7.5"
+              />
             </svg>
             @if (!isSidebarCollapsed()) {
               <span>Recolher menu</span>
@@ -171,8 +179,14 @@ interface NavItem {
             <button
               type="button"
               (click)="toggleSidebar()"
-              [attr.aria-label]="isSidebarCollapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'"
-              [title]="isSidebarCollapsed() ? 'Expandir menu lateral (Ctrl+B)' : 'Recolher menu lateral (Ctrl+B)'"
+              [attr.aria-label]="
+                isSidebarCollapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'
+              "
+              [title]="
+                isSidebarCollapsed()
+                  ? 'Expandir menu lateral (Ctrl+B)'
+                  : 'Recolher menu lateral (Ctrl+B)'
+              "
               class="hidden h-9 w-9 items-center justify-center rounded-lg text-brand-950/60 transition-colors hover:bg-brand-950/5 hover:text-brand-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-amber-strong md:inline-flex"
             >
               <svg
@@ -183,7 +197,11 @@ interface NavItem {
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
+                />
               </svg>
             </button>
 
@@ -273,6 +291,10 @@ interface NavItem {
     </div>
   `,
 })
+//TODO manter esse componente como o principal mas tem 3 lógicas diferentes nesse componente.
+// Lógica 1: side-bar, seus itens e a lógica de abrir e fechar.
+// Lógica 2: barra superior. Refletri se ela deve existir por que podemos deixar toda a navegação e essa lógica de usuários e configurações na barra lateral também.
+// Além de quebrar esses componentes precisamos rever essa estrutura e planejar melhor em arquivos .ts puros
 export class AppLayoutComponent {
   authService = inject(AuthService);
   private router = inject(Router);
@@ -334,6 +356,8 @@ export class AppLayoutComponent {
     { initialValue: this.router.url },
   );
 
+  //TODO coisa podre remover isso aquiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+  // Criar um serviço que vai fazer isso e um possível breadcrumb talvez
   pageTitle = computed(() => {
     const url = this.url();
     if (url.startsWith('/monitors/new')) return 'Novo monitor';

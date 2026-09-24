@@ -1,26 +1,28 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { MonitorService } from '../../core/services/monitor.service';
-import { MonitorMetricsService } from '../../core/services/monitor-metrics.service';
-import { WebhookService } from '../../core/services/webhook.service';
-import { ScraperQueueStatusResponse } from '../../core/models/monitor.model';
 import {
-  MetricsOverviewResponse,
-  TierMetricsResponse,
-  PriceDistributionResponse,
   BrandDistributionResponse,
+  MetricsOverviewResponse,
+  PriceDistributionResponse,
+  TierMetricsResponse,
   TimelineMetricsResponse,
 } from '../../core/models/metrics.model';
+import { ScraperQueueStatusResponse } from '../../core/models/monitor.model';
+import { MonitorMetricsService } from '../../core/services/monitor-metrics.service';
+import { MonitorService } from '../../core/services/monitor.service';
+import { WebhookService } from '../../core/services/webhook.service';
 import { ChartOptionsUtil } from '../../core/utils/chart-options.util';
+import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
+import { UiChartComponent } from '../../shared/components/ui-chart/ui-chart.component';
 import { UiPageHeaderComponent } from '../../shared/components/ui-page-header/ui-page-header.component';
 import { UiStatePanelComponent } from '../../shared/components/ui-state-panel/ui-state-panel.component';
 import { UiToastService } from '../../shared/components/ui-toast/ui-toast.service';
-import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
-import { UiChartComponent } from '../../shared/components/ui-chart/ui-chart.component';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+//MUUUUUUUUUUUUUITA repetição de código. Esse cara pode literalmente ser uma série de dumb ccomponentes euqnaot essa tela é o orquestrador principal.
+//Ainda irei fazer o refactor (quando eu tiver saco) para corrigir esse código vibe codded.
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,

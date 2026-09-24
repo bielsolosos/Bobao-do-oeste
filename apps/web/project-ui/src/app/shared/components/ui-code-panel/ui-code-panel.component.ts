@@ -68,7 +68,7 @@ export class UiCodePanelComponent {
     try {
       await navigator.clipboard.writeText(text);
       this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 2000);
+      setTimeout(() => this.copied.set(false), 2000); // CRÍTICOOOOOOOOOOOOO REVISARRRRRRRRRRRRRRRR
     } catch {
       this.toast.error('Não foi possível copiar', 'Copie o conteúdo manualmente.');
     }

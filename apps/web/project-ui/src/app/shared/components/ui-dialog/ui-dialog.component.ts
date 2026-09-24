@@ -1,9 +1,10 @@
-import { Component, ElementRef, ViewChild, effect, inject, input, output } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { Component, ElementRef, ViewChild, effect, inject, input, output } from '@angular/core';
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+//TODO achei muito complexo esse componente por mais que eu tenha entendido que é um modal. Revisar se esse cara realmente é uma boa saída e a utilização do mesmo.
 @Component({
   selector: 'app-ui-dialog',
   standalone: true,

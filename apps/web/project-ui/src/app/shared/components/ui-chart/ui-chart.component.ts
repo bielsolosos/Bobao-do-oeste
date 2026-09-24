@@ -12,6 +12,9 @@ import {
 import * as echarts from 'echarts';
 import { ECharts, EChartsCoreOption } from 'echarts';
 
+//TODO rever junto do utilitário que tem dos charts para construir esse cara direito
+//Básicamente é um wrapper do Echarts para fazer um loading e fallback de erro caso tenha.
+//Insere o Echarts de forma genérica e usa as opções vindas do utils.
 @Component({
   selector: 'app-ui-chart',
   standalone: true,

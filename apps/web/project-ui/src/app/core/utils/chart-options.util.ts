@@ -1,8 +1,8 @@
 import { EChartsCoreOption } from 'echarts';
 import {
-  TierMetricsResponse,
-  PriceDistributionResponse,
   BrandDistributionResponse,
+  PriceDistributionResponse,
+  TierMetricsResponse,
   TimelineMetricsResponse,
 } from '../models/metrics.model';
 
@@ -12,6 +12,7 @@ interface TooltipParam {
   color?: string;
 }
 
+//TODO Rever esse cara. Podemos ou quebrar cara um desses componentes em um gráfico genérico para cada item. Ou manter desse jeito. Parece até bom essa solução.
 export class ChartOptionsUtil {
   static buildDonutOptions(data: TierMetricsResponse): EChartsCoreOption {
     const total = data.total || 0;

@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
 
-import { UiConfirmService } from './ui-confirm.service';
 import { UiButtonComponent } from '../ui-button/ui-button.component';
 import { UiDialogComponent } from '../ui-dialog/ui-dialog.component';
+import { UiConfirmService } from './ui-confirm.service';
 
+//TODO esse cara deveria ser uma parte do layout ou core. tem regras e serviços aqui. E tem lógica nele. Shared/components tem que ser dumb components
 @Component({
   selector: 'app-ui-confirm-dialog',
   standalone: true,
