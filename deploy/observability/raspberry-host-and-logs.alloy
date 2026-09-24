@@ -103,7 +103,7 @@ loki.process "application_logs" {
 	stage.json {
 		expressions = {
 			level     = "level",
-			timestamp = "@timestamp",
+			timestamp = "\"@timestamp\"",
 		}
 	}
 
