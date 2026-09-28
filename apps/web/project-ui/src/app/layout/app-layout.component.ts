@@ -26,7 +26,6 @@ interface NavItem {
         [class.w-20]="isSidebarCollapsed()"
         aria-label="Navegação lateral"
       >
-        64
         <!-- Brand Header -->
         <a
           routerLink="/dashboard"

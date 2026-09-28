@@ -14,18 +14,15 @@ export function resolveApiUrl(fallbackBaseUrl?: string): string {
       ? configuredBaseUrl
       : fallbackBaseUrl;
 
-  // Se estiver no browser e acessando por IP ou hostname remoto (Tailscale, etc), ajusta a base URL
+  // Se estiver em desenvolvimento (fallbackBaseUrl fornecido) e acessando por IP ou hostname remoto (Tailscale, LAN, etc), ajusta a base URL
   if (
+    fallbackBaseUrl &&
+    (!configuredBaseUrl || configuredBaseUrl.trim() === '') &&
     runtimeWindow?.location?.hostname &&
     runtimeWindow.location.hostname !== 'localhost' &&
     runtimeWindow.location.hostname !== '127.0.0.1'
   ) {
-    if (
-      !configuredBaseUrl ||
-      configuredBaseUrl.trim() === '' ||
-      rawBaseUrl?.includes('localhost') ||
-      rawBaseUrl?.includes('127.0.0.1')
-    ) {
+    if (rawBaseUrl?.includes('localhost') || rawBaseUrl?.includes('127.0.0.1')) {
       const port = '8080';
       const protocol = runtimeWindow.location.protocol || 'http:';
       rawBaseUrl = `${protocol}//${runtimeWindow.location.hostname}:${port}`;
