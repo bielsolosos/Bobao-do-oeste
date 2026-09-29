@@ -19,7 +19,10 @@ public enum LlmModelEnum {
 
     // DeepSeek Models
     DEEPSEEK_CHAT("deepseek-chat", "DeepSeek Chat (V3)", ModelVendorEnum.DEEPSEEK, ModelTier.CHEAP),
-    DEEPSEEK_REASONER("deepseek-reasoner", "DeepSeek Reasoner (R1)", ModelVendorEnum.DEEPSEEK, ModelTier.STRONG);
+    DEEPSEEK_V4_1_FLASH("deepseek-v4.1-flash", "DeepSeek V4.1 FLASH", ModelVendorEnum.DEEPSEEK, ModelTier.CHEAP),
+    DEEPSEEK_V4_FLASH("deepseek-v4-flash", "DeepSeek V4 FLASH", ModelVendorEnum.DEEPSEEK, ModelTier.CHEAP),
+    DEEPSEEK_REASONER("deepseek-reasoner", "DeepSeek Reasoner (R1)", ModelVendorEnum.DEEPSEEK, ModelTier.STRONG),
+    DEEPSEEK_V4_PRO("deepseek-v4-pro-0813", "DeepSeek Reasoner (R1)", ModelVendorEnum.DEEPSEEK, ModelTier.STRONG);
 
     private final String model;
     private final String description;
