@@ -3,7 +3,7 @@ package br.dev.bielsolosos.biscraper.domain.monitoring.analysis.impl;
 import br.dev.bielsolosos.biscraper.core.config.AiChatClientFactory;
 import br.dev.bielsolosos.biscraper.core.enums.*;
 import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
-import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
+import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.ScraperHttpClient;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
@@ -48,7 +48,7 @@ class AnalisysFactoryNotebookImplTest {
     private AiAnalysisLogService aiAnalysisLogService;
 
     @Mock
-    private ScrappingDetailsTools detailsTools;
+    private ScraperHttpClient scraperClient;
 
     @InjectMocks
     private AnalisysFactoryNotebookImpl factory;
@@ -128,7 +128,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -175,7 +175,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -217,7 +217,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -259,7 +259,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -299,7 +299,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -341,7 +341,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -382,7 +382,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -423,7 +423,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -465,7 +465,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -505,7 +505,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -546,7 +546,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -585,7 +585,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -659,7 +659,7 @@ class AnalisysFactoryNotebookImplTest {
         when(message.getText()).thenReturn(jsonAiResponse);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
-        when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
+        when(chatClient.prompt().options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpec);
         when(callSpec.chatResponse()).thenReturn(mockResponse);
 
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1, item2, item3, item4, item5));

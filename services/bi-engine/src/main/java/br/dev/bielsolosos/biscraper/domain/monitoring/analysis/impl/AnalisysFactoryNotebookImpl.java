@@ -1,40 +1,10 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.analysis.impl;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Component;
-
 import br.dev.bielsolosos.biscraper.core.abstractfields.NotebookAnalysisTypeFields;
 import br.dev.bielsolosos.biscraper.core.config.AiChatClientFactory;
-import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
-import br.dev.bielsolosos.biscraper.core.enums.DiskType;
-import br.dev.bielsolosos.biscraper.core.enums.LlmModelEnum;
-import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
-import br.dev.bielsolosos.biscraper.domain.users.model.User;
-import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
-import br.dev.bielsolosos.biscraper.domain.users.service.UserConfigService;
-import br.dev.bielsolosos.biscraper.core.enums.NotebookBrand;
-import br.dev.bielsolosos.biscraper.core.enums.ProcessorBrand;
-import br.dev.bielsolosos.biscraper.core.enums.ProcessorTier;
-import br.dev.bielsolosos.biscraper.core.enums.RamType;
-import br.dev.bielsolosos.biscraper.core.enums.ScreenResolution;
+import br.dev.bielsolosos.biscraper.core.enums.*;
 import br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto;
 import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
-import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.AnalisysFactory;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.NotebookExtractedSpecsDto;
@@ -42,8 +12,57 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.utils.AiAnalisysU
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
+import br.dev.bielsolosos.biscraper.domain.users.model.User;
+import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
+import br.dev.bielsolosos.biscraper.domain.users.service.UserConfigService;
+import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.ScraperHttpClient;
+import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeDetailRequest;
+import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeDetailResponse;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/*
+ *                       __------__
+ *                     /~          ~\
+ *                    |    //^\//^\|         Oh..My great god ...     
+ *                  /~~\  ||  o| |o|:~\       Please grant me many many
+ *                 | |6   ||___|_|_||:|    /  bananas .. I want to give them
+ *                  \__.  /      o  \/'       to my dear Mary, then she will
+ *                   |   (       O   )        agree to marry me!!
+ *          /~~~~\    `\  \         /
+ *         | |~~\ |     )  ~------~`\
+ *        /' |  | |   /     ____ /~~~)\
+ *       (_/'   | | |     /'    |    ( |
+ *              | | |     \    /   __)/ \
+ *              \  \ \      \/    /' \   `\
+ *                \  \|\        /   | |\___|
+ *                  \ |  \____/     | |
+ *                  /^~&gt;  \        _/ &lt;
+ *                 |  |         \       \
+ *                 |  | \        \        \
+ *                 -^-\  \       |        )
+ *                      `\_______/^\______/
+ * 
+ * 
+ * Pipeline de Análise Especializada de Notebooks:
+ * [1/3] Enriquecimento: Recupera descrição completa e ficha técnica via Scraper HTTP de forma concorrente e segura.
+ * [2/3] Extração LLM: O modelo de IA extrai estritamente os parâmetros técnicos brutos em JSON (sem tools/loops).
+ * [3/3] Avaliação Determinística: O código Java aplica as regras de negócio, pesos e penalidades para calcular score e MatchTier.
+ * 
+ * TODO Revisar se tem como e se tem a necessidade de dividir em diversos componentes e deixar melhor o código.
+ */
 @Slf4j
 @Component
 public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
@@ -64,13 +83,13 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
     private final AiChatClientFactory aiChatClientFactory;
     private final UserConfigService userConfigService;
     private final AiAnalysisLogService aiAnalysisLogService;
-    private final ScrappingDetailsTools detailsTools;
+    private final ScraperHttpClient scraperClient;
     private final ObjectMapper nullFallbackObjectmapper = new ObjectMapper()
             .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE);
 
     private static final String SYSTEM_PROMPT_TEMPLATE = """
             Você é um agente especialista em extração rigorosa e factualmente exata de dados técnicos de Notebooks em marketplaces (OLX, Mercado Livre, etc.).
-            Seu objetivo exclusivo é EXTRAIR os dados técnicos reais do equipamento anunciado a partir do resumo ou de ferramentas.
+            Seu objetivo exclusivo é EXTRAIR os dados técnicos reais do equipamento anunciado a partir do título, descrição integral e propriedades técnicas fornecidas no payload JSON.
 
             OBJETIVO E ESCOPO DA BUSCA DO USUÁRIO:
             \"\"\"
@@ -87,7 +106,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                - O "OBJETIVO E ESCOPO DA BUSCA DO USUÁRIO" acima descreve APENAS os termos que o usuário digitou na barra de busca do marketplace para filtrar itens.
                - Esses termos NÃO definem o anúncio! Plataformas de marketplace retornam anúncios variados que muitas vezes NÃO têm o processador pesquisado ou omitiram essa especificação no título.
                - NUNCA assuma, deduza ou complete que um anúncio possui determinado processador, geração, RAM ou SSD só porque o termo de busca do usuário continha isso.
-               - Se um anúncio disser "Notebook Dell Inspiron 15 8GB 256GB SSD" sem citar o processador (e nenhuma tool foi acionada), os campos 'processorBrand', 'processorModel' e 'processGeneration' DEVEM ser null. NUNCA invente ou adivinhe a CPU!
+               - Se um anúncio disser "Notebook Dell Inspiron 15 8GB 256GB SSD" sem citar o processador no título, descrição ou ficha técnica, os campos 'processorBrand', 'processorModel' e 'processGeneration' DEVEM ser null. NUNCA invente ou adivinhe a CPU!
 
             2. DESAMBIGUAÇÃO RIGOROSA: CÓDIGO DE CARCAÇA/CHASSIS NÃO É PROCESSADOR:
                - Anúncios frequentemente trazem códigos do modelo da carcaça do notebook. NUNCA confunda código de carcaça com modelo ou geração de processador!
@@ -110,12 +129,11 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                - NUNCA extraia geração a partir do número da carcaça do notebook (ex: 'Inspiron 3501' NÃO tem geração 3 nem 35; se o processador for apenas 'Core i5' sem modelo exato, 'processGeneration' DEVE ser null).
 
             ========================================================================================
-            DIRETRIZES DE TRIAGEM E USO DE TOOLS ('getAdditionalInfo' e 'getAdditionalInfoAndImages'):
+            DIRETRIZES DE LEITURA DO DOSSIÊ TÉCNICO ENRIQUECIDO:
             ========================================================================================
-            1. NÃO CHAME TOOLS PARA PRODUTOS FORA DO ESCOPO: Se o anúncio for claramente de marca incompatível com o que o usuário busca (ex: usuário busca DELL, mas o anúncio é Apple MacBook, Lenovo, Sony, etc.), ou for peças/carcaças/sucatas/acessórios, APENAS extraia os dados básicos presentes no título/resumo. NUNCA acione tools para produtos incompatíveis.
-            2. USO CIRÚRGICO DE TOOLS: Acione a tool 'getAdditionalInfo' EXCLUSIVAMENTE para anúncios candidatos que pertençam à marca/linha desejada MAS cujos detalhes vitais (ex: geração/modelo exato do processador, RAM ou capacidade de SSD) estejam ausentes ou incompletos no título/resumo.
-            3. DADOS JÁ CLAROS NO RESUMO: Se o título/descrição inicial já contiver os dados necessários (ex: 'Notebook Dell Inspiron i5 1135G7 16GB SSD 512GB'), NÃO acione nenhuma tool.
-            4. Se for analisar imagens de candidatos válidos com 'getAdditionalInfoAndImages', atente-se a fotos da tela de 'Sobre o Computador / Propriedades do Sistema' e adesivos no palmrest (adesivos ao lado do touchpad indicando Intel Core i3/i5/i7, AMD Ryzen, geração, GeForce, etc.).
+            1. O payload contém dados completos previamente enriquecidos de cada anúncio: 'title', 'price', 'description' (descrição integral do vendedor) e 'technical_properties' (ficha técnica estruturada extraída do anúncio).
+            2. Analise minuciosamente a 'description' e as 'technical_properties' para encontrar dados técnicos ausentes no título (ex: geração exata do processador, quantidade de RAM, tipo de SSD).
+            3. Caso a informação técnica esteja explícita nas propriedades ou no texto da descrição, extraia-a com precisão. Caso não esteja presente em nenhum local do anúncio, preencha o campo como null.
 
             CAMPOS A EXTRAIR POR ANÚNCIO:
             - brand: Marca do Notebook (APPLE, DELL, LENOVO, ACER, ASUS, HP, SAMSUNG, AVELL, LG, VAIO, MSI, ALIENWARE, OTHER)
@@ -138,6 +156,11 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             Caso não consiga identificar algum campo específico, preencha o campo como null.
             """;
 
+    private record EnrichedScrapedListingDTO(
+            ScrapedListingDTO listing,
+            ScrapeDetailResponse details) {
+    }
+
     private record AiExtractedItem(
             NotebookBrand brand,
             ProcessorBrand processorBrand,
@@ -155,11 +178,11 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             AiChatClientFactory aiChatClientFactory,
             UserConfigService userConfigService,
             AiAnalysisLogService aiAnalysisLogService,
-            ScrappingDetailsTools detailsTools) {
+            ScraperHttpClient scraperClient) {
         this.aiChatClientFactory = aiChatClientFactory;
         this.userConfigService = userConfigService;
         this.aiAnalysisLogService = aiAnalysisLogService;
-        this.detailsTools = detailsTools;
+        this.scraperClient = scraperClient;
     }
 
     @Override
@@ -208,6 +231,17 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         return results;
     }
 
+
+       /*
+     * /\ /\
+     * \ _____\
+     * (_)-(_)
+     * 
+     * Linha de raciocínio: Enriquecer os anuncios com descrição e as imagens -> IA
+     * extrai -> Avalia dentro do código
+     * 
+     * TODO Documentar melhor. Na maioria da parte do código. 
+     */
     private List<AnalisysResponse> analyzeBatch(
             ScrapingExecution execution,
             List<ScrapedListingDTO> batch,
@@ -217,8 +251,19 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             String modelName,
             String vendorName) {
 
-        String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
         long timerStart = System.currentTimeMillis();
+
+        // -------------------------------------------------------------------------
+        // [1/3] ENRIQUECIMENTO CONCORRENTE VIA SCRAPER CLIENT
+        // -------------------------------------------------------------------------
+        log.info("[1/3] Enriquecendo lote de {} anúncios de notebooks via Scraper HTTP...", batch.size());
+        List<EnrichedScrapedListingDTO> enrichedBatch = batch.parallelStream()
+                .map(listing -> enrichListing(listing, execution != null ? execution.getVendor() : null))
+                .toList();
+
+
+        List<Map<String, Object>> promptItems = formatEnrichedBatchForPrompt(enrichedBatch);
+        String itemsJson = AiAnalisysUtils.formatBatchMapsForPrompt(promptItems);
 
         String systemPrompt = String.format(
                 SYSTEM_PROMPT_TEMPLATE,
@@ -226,12 +271,14 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                 AiAnalisysUtils.getJsonSchema(ScrapedListingDTO.class),
                 AiAnalisysUtils.getJsonSchema(AiExtractedItem.class));
 
+        // -------------------------------------------------------------------------
+        // [2/3] EXTRAÇÃO DIRETA VIA LLM (SEM TOOLS)
+        // -------------------------------------------------------------------------
         try {
-            log.debug("Disparando prompt de extração com Tools para lote de {} anúncios usando modelo '{}'...",
-                    batch.size(), modelName);
+            log.info("[2/3] Disparando extração LLM ({}) para lote de {} anúncios enriquecidos...",
+                    modelName, batch.size());
 
             ChatResponse response = chatClient.prompt()
-                    .tools(detailsTools)
                     .options(ChatOptions.builder()
                             .model(modelName)
                             .temperature(0.1))
@@ -240,7 +287,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                     .chatResponse();
 
             long duration = System.currentTimeMillis() - timerStart;
-            log.info("Análise LLM de notebooks concluída com sucesso para lote de {} anúncios em {}ms.",
+            log.info("Extração LLM concluída com sucesso para lote de {} anúncios em {}ms.",
                     batch.size(), duration);
 
             String rawResponse = response != null && response.getResult() != null
@@ -269,6 +316,10 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                     sanitizedJson,
                     AiExtractedItem[].class);
 
+            // -------------------------------------------------------------------------
+            // [3/3] AVALIAÇÃO DETERMINÍSTICA DE REGRAS DE NEGÓCIO (JAVA)
+            // -------------------------------------------------------------------------
+            log.info("[3/3] Avaliando regras determinísticas para {} anúncios extraídos...", batch.size());
             List<AnalisysResponse> itensAnalized = new ArrayList<>();
 
             for (int i = 0; i < Math.min(itensToAnalyze.length, batch.size()); i++) {
@@ -308,6 +359,90 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             }
             return Collections.emptyList();
         }
+    }
+
+    private EnrichedScrapedListingDTO enrichListing(ScrapedListingDTO listing, Vendor executionVendor) {
+        if (listing == null || listing.url() == null || listing.url().isBlank()) {
+            return new EnrichedScrapedListingDTO(listing, null);
+        }
+        Vendor targetVendor = listing.vendor() != null ? listing.vendor() : executionVendor;
+        try {
+            ScrapeDetailResponse details = scraperClient.scrapeDetail(
+                    new ScrapeDetailRequest(listing.url(), targetVendor, false, 1, false));
+            return new EnrichedScrapedListingDTO(listing, details);
+        } catch (Exception e) {
+            log.warn("Falha ao enriquecer detalhes do anúncio '{}': {}", listing.url(), e.getMessage());
+            return new EnrichedScrapedListingDTO(listing, null);
+        }
+    }
+
+    /**
+     * Formata e estrutura os anúncios enriquecidos (com dados do scraping, descrição integral e ficha técnica)
+     * em uma lista de mapas enxuta e organizada para compor o payload JSON enviado no prompt da IA.
+     *
+     * @param enrichedBatch Lista de anúncios previamente enriquecidos com detalhes do marketplace
+     * @return Lista de mapas contendo os dados estruturados para o prompt do LLM
+     */
+    private List<Map<String, Object>> formatEnrichedBatchForPrompt(List<EnrichedScrapedListingDTO> enrichedBatch) {
+        List<Map<String, Object>> promptItems = new ArrayList<>(enrichedBatch.size());
+        for (EnrichedScrapedListingDTO item : enrichedBatch) {
+            ScrapedListingDTO listing = item.listing();
+            ScrapeDetailResponse details = item.details();
+            var detailData = details != null ? details.data() : null;
+
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("vendor_listing_id", listing.vendorListingId());
+            map.put("vendor", listing.vendor() != null ? listing.vendor().name() : "OLX");
+            if (listing.url() != null && !listing.url().isBlank()) {
+                map.put("url", listing.url());
+            }
+
+            String title = detailData != null && detailData.title() != null && !detailData.title().isBlank()
+                    ? detailData.title()
+                    : listing.title();
+            map.put("title", title);
+
+            BigDecimal price = detailData != null && detailData.price() != null
+                    ? detailData.price()
+                    : listing.price();
+            if (price != null) {
+                map.put("price", price);
+            }
+
+            if (listing.hasDelivery()) {
+                map.put("has_delivery", true);
+            }
+
+            String loc = (listing.city() != null ? listing.city() : "") + (listing.state() != null ? "/" + listing.state() : "");
+            if (!loc.isBlank()) {
+                map.put("location", loc);
+            }
+
+            String rawDesc = detailData != null && detailData.description() != null && !detailData.description().isBlank()
+                    ? detailData.description()
+                    : listing.description();
+            if (rawDesc != null && !rawDesc.isBlank()) {
+                map.put("description", sanitizeDescription(rawDesc));
+            }
+
+            Map<String, Object> properties = detailData != null && detailData.properties() != null
+                    ? detailData.properties()
+                    : Collections.emptyMap();
+            if (!properties.isEmpty()) {
+                map.put("technical_properties", properties);
+            }
+
+            promptItems.add(map);
+        }
+        return promptItems;
+    }
+
+    private String sanitizeDescription(String description) {
+        if (description == null || description.isBlank()) {
+            return null;
+        }
+        String cleaned = description.replaceAll("\\R{2,}", "\n").strip();
+        return cleaned.length() > 3500 ? cleaned.substring(0, 3500) + "..." : cleaned;
     }
 
     private String extractUserCriteria(ProductMonitor monitor) {
