@@ -256,6 +256,10 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         // -------------------------------------------------------------------------
         // [1/3] ENRIQUECIMENTO CONCORRENTE VIA SCRAPER CLIENT
         // -------------------------------------------------------------------------
+        // TODO: [MULTIMODAL / VISÃO COMPUTACIONAL]
+        // Para anúncios com especificações ambíguas no texto (ex: "Dell 8GB" sem modelo de CPU),
+        // baixar imagens de telas da BIOS, "Sobre o Computador" e adesivos no palmrest (Intel/Ryzen/RTX)
+        // via scraperClient.scrapeImageDetails e repassar como Media (UserMessage) para modelos com visão (ex: Gemini Flash).
         log.info("[1/3] Enriquecendo lote de {} anúncios de notebooks via Scraper HTTP...", batch.size());
         List<EnrichedScrapedListingDTO> enrichedBatch = batch.parallelStream()
                 .map(listing -> enrichListing(listing, execution != null ? execution.getVendor() : null))
@@ -274,6 +278,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         // -------------------------------------------------------------------------
         // [2/3] EXTRAÇÃO DIRETA VIA LLM (SEM TOOLS)
         // -------------------------------------------------------------------------
+        long llmTimerStart = System.currentTimeMillis();
         try {
             log.info("[2/3] Disparando extração LLM ({}) para lote de {} anúncios enriquecidos...",
                     modelName, batch.size());
@@ -286,7 +291,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                     .call()
                     .chatResponse();
 
-            long duration = System.currentTimeMillis() - timerStart;
+            long duration = System.currentTimeMillis() - llmTimerStart;
             log.info("Extração LLM concluída com sucesso para lote de {} anúncios em {}ms.",
                     batch.size(), duration);
 
