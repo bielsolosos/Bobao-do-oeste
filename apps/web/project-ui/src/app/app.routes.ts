@@ -76,6 +76,12 @@ export const routes: Routes = [
         canActivate: [adminGuard],
         title: 'Auditoria de IA · Bobão do Oeste',
       },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+        title: 'Configurações de IA · Bobão do Oeste',
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

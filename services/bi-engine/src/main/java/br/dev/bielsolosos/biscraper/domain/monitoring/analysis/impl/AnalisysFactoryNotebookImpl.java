@@ -19,10 +19,14 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import br.dev.bielsolosos.biscraper.core.abstractfields.NotebookAnalysisTypeFields;
+import br.dev.bielsolosos.biscraper.core.config.AiChatClientFactory;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.DiskType;
 import br.dev.bielsolosos.biscraper.core.enums.LlmModelEnum;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
+import br.dev.bielsolosos.biscraper.domain.users.model.User;
+import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
+import br.dev.bielsolosos.biscraper.domain.users.service.UserConfigService;
 import br.dev.bielsolosos.biscraper.core.enums.NotebookBrand;
 import br.dev.bielsolosos.biscraper.core.enums.ProcessorBrand;
 import br.dev.bielsolosos.biscraper.core.enums.ProcessorTier;
@@ -57,7 +61,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
     private static final int BATCH_SIZE = 15;
 
-    private final ChatClient chatClient;
+    private final AiChatClientFactory aiChatClientFactory;
+    private final UserConfigService userConfigService;
     private final AiAnalysisLogService aiAnalysisLogService;
     private final ScrappingDetailsTools detailsTools;
     private final ObjectMapper nullFallbackObjectmapper = new ObjectMapper()
@@ -147,12 +152,13 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
     }
 
     public AnalisysFactoryNotebookImpl(
-            ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
-            ObjectMapper objectMapper,
+            AiChatClientFactory aiChatClientFactory,
+            UserConfigService userConfigService,
             AiAnalysisLogService aiAnalysisLogService,
             ScrappingDetailsTools detailsTools) {
+        this.aiChatClientFactory = aiChatClientFactory;
+        this.userConfigService = userConfigService;
         this.aiAnalysisLogService = aiAnalysisLogService;
-        this.chatClient = initChatClient(chatClientBuilderProvider);
         this.detailsTools = detailsTools;
     }
 
@@ -169,10 +175,25 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         }
 
         ProductMonitor monitor = execution != null ? execution.getProductMonitor() : null;
-        log.info("Iniciando análise especializada de NOTEBOOK via Gemini para {} anúncios do monitor '{}'.",
-                listings.size(), monitor != null ? monitor.getName() : "N/A");
+        User user = monitor != null ? monitor.getUser() : null;
+        UserConfig userConfig = userConfigService.getConfigForUser(user);
 
-        if (!isChatClientAvailable(execution, listings.size())) {
+        log.info("Iniciando análise especializada de NOTEBOOK via {} ({}) para {} anúncios do monitor '{}'.",
+                userConfig.getAiVendor(), userConfig.getCheapModel(), listings.size(), monitor != null ? monitor.getName() : "N/A");
+
+        ChatClient chatClient = null;
+        try {
+            chatClient = aiChatClientFactory.getChatClient(userConfig.getAiVendor());
+        } catch (Exception e) {
+            log.warn("ChatClient ({}) não disponível: {}", userConfig.getAiVendor(), e.getMessage());
+        }
+
+        if (chatClient == null) {
+            log.warn("ChatClient ({}) não disponível no contexto. Aplicando fallback (MatchTier.NONE) para {} anúncios.",
+                    userConfig.getAiVendor(), listings.size());
+            if (execution != null) {
+                execution.setUsedFallback(true);
+            }
             return Collections.emptyList();
         }
 
@@ -181,7 +202,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
         for (int i = 0; i < listings.size(); i += BATCH_SIZE) {
             List<ScrapedListingDTO> batch = listings.subList(i, Math.min(i + BATCH_SIZE, listings.size()));
-            results.addAll(analyzeBatch(execution, batch, userCriteria, monitor));
+            results.addAll(analyzeBatch(execution, batch, userCriteria, monitor, chatClient, userConfig.getCheapModel()));
         }
 
         return results;
@@ -191,10 +212,11 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             ScrapingExecution execution,
             List<ScrapedListingDTO> batch,
             String userCriteria,
-            ProductMonitor monitor) {
+            ProductMonitor monitor,
+            ChatClient chatClient,
+            String modelName) {
 
         String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
-        String modelName = LlmModelEnum.GEMINI_2_5_FLASH_LITE.getModel();
         long timerStart = System.currentTimeMillis();
 
         String systemPrompt = String.format(
@@ -906,23 +928,5 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
         if (score >= 45)
             return MatchTier.LOW;
         return MatchTier.NONE;
-    }
-
-    private boolean isChatClientAvailable(ScrapingExecution execution, int listingsCount) {
-        if (this.chatClient == null) {
-            log.warn(
-                    "ChatClient (Spring AI / Gemini) não disponível no contexto. Aplicando fallback (MatchTier.NONE) para {} anúncios.",
-                    listingsCount);
-            if (execution != null) {
-                execution.setUsedFallback(true);
-            }
-            return false;
-        }
-        return true;
-    }
-
-    private ChatClient initChatClient(ObjectProvider<ChatClient.Builder> chatClientBuilderProvider) {
-        ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
-        return builder != null ? builder.build() : null;
     }
 }

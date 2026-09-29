@@ -1,9 +1,10 @@
 package br.dev.bielsolosos.biscraper.domain.monitoring.analysis.impl;
 
+import br.dev.bielsolosos.biscraper.core.config.AiChatClientFactory;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
+import br.dev.bielsolosos.biscraper.core.enums.ModelVendorEnum;
 import br.dev.bielsolosos.biscraper.core.enums.Vendor;
-import br.dev.bielsolosos.biscraper.domain.ai.model.AiAnalysisLog;
 import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
 import br.dev.bielsolosos.biscraper.domain.ai.tools.ScrappingDetailsTools;
 import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.AnalisysResponse;
@@ -12,17 +13,21 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.model.dto.ItemAna
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
+import br.dev.bielsolosos.biscraper.domain.users.model.User;
+import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
+import br.dev.bielsolosos.biscraper.domain.users.service.UserConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.beans.factory.ObjectProvider;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,10 +42,10 @@ import static org.mockito.Mockito.*;
 class AnalisysFactorySimpleImplTest {
 
     @Mock
-    private ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
+    private AiChatClientFactory aiChatClientFactory;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private ChatClient.Builder chatClientBuilder;
+    @Mock
+    private UserConfigService userConfigService;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ChatClient chatClient;
@@ -51,16 +56,32 @@ class AnalisysFactorySimpleImplTest {
     @Mock
     private ScrappingDetailsTools detailsTools;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     private ScrapingExecution execution;
     private ProductMonitor monitor;
+    private User user;
+    private UserConfig userConfig;
+
+    @InjectMocks
+    private AnalisysFactorySimpleImpl factory;
 
     @BeforeEach
     void setUp() {
+        user = User.builder().id(UUID.randomUUID()).username("testuser").build();
+
+        userConfig = UserConfig.builder()
+                .user(user)
+                .aiVendor(ModelVendorEnum.GEMINI)
+                .cheapModel("gemini-2.5-flash")
+                .strongModel("gemini-2.5-pro")
+                .build();
+
         monitor = new ProductMonitor();
         monitor.setId(UUID.randomUUID());
         monitor.setName("Notebook Gamer i7");
+        monitor.setUser(user);
 
         execution = ScrapingExecution.builder()
                 .id(UUID.randomUUID())
@@ -71,18 +92,14 @@ class AnalisysFactorySimpleImplTest {
     @Test
     @DisplayName("Deve retornar AnalysisType.SIMPLE")
     void shouldReturnCorrectAnalysisType() {
-        when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
         assertEquals(AnalysisType.SIMPLE, factory.getAnalisysType());
     }
 
     @Test
-    @DisplayName("Deve classificar anúncios em Tiers e salvar AiAnalysisLog quando Gemini responder com sucesso")
+    @DisplayName("Deve classificar anúncios em Tiers e salvar AiAnalysisLog quando IA responder com sucesso")
     void shouldClassifyItemsIntoTiersSuccessfully() throws Exception {
-        when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
-        when(chatClientBuilder.build()).thenReturn(chatClient);
-
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
+        when(userConfigService.getConfigForUser(user)).thenReturn(userConfig);
+        when(aiChatClientFactory.getChatClient(ModelVendorEnum.GEMINI)).thenReturn(chatClient);
 
         ScrapedListingDTO item1 = createListing("item-1", "Dell G15 i7 16GB RTX 3050", BigDecimal.valueOf(3500));
         ScrapedListingDTO item2 = createListing("item-2", "Acer Nitro 5 i5 8GB", BigDecimal.valueOf(2800));
@@ -98,7 +115,7 @@ class AnalisysFactorySimpleImplTest {
         org.springframework.ai.chat.model.ChatResponse mockResponse1 = mock(org.springframework.ai.chat.model.ChatResponse.class);
         org.springframework.ai.chat.model.Generation generation1 = mock(org.springframework.ai.chat.model.Generation.class);
         org.springframework.ai.chat.messages.AssistantMessage message1 = mock(org.springframework.ai.chat.messages.AssistantMessage.class);
-        
+
         when(mockResponse1.getResult()).thenReturn(generation1);
         when(generation1.getOutput()).thenReturn(message1);
         when(message1.getText()).thenReturn("Análise enriquecida preliminar dos anúncios com Tools");
@@ -106,10 +123,11 @@ class AnalisysFactorySimpleImplTest {
         org.springframework.ai.chat.model.ChatResponse mockResponse2 = mock(org.springframework.ai.chat.model.ChatResponse.class);
         org.springframework.ai.chat.model.Generation generation2 = mock(org.springframework.ai.chat.model.Generation.class);
         org.springframework.ai.chat.messages.AssistantMessage message2 = mock(org.springframework.ai.chat.messages.AssistantMessage.class);
-        
+
         when(mockResponse2.getResult()).thenReturn(generation2);
         when(generation2.getOutput()).thenReturn(message2);
-        when(message2.getText()).thenReturn(objectMapper.writeValueAsString(aiResponse));
+        String aiResponseJson = objectMapper.writeValueAsString(aiResponse);
+        when(message2.getText()).thenReturn(aiResponseJson);
 
         // Etapa 1
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpec1 = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
@@ -144,9 +162,8 @@ class AnalisysFactorySimpleImplTest {
     @Test
     @DisplayName("Deve aplicar fallback gracioso (MatchTier.NONE) quando ChatClient não estiver disponível")
     void shouldFallbackWhenChatClientUnavailable() {
-        when(chatClientBuilderProvider.getIfAvailable()).thenReturn(null);
-
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
+        when(userConfigService.getConfigForUser(user)).thenReturn(userConfig);
+        when(aiChatClientFactory.getChatClient(ModelVendorEnum.GEMINI)).thenReturn(null);
 
         ScrapedListingDTO item1 = createListing("item-1", "Notebook", BigDecimal.valueOf(3000));
         List<AnalisysResponse> results = factory.analizeScrappedItens(execution, List.of(item1));
@@ -158,12 +175,10 @@ class AnalisysFactorySimpleImplTest {
     }
 
     @Test
-    @DisplayName("Deve registrar log com status ERROR e aplicar fallback gracioso quando Gemini lançar exceção")
-    void shouldFallbackWhenGeminiThrowsException() {
-        when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
-        when(chatClientBuilder.build()).thenReturn(chatClient);
-
-        AnalisysFactorySimpleImpl factory = new AnalisysFactorySimpleImpl(chatClientBuilderProvider, objectMapper, aiAnalysisLogService, detailsTools);
+    @DisplayName("Deve registrar log com status ERROR e aplicar fallback gracioso quando IA lançar exceção")
+    void shouldFallbackWhenAiThrowsException() {
+        when(userConfigService.getConfigForUser(user)).thenReturn(userConfig);
+        when(aiChatClientFactory.getChatClient(ModelVendorEnum.GEMINI)).thenReturn(chatClient);
 
         org.springframework.ai.chat.client.ChatClient.CallResponseSpec callSpecEx = mock(org.springframework.ai.chat.client.ChatClient.CallResponseSpec.class);
         lenient().when(chatClient.prompt().tools(any()).options(any(ChatOptions.Builder.class)).messages(any(), any()).call()).thenReturn(callSpecEx);

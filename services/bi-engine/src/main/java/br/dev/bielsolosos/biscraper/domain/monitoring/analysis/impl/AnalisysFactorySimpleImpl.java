@@ -15,13 +15,12 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import br.dev.bielsolosos.biscraper.core.config.AiChatClientFactory;
 import br.dev.bielsolosos.biscraper.core.enums.AnalysisType;
-import br.dev.bielsolosos.biscraper.core.enums.LlmModelEnum;
 import br.dev.bielsolosos.biscraper.core.enums.MatchTier;
 import br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto;
 import br.dev.bielsolosos.biscraper.domain.ai.service.AiAnalysisLogService;
@@ -34,6 +33,9 @@ import br.dev.bielsolosos.biscraper.domain.monitoring.analysis.utils.AiAnalisysU
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ProductMonitor;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.ScrapingExecution;
 import br.dev.bielsolosos.biscraper.domain.monitoring.model.dto.scrapper.ScrapedListingDTO;
+import br.dev.bielsolosos.biscraper.domain.users.model.User;
+import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
+import br.dev.bielsolosos.biscraper.domain.users.service.UserConfigService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -82,21 +84,23 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             {"results":[{"id":"ID_DO_ANUNCIO","score":85.0,"reason":"justificativa curta"}]}
             """;
 
-    private final ChatClient chatClient;
+    private final AiChatClientFactory aiChatClientFactory;
+    private final UserConfigService userConfigService;
     private final ObjectMapper objectMapper;
     private final AiAnalysisLogService aiAnalysisLogService;
     private final ScrappingDetailsTools detailsTools;
 
     public AnalisysFactorySimpleImpl(
-            ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
+            AiChatClientFactory aiChatClientFactory,
+            UserConfigService userConfigService,
             ObjectMapper objectMapper,
             AiAnalysisLogService aiAnalysisLogService,
             ScrappingDetailsTools detailsTools
     ) {
+        this.aiChatClientFactory = aiChatClientFactory;
+        this.userConfigService = userConfigService;
         this.objectMapper = objectMapper;
         this.aiAnalysisLogService = aiAnalysisLogService;
-        ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
-        this.chatClient = builder != null ? builder.build() : null;
         this.detailsTools = detailsTools;
     }
 
@@ -112,13 +116,24 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         }
 
         ProductMonitor monitor = execution != null ? execution.getProductMonitor() : null;
+        User user = monitor != null ? monitor.getUser() : null;
+        UserConfig userConfig = userConfigService.getConfigForUser(user);
         String userCriteria = extractUserCriteria(monitor);
 
-        log.info("Iniciando análise SIMPLE via Gemini para {} anúncios do monitor '{}'.",
-                listings.size(), monitor != null ? monitor.getName() : "N/A");
+        log.info("Iniciando análise SIMPLE via {} ({}) para {} anúncios do monitor '{}'.",
+                userConfig.getAiVendor(), userConfig.getCheapModel(), listings.size(), monitor != null ? monitor.getName() : "N/A");
+
+        ChatClient chatClient = null;
+        try {
+            chatClient = aiChatClientFactory.getChatClient(userConfig.getAiVendor());
+        } catch (Exception e) {
+            log.warn("ChatClient ({}) não disponível: {}. Aplicando fallback gracioso (MatchTier.NONE) para {} itens.",
+                    userConfig.getAiVendor(), e.getMessage(), listings.size());
+        }
 
         if (chatClient == null) {
-            log.warn("ChatClient (Gemini) não disponível. Aplicando fallback gracioso (MatchTier.NONE) para {} itens.", listings.size());
+            log.warn("ChatClient ({}) não disponível. Aplicando fallback gracioso (MatchTier.NONE) para {} itens.",
+                    userConfig.getAiVendor(), listings.size());
             if (execution != null) execution.setUsedFallback(true);
             return createFallbackResponses(execution, listings);
         }
@@ -128,7 +143,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         // Particiona em lotes de até BATCH_SIZE (15) para otimização de custo e rate limit
         for (int i = 0; i < listings.size(); i += BATCH_SIZE) {
             List<ScrapedListingDTO> batch = listings.subList(i, Math.min(i + BATCH_SIZE, listings.size()));
-            responses.addAll(analyzeBatch(execution, batch, userCriteria));
+            responses.addAll(analyzeBatch(execution, batch, userCriteria, chatClient, userConfig.getCheapModel()));
         }
 
         return responses;
@@ -137,11 +152,12 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
     private List<AnalisysResponse> analyzeBatch(
             ScrapingExecution execution,
             List<ScrapedListingDTO> batch,
-            String userCriteria
+            String userCriteria,
+            ChatClient chatClient,
+            String modelName
     ) {
         String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
         ProductMonitor monitor = execution != null ? execution.getProductMonitor() : null;
-        String modelName = LlmModelEnum.GEMINI_2_5_FLASH_LITE.getModel();
 
         // ==============================================================================
         // ETAPA 1: Investigação e Coleta de Dados via Tool Calling (Saída telegráfica enxuta)

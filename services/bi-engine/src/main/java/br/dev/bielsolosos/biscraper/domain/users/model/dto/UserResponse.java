@@ -8,5 +8,6 @@ public record UserResponse(
         String username,
         String email,
         boolean active,
-        Set<String> roles
+        Set<String> roles,
+        UserConfigResponse config
 ) {}
