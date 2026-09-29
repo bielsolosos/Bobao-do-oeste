@@ -143,7 +143,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
         // Particiona em lotes de até BATCH_SIZE (15) para otimização de custo e rate limit
         for (int i = 0; i < listings.size(); i += BATCH_SIZE) {
             List<ScrapedListingDTO> batch = listings.subList(i, Math.min(i + BATCH_SIZE, listings.size()));
-            responses.addAll(analyzeBatch(execution, batch, userCriteria, chatClient, userConfig.getCheapModel()));
+            responses.addAll(analyzeBatch(execution, batch, userCriteria, chatClient, userConfig.getCheapModel(), userConfig.getAiVendor().name()));
         }
 
         return responses;
@@ -154,7 +154,8 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             List<ScrapedListingDTO> batch,
             String userCriteria,
             ChatClient chatClient,
-            String modelName
+            String modelName,
+            String vendorName
     ) {
         String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
         ProductMonitor monitor = execution != null ? execution.getProductMonitor() : null;
@@ -186,6 +187,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
+                    .vendor(vendorName != null ? vendorName : "GEMINI")
                     .itemsCount(batch.size())
                     .systemPrompt(step1SystemPrompt)
                     .userPrompt(step1UserPrompt)
@@ -198,12 +200,13 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
         } catch (Exception e) {
             int step1Duration = (int) (System.currentTimeMillis() - step1Start);
-            log.error("Erro na Etapa 1 (Investigação com Gemini): {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
+            log.error("Erro na Etapa 1 (Investigação com LLM): {}. Gravando log de erro e aplicando fallback.", e.getMessage(), e);
 
             AiAnalysisLogCreateDto errorDto = AiAnalysisLogCreateDto.builder()
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
+                    .vendor(vendorName != null ? vendorName : "GEMINI")
                     .itemsCount(batch.size())
                     .systemPrompt(step1SystemPrompt)
                     .userPrompt(step1UserPrompt)
@@ -246,6 +249,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
+                    .vendor(vendorName != null ? vendorName : "GEMINI")
                     .itemsCount(batch.size())
                     .systemPrompt(step2SystemPrompt)
                     .userPrompt(step2UserPrompt)
@@ -257,7 +261,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
             aiAnalysisLogService.saveLog(dtoBuilder);
 
             if (aiResponse == null || aiResponse.results() == null || aiResponse.results().isEmpty()) {
-                log.warn("Gemini retornou resposta vazia para o lote de {} itens na Etapa 2. Aplicando fallback.", batch.size());
+                log.warn("LLM retornou resposta vazia para o lote de {} itens na Etapa 2. Aplicando fallback.", batch.size());
                 if (execution != null) execution.setUsedFallback(true);
                 return createFallbackResponses(execution, batch);
             }
@@ -291,12 +295,13 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
 
         } catch (Exception e) {
             int step2Duration = (int) (System.currentTimeMillis() - step2Start);
-            log.error("Erro na Etapa 2 (Avaliação com Gemini): {}. Aplicando fallback.", e.getMessage(), e);
+            log.error("Erro na Etapa 2 (Avaliação com LLM): {}. Aplicando fallback.", e.getMessage(), e);
 
             var errorDto = br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto.builder()
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
+                    .vendor(vendorName != null ? vendorName : "GEMINI")
                     .itemsCount(batch.size())
                     .systemPrompt(step2SystemPrompt)
                     .userPrompt(step2UserPrompt)

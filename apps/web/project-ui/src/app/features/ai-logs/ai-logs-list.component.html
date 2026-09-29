@@ -1,7 +1,7 @@
 <app-ui-page-header
   eyebrow="Operação"
   title="Auditoria de IA"
-  subtitle="Histórico das chamadas do Gemini para classificar anúncios."
+  subtitle="Histórico e rastreamento de chamadas de IA para classificação de oportunidades."
 >
   <app-ui-button variant="secondary" (clicked)="loadLogs()">Atualizar</app-ui-button>
 </app-ui-page-header>
@@ -9,13 +9,15 @@
 <app-ui-card [noPadding]="true" extraClasses="mb-4">
   <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
     <div class="sm:col-span-2">
-      <label for="ailog-keyword" class="sr-only">Buscar por monitor, modelo ou vendor</label>
+      <label for="ailog-keyword" class="sr-only"
+        >Buscar por monitor, modelo, vendor, Job ID ou Request ID</label
+      >
       <input
         id="ailog-keyword"
         type="search"
         [value]="keyword()"
         (input)="onKeyword($event)"
-        placeholder="Buscar por monitor, modelo ou vendor"
+        placeholder="Buscar por monitor, modelo, vendor, Job ID ou Request ID"
         class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 placeholder:text-brand-950/40 focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
       />
     </div>
@@ -82,6 +84,12 @@
                   scope="col"
                   class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
                 >
+                  Rastreamento (Job / Req)
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-950/50"
+                >
                   Tokens (p/g/total)
                 </th>
                 <th
@@ -116,6 +124,18 @@
                   <td class="px-6 py-4 text-sm text-brand-950/80">
                     {{ log.modelName }}
                     <span class="text-xs text-brand-950/50">· {{ log.vendor }}</span>
+                  </td>
+                  <td class="px-6 py-4 text-xs font-mono text-brand-950/80">
+                    <div class="flex flex-col gap-0.5 max-w-[200px]">
+                      <span class="truncate" [title]="log.jobId || 'N/A'">
+                        <span class="text-brand-950/50 font-sans font-medium">Job:</span>
+                        {{ log.jobId || '—' }}
+                      </span>
+                      <span class="truncate" [title]="log.requestId || 'N/A'">
+                        <span class="text-brand-950/50 font-sans font-medium">Req:</span>
+                        {{ log.requestId || '—' }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-6 py-4 text-xs font-mono text-brand-950/80">
                     {{ log.promptTokens ?? '—' }} / {{ log.generationTokens ?? '—' }} /
@@ -171,6 +191,14 @@
       <div>
         <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Vendor</dt>
         <dd class="text-brand-950">{{ log.vendor }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Job ID</dt>
+        <dd class="font-mono text-xs text-brand-950 select-all">{{ log.jobId || '—' }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">Request ID</dt>
+        <dd class="font-mono text-xs text-brand-950 select-all">{{ log.requestId || '—' }}</dd>
       </div>
       <div>
         <dt class="text-xs font-semibold uppercase tracking-wider text-brand-950/50">

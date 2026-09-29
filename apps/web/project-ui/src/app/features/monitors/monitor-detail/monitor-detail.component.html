@@ -575,6 +575,23 @@
                     <span class="font-mono text-xs font-semibold text-brand-950">{{
                       log.modelName
                     }}</span>
+                    <span class="text-xs text-brand-950/50">· {{ log.vendor }}</span>
+                    @if (log.jobId) {
+                      <span
+                        class="font-mono text-[11px] text-brand-950/60"
+                        [title]="'Job: ' + log.jobId"
+                      >
+                        Job: {{ log.jobId }}
+                      </span>
+                    }
+                    @if (log.requestId) {
+                      <span
+                        class="font-mono text-[11px] text-brand-950/60"
+                        [title]="'Req: ' + log.requestId"
+                      >
+                        Req: {{ log.requestId }}
+                      </span>
+                    }
                     <app-ui-badge
                       [variant]="log.status === 'SUCCESS' ? 'success' : 'neutral'"
                       size="xs"
@@ -619,11 +636,21 @@
       @for (l of selectedListingLogs(); track l.id) {
         <div class="rounded-lg border border-brand-950/10 p-3 bg-brand-950/[0.01]">
           <div
-            class="flex items-center justify-between text-xs text-brand-950/60 pb-2 border-b border-brand-950/5"
+            class="flex flex-wrap items-center justify-between gap-2 text-xs text-brand-950/60 pb-2 border-b border-brand-950/5"
           >
             <span
               >Modelo: <strong class="text-brand-950">{{ l.modelName }}</strong></span
             >
+            @if (l.jobId) {
+              <span
+                >Job: <strong class="font-mono text-brand-950">{{ l.jobId }}</strong></span
+              >
+            }
+            @if (l.requestId) {
+              <span
+                >Req: <strong class="font-mono text-brand-950">{{ l.requestId }}</strong></span
+              >
+            }
             <span
               >Duração: <strong class="text-brand-950">{{ l.durationMs }}ms</strong></span
             >

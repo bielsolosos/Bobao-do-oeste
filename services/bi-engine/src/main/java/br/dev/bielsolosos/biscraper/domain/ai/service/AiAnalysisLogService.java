@@ -14,6 +14,7 @@ import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.service.MeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -69,9 +70,31 @@ public class AiAnalysisLogService {
     @Transactional
     public void saveLog(br.dev.bielsolosos.biscraper.domain.ai.model.dto.AiAnalysisLogCreateDto dto) {
         try {
+            String resolvedRequestId = dto.requestId();
+            if ((resolvedRequestId == null || resolvedRequestId.isBlank())
+                    && dto.scrapingExecution() != null
+                    && dto.scrapingExecution().getWebhookEvent() != null) {
+                resolvedRequestId = dto.scrapingExecution().getWebhookEvent().getRequestId();
+            }
+            if (resolvedRequestId == null || resolvedRequestId.isBlank()) {
+                resolvedRequestId = MDC.get("requestId");
+            }
+
+            String resolvedJobId = dto.jobId();
+            if ((resolvedJobId == null || resolvedJobId.isBlank())
+                    && dto.scrapingExecution() != null
+                    && dto.scrapingExecution().getWebhookEvent() != null) {
+                resolvedJobId = dto.scrapingExecution().getWebhookEvent().getJobId();
+            }
+            if (resolvedJobId == null || resolvedJobId.isBlank()) {
+                resolvedJobId = MDC.get("jobId");
+            }
+
             AiAnalysisLog aiLog = AiAnalysisLog.builder()
                     .productMonitor(dto.productMonitor())
                     .scrapingExecution(dto.scrapingExecution())
+                    .requestId(resolvedRequestId)
+                    .jobId(resolvedJobId)
                     .modelName(dto.modelName())
                     .vendor(dto.vendor() != null ? dto.vendor() : "GEMINI")
                     .itemsCount(dto.itemsCount())

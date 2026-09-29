@@ -8,6 +8,8 @@ public record AiAnalysisLogResponse(
     UUID productMonitorId,
     String productMonitorName,
     UUID scrapingExecutionId,
+    String requestId,
+    String jobId,
     String modelName,
     String vendor,
     int itemsCount,

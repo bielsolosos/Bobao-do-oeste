@@ -69,6 +69,10 @@ public class WebhookScrapperService {
                 WebhookEvent event = existingEvent.get();
                 event.setStatus("SUCCESS".equalsIgnoreCase(payload.status()) ? WebhookStatus.PROCESSED : WebhookStatus.FAILED);
 
+                if (payload.jobId() != null && !payload.jobId().isBlank()) {
+                    event.setJobId(payload.jobId());
+                }
+
                 if (payload.response() != null) {
                     event.setRawPayload(objectMapper.valueToTree(payload.response()));
                 }

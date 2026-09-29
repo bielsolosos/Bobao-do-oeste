@@ -202,7 +202,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
         for (int i = 0; i < listings.size(); i += BATCH_SIZE) {
             List<ScrapedListingDTO> batch = listings.subList(i, Math.min(i + BATCH_SIZE, listings.size()));
-            results.addAll(analyzeBatch(execution, batch, userCriteria, monitor, chatClient, userConfig.getCheapModel()));
+            results.addAll(analyzeBatch(execution, batch, userCriteria, monitor, chatClient, userConfig.getCheapModel(), userConfig.getAiVendor().name()));
         }
 
         return results;
@@ -214,7 +214,8 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
             String userCriteria,
             ProductMonitor monitor,
             ChatClient chatClient,
-            String modelName) {
+            String modelName,
+            String vendorName) {
 
         String itemsJson = AiAnalisysUtils.formatBatchForPrompt(batch);
         long timerStart = System.currentTimeMillis();
@@ -233,7 +234,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                     .tools(detailsTools)
                     .options(ChatOptions.builder()
                             .model(modelName)
-                            .temperature(0.2))
+                            .temperature(0.1))
                     .messages(new SystemMessage(systemPrompt), new UserMessage(itemsJson))
                     .call()
                     .chatResponse();
@@ -252,6 +253,7 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
+                    .vendor(vendorName != null ? vendorName : "GEMINI")
                     .itemsCount(batch.size())
                     .systemPrompt(systemPrompt)
                     .userPrompt(itemsJson)
@@ -283,13 +285,14 @@ public class AnalisysFactoryNotebookImpl implements AnalisysFactory {
 
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - timerStart;
-            log.error("Erro na análise do lote de notebooks via Gemini: {}. Gravando log de erro e aplicando fallback.",
+            log.error("Erro na análise do lote de notebooks via LLM: {}. Gravando log de erro e aplicando fallback.",
                     e.getMessage(), e);
 
             AiAnalysisLogCreateDto errorDto = AiAnalysisLogCreateDto.builder()
                     .productMonitor(monitor)
                     .scrapingExecution(execution)
                     .modelName(modelName)
+                    .vendor(vendorName != null ? vendorName : "GEMINI")
                     .itemsCount(batch.size())
                     .systemPrompt(systemPrompt)
                     .userPrompt(itemsJson)

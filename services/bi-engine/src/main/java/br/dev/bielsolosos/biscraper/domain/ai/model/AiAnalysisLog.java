@@ -32,6 +32,12 @@ public class AiAnalysisLog {
     @JoinColumn(name = "scraping_execution_id")
     private ScrapingExecution scrapingExecution;
 
+    @Column(name = "request_id", length = 255)
+    private String requestId;
+
+    @Column(name = "job_id", length = 255)
+    private String jobId;
+
     @Column(name = "model_name", nullable = false, length = 100)
     private String modelName;
 

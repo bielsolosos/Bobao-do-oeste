@@ -3,6 +3,8 @@ export interface AiAnalysisLogResponse {
   productMonitorId?: string;
   productMonitorName?: string;
   scrapingExecutionId?: string;
+  requestId?: string;
+  jobId?: string;
   modelName: string;
   vendor: string;
   itemsCount: number;

@@ -10,6 +10,8 @@ import org.springframework.ai.chat.metadata.Usage;
 public record AiAnalysisLogCreateDto(
         ProductMonitor productMonitor,
         ScrapingExecution scrapingExecution,
+        String requestId,
+        String jobId,
         String modelName,
         String vendor,
         int itemsCount,

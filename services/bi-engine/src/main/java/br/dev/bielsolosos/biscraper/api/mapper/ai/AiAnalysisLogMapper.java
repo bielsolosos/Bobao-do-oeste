@@ -13,11 +13,23 @@ public class AiAnalysisLogMapper {
             return null;
         }
 
+        String requestId = log.getRequestId();
+        if (requestId == null && log.getScrapingExecution() != null && log.getScrapingExecution().getWebhookEvent() != null) {
+            requestId = log.getScrapingExecution().getWebhookEvent().getRequestId();
+        }
+
+        String jobId = log.getJobId();
+        if (jobId == null && log.getScrapingExecution() != null && log.getScrapingExecution().getWebhookEvent() != null) {
+            jobId = log.getScrapingExecution().getWebhookEvent().getJobId();
+        }
+
         return new AiAnalysisLogResponse(
                 log.getId(),
                 log.getProductMonitor() != null ? log.getProductMonitor().getId() : null,
                 log.getProductMonitor() != null ? log.getProductMonitor().getName() : null,
                 log.getScrapingExecution() != null ? log.getScrapingExecution().getId() : null,
+                requestId,
+                jobId,
                 log.getModelName(),
                 log.getVendor(),
                 log.getItemsCount(),

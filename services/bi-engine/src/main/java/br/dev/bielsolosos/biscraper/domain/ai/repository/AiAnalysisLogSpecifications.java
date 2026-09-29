@@ -30,7 +30,9 @@ public final class AiAnalysisLogSpecifications {
                 predicates.add(cb.or(
                         cb.like(cb.lower(monitorJoin.get("name")), like),
                         cb.like(cb.lower(root.get("modelName")), like),
-                        cb.like(cb.lower(root.get("vendor")), like)
+                        cb.like(cb.lower(root.get("vendor")), like),
+                        cb.like(cb.lower(root.get("requestId")), like),
+                        cb.like(cb.lower(root.get("jobId")), like)
                 ));
             }
 
