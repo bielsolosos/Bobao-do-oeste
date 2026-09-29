@@ -87,4 +87,39 @@ class ScraperHttpClientTest {
 
         mockServer.verify();
     }
+
+    @Test
+    @DisplayName("Deve enviar GET para endpoint de imagem com Basic Auth e retornar bytes")
+    void shouldScrapeImageDetailsSuccessfully() {
+        String expectedAuth = "Basic " + Base64.getEncoder().encodeToString("testuser:testpass".getBytes(StandardCharsets.UTF_8));
+        byte[] expectedBytes = new byte[]{1, 2, 3, 4, 5};
+
+        mockServer.expect(requestTo("http://localhost:8000/api/v1/images/img-1.jpg"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, expectedAuth))
+                .andRespond(withSuccess(expectedBytes, MediaType.IMAGE_JPEG));
+
+        byte[] result = scraperHttpClient.scrapeImageDetails("/api/v1/images/img-1.jpg");
+
+        assertNotNull(result);
+        assertArrayEquals(expectedBytes, result);
+
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("Deve retornar null quando ocorrer erro ao buscar imagem")
+    void shouldReturnNullWhenScrapeImageDetailsFails() {
+        String expectedAuth = "Basic " + Base64.getEncoder().encodeToString("testuser:testpass".getBytes(StandardCharsets.UTF_8));
+
+        mockServer.expect(requestTo("http://localhost:8000/api/v1/images/img-not-found.jpg"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, expectedAuth))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withServerError());
+
+        byte[] result = scraperHttpClient.scrapeImageDetails("/api/v1/images/img-not-found.jpg");
+
+        assertNull(result);
+        mockServer.verify();
+    }
 }

@@ -6,13 +6,14 @@ import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeDeta
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.ScrapeDetailResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
@@ -22,12 +23,20 @@ public class ScrappingDetailsTools {
     private final ScraperHttpClient scraperHttpClient;
 
     public record ListingDetailsDto(
+            String originalUrl,
             String title,
             String description,
-            List<String> urlImages,
-            Map<String, Object> properties
-    ) {}
-    
+            Map<String, Object> properties) {
+    }
+
+    public record ListingDetailsWithImagesDto(
+            String originalUrl,
+            String title,
+            String description,
+            Map<String, byte[]> images,
+            Map<String, Object> properties) {
+    }
+
     @Tool(description = """
             Busca detalhes completos, descrição integral e atributos técnicos diretamente da página de um anúncio no marketplace.
             REGRAS CRÍTICAS DE USO (NÃO FAÇA SPAM):
@@ -40,24 +49,28 @@ public class ScrappingDetailsTools {
             @ToolParam(description = "Vendor from site that was scraped (OLX, MERCADO_LIVRE)") Vendor vendor,
             @ToolParam(description = "Scraped listing URL") String url) {
 
-        log.info( "======================================================== TOOL ACIONADA =============================================================");
+        log.info(
+                "======================================================== TOOL ACIONADA =============================================================");
         log.info("Tool ScrappingDetailsTools chamada para vendor={} e url={}", vendor, url);
 
-        try {                                                               // Não baixa as imagens e nem força o browser
-            ScrapeDetailResponse response = scraperHttpClient.scrapeDetail(new ScrapeDetailRequest(url, vendor, false, 24, false));
+        try { // Não baixa as imagens e nem força o browser
+            ScrapeDetailResponse response = scraperHttpClient
+                    .scrapeDetail(new ScrapeDetailRequest(url, vendor, false, 24, false));
 
-            if (response != null && response.success() && response.data() != null) {
-                var data = response.data();
-                
-                return new ListingDetailsDto(
-                        data.title(),
-                        sanitizeDescription(data.description()),
-                        null,
-                        data.properties() != null ? data.properties() : Collections.emptyMap()
-                );
+            if (response == null || !response.success() || response.data() == null) {
+                log.warn("Falha ao obter detalhes do anúncio {}: {}", url,
+                        response != null ? response.errorMessage() : "Resposta nula");
+                return new ListingDetailsDto(null, null, null, Collections.emptyMap());
             }
-            log.warn("Falha ao obter detalhes do anúncio {}: {}", url, response != null ? response.errorMessage() : "Resposta nula");
-            return new ListingDetailsDto(null, null, null, Collections.emptyMap());
+
+            var data = response.data();
+
+            return new ListingDetailsDto(
+                    url,
+                    data.title(),
+                    sanitizeDescription(data.description()),
+                    data.properties() != null ? data.properties() : Collections.emptyMap());
+                    
         } catch (Exception e) {
             log.error("Erro ao executar tool getAdditionalInfo para url {}: {}", url, e.getMessage(), e);
             return new ListingDetailsDto(null, null, null, Collections.emptyMap());
@@ -73,33 +86,55 @@ public class ScrappingDetailsTools {
             3. NUNCA acione esta ferramenta se o título e o resumo fornecidos já tiverem informações suficientes para confirmar o item.
             4. USO CIRÚRGICO: Acione apenas para candidatos com potencial real cujos detalhes técnicos ou estado visual sejam ambíguos ou incompletos.
             """)
-    public ListingDetailsDto getAdditionalInfoAndImages(
+    public ListingDetailsWithImagesDto getAdditionalInfoAndImages(
             @ToolParam(description = "Vendor from site that was scraped (OLX, MERCADO_LIVRE)") Vendor vendor,
             @ToolParam(description = "Scraped listing URL") String url) {
 
-        log.info("======================================================== TOOL IMAGEM ACIONADA =============================================================");
+        log.info(
+                "======================================================== TOOL IMAGEM ACIONADA =============================================================");
         log.info("Tool ScrappingDetailsTools chamada para vendor={} e url={}", vendor, url);
 
         try {
-            ScrapeDetailResponse response = scraperHttpClient.scrapeDetail(new ScrapeDetailRequest(url, vendor, true, 24, false));
+            ScrapeDetailResponse response = scraperHttpClient
+                    .scrapeDetail(new ScrapeDetailRequest(url, vendor, true, 24, false));
 
-            if (response != null && response.success() && response.data() != null) {
-                var data = response.data();
-
-                return new ListingDetailsDto(
-                        data.title(),
-                        sanitizeDescription(data.description()),
-                        data.cachedImages() != null
-                                ? data.cachedImages().stream().map(item -> item.fullEndpointUrl()).toList()
-                                : Collections.emptyList(),
-                        data.properties() != null ? data.properties() : Collections.emptyMap()
-                );
+            if (response == null || !response.success() || response.data() == null) {
+                log.warn("Falha ao obter detalhes do anúncio {}: {}", url,
+                        response != null ? response.errorMessage() : "Resposta nula");
+                return new ListingDetailsWithImagesDto(null, null, null, Collections.emptyMap(), Collections.emptyMap());
             }
-            log.warn("Falha ao obter detalhes do anúncio {}: {}", url, response != null ? response.errorMessage() : "Resposta nula");
-            return new ListingDetailsDto(null, null, null, Collections.emptyMap());
+
+            var data = response.data();
+
+            Map<String, byte[]> images = new ConcurrentHashMap<>();
+            
+            if (data.cachedImages() != null) {
+                
+                data.cachedImages().parallelStream().forEach(item -> {
+
+                    if (item != null && item.endpointUrl() != null) {
+
+                        byte[] content = scraperHttpClient.scrapeImageDetails(item.endpointUrl());
+
+                        if (content != null && content.length > 0) {
+                            String key = item.originalUrl() != null ? item.originalUrl() : item.endpointUrl();
+                            images.put(key, content);
+                        }
+
+                    }
+                });
+            }
+
+            return new ListingDetailsWithImagesDto(
+                    url,
+                    data.title(),
+                    sanitizeDescription(data.description()),
+                    images,
+                    data.properties() != null ? data.properties() : Collections.emptyMap());
+
         } catch (Exception e) {
             log.error("Erro ao executar tool getAdditionalInfoAndImages para url {}: {}", url, e.getMessage(), e);
-            return new ListingDetailsDto(null, null, null, Collections.emptyMap());
+            return new ListingDetailsWithImagesDto(null, null, null, Collections.emptyMap(), Collections.emptyMap());
         }
     }
 
