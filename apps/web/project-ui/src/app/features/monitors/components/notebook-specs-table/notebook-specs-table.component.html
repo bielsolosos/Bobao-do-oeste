@@ -194,7 +194,9 @@
         <strong class="text-brand-950">{{ filteredAndSortedSpecsListings().length }}</strong>
         notebooks encontrados</span
       >
-      <span class="text-[11px] text-brand-950/40">Dica: clique no cabeçalho das colunas para ordenar</span>
+      <span class="text-[11px] text-brand-950/40"
+        >Dica: clique no cabeçalho das colunas para ordenar</span
+      >
     </div>
 
     <div class="overflow-x-auto">
@@ -726,7 +728,9 @@
                 REPROVADO PELA IA
               </span>
             } @else {
-              <span class="rounded bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-700">
+              <span
+                class="rounded bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-700"
+              >
                 APROVADO
               </span>
             }
@@ -754,7 +758,9 @@
 
       <!-- Notas da Avaliação de IA (evaluationNotes) -->
       @if (specs?.evaluationNotes && specs.evaluationNotes.length > 0) {
-        <div class="rounded-xl border border-brand-amber-strong/20 bg-brand-amber-strong/[0.04] p-4">
+        <div
+          class="rounded-xl border border-brand-amber-strong/20 bg-brand-amber-strong/[0.04] p-4"
+        >
           <div class="flex items-center gap-2 mb-2">
             <svg
               class="h-4 w-4 text-brand-amber-strong"
@@ -978,4 +984,3 @@
     </div>
   }
 </app-ui-dialog>
-

@@ -29,7 +29,14 @@ spring:
       genai:
         api-key: ${GEMINI_API_KEY:AIzaSyBnjz8fLgcPeOOexLPVIfXU8w5HiQaqB7Q}
         chat:
-          model: ${GEMINI_MODEL:gemini-2.5-flash}
+          options:
+            model: ${GEMINI_MODEL:gemini-2.5-flash}
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:dummy-deepseek-api-key}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
 
 biscraper:
   jwt:

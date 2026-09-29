@@ -1,6 +1,5 @@
 package br.dev.bielsolosos.biscraper.infrastructure.client.scraper;
 
-import br.dev.bielsolosos.biscraper.core.enums.Vendor;
 import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrapeClientRequest;
 import br.dev.bielsolosos.biscraper.infrastructure.client.scraper.dto.AsyncScrapeClientResponse;
@@ -85,5 +84,19 @@ public class ScraperHttpClient {
     private String getBasicAuthHeader() {
         String auth = properties.getScraper().getUsername() + ":" + properties.getScraper().getPassword();
         return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public byte[] scrapeImageDetails(String endpointUrl) {
+        String authHeader = getBasicAuthHeader();
+        try {
+            return restClient.get()
+                    .uri(endpointUrl)
+                    .header(HttpHeaders.AUTHORIZATION, authHeader)
+                    .retrieve()
+                    .body(byte[].class);
+        } catch (Exception e) {
+            log.warn("Não foi possível obter imagem do Scraper Python para o endpoint '{}': {}", endpointUrl, e.getMessage());
+            return null;
+        }
     }
 }
