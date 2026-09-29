@@ -32,7 +32,7 @@ spring:
           options:
             model: ${GEMINI_MODEL:gemini-2.5-flash}
     deepseek:
-      api-key: ${DEEPSEEK_API_KEY:dummy-deepseek-api-key}
+      api-key: ${DEEPSEEK_API_KEY}
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       chat:
         options:
