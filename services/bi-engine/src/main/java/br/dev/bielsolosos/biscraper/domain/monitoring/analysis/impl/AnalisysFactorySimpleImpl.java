@@ -157,7 +157,7 @@ public class AnalisysFactorySimpleImpl implements AnalisysFactory {
                     .tools(detailsTools)
                     .options(ChatOptions.builder()
                             .model(modelName)
-                            .temperature(0.2))
+                            .temperature(0.1))
                     .messages(new SystemMessage(step1SystemPrompt), new UserMessage(step1UserPrompt))
                     .call()
                     .chatResponse();
