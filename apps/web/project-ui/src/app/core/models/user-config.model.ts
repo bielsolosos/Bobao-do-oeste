@@ -1,22 +1,26 @@
-export type ModelVendor = 'GEMINI' | 'DEEPSEEK' | 'OLLAMA';
+export type ModelVendor = 'GEMINI' | 'DEEPSEEK';
 
-export type ModelTier = 'CHEAP' | 'STRONG';
+export interface ModelOptionDto {
+  id: string;
+  name: string;
+  description: string;
+}
 
-export interface LlmModelOption {
-  modelId: string;
+export interface VendorModelsDto {
+  vendor: ModelVendor;
   displayName: string;
-  tier: ModelTier;
+  cheapModels: ModelOptionDto[];
+  strongModels: ModelOptionDto[];
+}
+
+export interface AvailableAiModelsResponse {
+  vendors: VendorModelsDto[];
 }
 
 export interface UserConfig {
   aiVendor: ModelVendor;
   cheapModel: string;
   strongModel: string;
-}
-
-export interface AvailableAiModelsResponse {
-  vendors: ModelVendor[];
-  modelsByVendor: Record<string, LlmModelOption[]>;
 }
 
 export interface UpdateUserConfigRequest {

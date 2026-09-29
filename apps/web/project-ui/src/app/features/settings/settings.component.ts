@@ -3,8 +3,9 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   AvailableAiModelsResponse,
-  LlmModelOption,
+  ModelOptionDto,
   ModelVendor,
+  VendorModelsDto,
 } from '../../core/models/user-config.model';
 import { AuthService } from '../../core/services/auth.service';
 import { UserConfigService } from '../../core/services/user-config.service';
@@ -14,6 +15,17 @@ import { UiFormFieldComponent } from '../../shared/components/ui-form-field/ui-f
 import { UiPageHeaderComponent } from '../../shared/components/ui-page-header/ui-page-header.component';
 import { UiStatePanelComponent } from '../../shared/components/ui-state-panel/ui-state-panel.component';
 import { UiToastService } from '../../shared/components/ui-toast/ui-toast.service';
+
+interface VendorDisplayOption {
+  value: ModelVendor;
+  label: string;
+  badge: string;
+  tagline: string;
+  description: string;
+  recommendedFor: string;
+  iconBg: string;
+  accentColor: string;
+}
 
 @Component({
   selector: 'app-settings',
@@ -40,6 +52,32 @@ export class SettingsComponent implements OnInit {
   loadError = signal(false);
 
   availableModels = signal<AvailableAiModelsResponse | null>(null);
+  selectedVendor = signal<ModelVendor>('GEMINI');
+
+  readonly vendorDisplayOptions: VendorDisplayOption[] = [
+    {
+      value: 'GEMINI',
+      label: 'Google Gemini',
+      badge: 'Google AI',
+      tagline: 'Velocidade extrema e suporte multimodal nativo',
+      description:
+        'Excelente para triagem rápida, leitura ágil de fotos de anúncios e baixíssima latência na esteira de scraping.',
+      recommendedFor: 'Recomendado para monitoramentos em tempo real e alto volume de itens',
+      iconBg: 'bg-amber-500/10 text-brand-amber-strong border-brand-amber/20',
+      accentColor: 'border-brand-amber ring-2 ring-brand-amber/20 bg-brand-amber/[0.03]',
+    },
+    {
+      value: 'DEEPSEEK',
+      label: 'DeepSeek',
+      badge: 'DeepSeek AI',
+      tagline: 'Raciocínio lógico refinado e alto custo-benefício',
+      description:
+        'Ideal para análises minuciosas de descrições complexas, desambiguação rigorosa de hardware e filtros profundos.',
+      recommendedFor: 'Recomendado para avaliações complexas e especificações difíceis',
+      iconBg: 'bg-sky-500/10 text-sky-600 border-sky-500/20',
+      accentColor: 'border-sky-500 ring-2 ring-sky-500/20 bg-sky-500/[0.03]',
+    },
+  ];
 
   form = this.fb.group({
     aiVendor: ['GEMINI' as ModelVendor, [Validators.required]],
@@ -47,63 +85,28 @@ export class SettingsComponent implements OnInit {
     strongModel: ['', [Validators.required]],
   });
 
-  selectedVendor = signal<ModelVendor>('GEMINI');
-
-  vendorOptions: {
-    value: ModelVendor;
-    label: string;
-    description: string;
-    badge: string;
-    icon: string;
-  }[] = [
-    {
-      value: 'GEMINI',
-      label: 'Google Gemini',
-      description: 'Modelos multimodais de alta velocidade e contexto ultra-amplo.',
-      badge: 'Google',
-      icon: 'sparkles',
-    },
-    {
-      value: 'DEEPSEEK',
-      label: 'DeepSeek',
-      description: 'Modelos de raciocínio profundo e excelente relação custo-benefício.',
-      badge: 'DeepSeek',
-      icon: 'cpu-chip',
-    },
-    {
-      value: 'OLLAMA',
-      label: 'Ollama (Local / On-Premise)',
-      description: 'Execução de modelos open-source locais para privacidade total.',
-      badge: 'Self-Hosted',
-      icon: 'server',
-    },
-  ];
-
-  availableCheapModels = computed<LlmModelOption[]>(() => {
-    const models = this.availableModels();
+  currentVendorData = computed<VendorModelsDto | undefined>(() => {
+    const data = this.availableModels();
     const vendor = this.selectedVendor();
-    if (!models || !models.modelsByVendor || !models.modelsByVendor[vendor]) {
-      return [];
-    }
-    return models.modelsByVendor[vendor].filter((m) => m.tier === 'CHEAP');
+    if (!data?.vendors) return undefined;
+    return data.vendors.find((v) => v.vendor === vendor);
   });
 
-  availableStrongModels = computed<LlmModelOption[]>(() => {
-    const models = this.availableModels();
-    const vendor = this.selectedVendor();
-    if (!models || !models.modelsByVendor || !models.modelsByVendor[vendor]) {
-      return [];
-    }
-    return models.modelsByVendor[vendor].filter((m) => m.tier === 'STRONG');
+  availableCheapModels = computed<ModelOptionDto[]>(() => {
+    return this.currentVendorData()?.cheapModels ?? [];
+  });
+
+  availableStrongModels = computed<ModelOptionDto[]>(() => {
+    return this.currentVendorData()?.strongModels ?? [];
   });
 
   ngOnInit() {
     this.loadData();
 
     this.form.get('aiVendor')?.valueChanges.subscribe((vendor) => {
-      if (vendor) {
-        this.selectedVendor.set(vendor as ModelVendor);
-        this.autoSelectModelsForVendor(vendor as ModelVendor);
+      if (vendor && (vendor === 'GEMINI' || vendor === 'DEEPSEEK')) {
+        this.selectedVendor.set(vendor);
+        this.autoSelectModelsForVendor(vendor);
       }
     });
   }
@@ -113,30 +116,30 @@ export class SettingsComponent implements OnInit {
     this.loadError.set(false);
 
     this.userConfigService.getAvailableModels().subscribe({
-      next: (models) => {
-        this.availableModels.set(models);
+      next: (response) => {
+        this.availableModels.set(response);
 
         const currentConfig = this.authService.currentUser()?.config;
         if (currentConfig) {
-          this.selectedVendor.set(currentConfig.aiVendor || 'GEMINI');
+          const vendor: ModelVendor = currentConfig.aiVendor === 'DEEPSEEK' ? 'DEEPSEEK' : 'GEMINI';
+          this.selectedVendor.set(vendor);
           this.form.patchValue({
-            aiVendor: currentConfig.aiVendor || 'GEMINI',
+            aiVendor: vendor,
             cheapModel: currentConfig.cheapModel || '',
             strongModel: currentConfig.strongModel || '',
           });
+          this.ensureValidSelection(vendor);
         } else {
           this.authService.loadMe().subscribe((user) => {
             const config = user?.config;
-            const vendor = config?.aiVendor || 'GEMINI';
+            const vendor: ModelVendor = config?.aiVendor === 'DEEPSEEK' ? 'DEEPSEEK' : 'GEMINI';
             this.selectedVendor.set(vendor);
             this.form.patchValue({
               aiVendor: vendor,
               cheapModel: config?.cheapModel || '',
               strongModel: config?.strongModel || '',
             });
-            if (!config?.cheapModel || !config?.strongModel) {
-              this.autoSelectModelsForVendor(vendor);
-            }
+            this.ensureValidSelection(vendor);
           });
         }
 
@@ -151,38 +154,48 @@ export class SettingsComponent implements OnInit {
   }
 
   selectVendor(vendor: ModelVendor) {
-    this.form.patchValue({ aiVendor: vendor });
-    this.form.markAsDirty();
+    if (this.form.get('aiVendor')?.value !== vendor) {
+      this.form.patchValue({ aiVendor: vendor });
+      this.form.markAsDirty();
+    }
   }
 
-  private autoSelectModelsForVendor(vendor: ModelVendor) {
-    const models = this.availableModels();
-    if (!models || !models.modelsByVendor || !models.modelsByVendor[vendor]) return;
-
-    const vendorModels = models.modelsByVendor[vendor];
-    const cheap =
-      vendorModels.find((m) => m.tier === 'CHEAP')?.modelId || vendorModels[0]?.modelId || '';
-    const strong =
-      vendorModels.find((m) => m.tier === 'STRONG')?.modelId || vendorModels[0]?.modelId || '';
+  private ensureValidSelection(vendor: ModelVendor) {
+    const vendorData = this.availableModels()?.vendors?.find((v) => v.vendor === vendor);
+    if (!vendorData) return;
 
     const currentCheap = this.form.get('cheapModel')?.value;
     const currentStrong = this.form.get('strongModel')?.value;
 
-    const cheapExists = vendorModels.some((m) => m.modelId === currentCheap && m.tier === 'CHEAP');
-    const strongExists = vendorModels.some(
-      (m) => m.modelId === currentStrong && m.tier === 'STRONG',
-    );
+    const cheapValid = vendorData.cheapModels.some((m) => m.id === currentCheap);
+    const strongValid = vendorData.strongModels.some((m) => m.id === currentStrong);
 
     this.form.patchValue({
-      cheapModel: cheapExists ? currentCheap : cheap,
-      strongModel: strongExists ? currentStrong : strong,
+      cheapModel: cheapValid ? currentCheap : vendorData.cheapModels[0]?.id || '',
+      strongModel: strongValid ? currentStrong : vendorData.strongModels[0]?.id || '',
+    });
+  }
+
+  private autoSelectModelsForVendor(vendor: ModelVendor) {
+    const vendorData = this.availableModels()?.vendors?.find((v) => v.vendor === vendor);
+    if (!vendorData) return;
+
+    const currentCheap = this.form.get('cheapModel')?.value;
+    const currentStrong = this.form.get('strongModel')?.value;
+
+    const cheapValid = vendorData.cheapModels.some((m) => m.id === currentCheap);
+    const strongValid = vendorData.strongModels.some((m) => m.id === currentStrong);
+
+    this.form.patchValue({
+      cheapModel: cheapValid ? currentCheap : vendorData.cheapModels[0]?.id || '',
+      strongModel: strongValid ? currentStrong : vendorData.strongModels[0]?.id || '',
     });
   }
 
   onSubmit() {
     this.form.markAllAsTouched();
     if (this.form.invalid) {
-      this.toast.warning('Atenção', 'Preencha todos os campos obrigatórios.');
+      this.toast.warning('Atenção', 'Selecione os modelos válidos para continuar.');
       return;
     }
 

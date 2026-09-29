@@ -49,7 +49,11 @@ export interface TabItem {
                 class="flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3.5 text-sm font-medium transition-colors"
               >
                 @if (tab.icon) {
-                  <span [innerHTML]="tab.icon" class="h-5 w-5" aria-hidden="true"></span>
+                  <span
+                    [innerHTML]="tab.icon"
+                    class="h-5 w-5 flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 [&_svg]:fill-none [&_svg]:stroke-current"
+                    aria-hidden="true"
+                  ></span>
                 }
                 {{ tab.label }}
                 @if (tab.badge !== undefined) {

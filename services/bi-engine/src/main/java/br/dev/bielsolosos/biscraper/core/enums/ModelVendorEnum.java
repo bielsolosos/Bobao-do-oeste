@@ -9,8 +9,7 @@ import java.util.Locale;
 @AllArgsConstructor
 public enum ModelVendorEnum {
     GEMINI("googleGenAiChatModel", "Google Gemini"),
-    DEEPSEEK("deepSeekChatModel", "DeepSeek"),
-    OLLAMA("ollamaChatModel", "Ollama");
+    DEEPSEEK("deepSeekChatModel", "DeepSeek");
 
     private final String value;
     private final String displayName;
@@ -23,7 +22,6 @@ public enum ModelVendorEnum {
         return switch (value.trim().toUpperCase(Locale.ROOT)) {
             case "GEMINI", "GOOGLE", "GOOGLE_GENAI", "GOOGLEGENAI" -> GEMINI;
             case "DEEPSEEK" -> DEEPSEEK;
-            case "OLLAMA" -> OLLAMA;
             default -> throw new IllegalArgumentException("Unsupported model vendor: " + value);
         };
     }

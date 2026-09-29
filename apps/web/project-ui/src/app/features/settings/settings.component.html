@@ -1,237 +1,284 @@
 <div class="mx-auto max-w-4xl space-y-6 pb-12">
   <app-ui-page-header
     title="Configurações de Inteligência Artificial"
-    subtitle="Personalize o provedor padrão de IA e a escolha de modelos para extração e análise dos seus monitores"
+    subtitle="Configure o provedor e os modelos de linguagem que processarão a triagem e avaliação dos seus monitores"
   >
   </app-ui-page-header>
 
   @if (isLoading()) {
     <div class="space-y-4">
-      <div class="h-48 animate-pulse rounded-xl bg-surface"></div>
-      <div class="h-64 animate-pulse rounded-xl bg-surface"></div>
+      <div class="h-44 animate-pulse rounded-xl bg-surface border border-brand-950/10"></div>
+      <div class="h-64 animate-pulse rounded-xl bg-surface border border-brand-950/10"></div>
     </div>
   } @else if (loadError()) {
     <app-ui-state-panel
       type="error"
       title="Erro ao carregar configurações"
-      description="Não foi possível obter o catálogo de modelos disponíveis. Verifique sua conexão e tente novamente."
+      description="Não foi possível obter o catálogo de modelos disponíveis. Verifique a conexão com o servidor e tente novamente."
       actionLabel="Tentar novamente"
       (action)="loadData()"
     ></app-ui-state-panel>
   } @else {
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
-      <!-- Card: Provedor de IA -->
+      <!-- 1. SELEÇÃO DO PROVEDOR (VENDOR) -->
       <app-ui-card
-        title="Provedor de IA (Vendor)"
-        subtitle="Selecione o ecossistema de modelos de linguagem que será utilizado para avaliar os anúncios"
+        title="1. Provedor de IA Padrão"
+        subtitle="Escolha o provedor de IA que executará a extração e a pontuação dos seus anúncios de marketplace"
       >
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          @for (option of vendorOptions; track option.value) {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          @for (option of vendorDisplayOptions; track option.value) {
             <button
               type="button"
               (click)="selectVendor(option.value)"
-              class="relative flex cursor-pointer flex-col justify-between rounded-xl border p-4 text-left transition-all duration-200 hover:border-brand-amber hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-amber"
-              [class.border-brand-amber]="form.get('aiVendor')?.value === option.value"
-              [class.bg-brand-amber/5]="form.get('aiVendor')?.value === option.value"
-              [class.border-brand-950/10]="form.get('aiVendor')?.value !== option.value"
-              [class.bg-surface]="form.get('aiVendor')?.value !== option.value"
+              class="group relative flex flex-col justify-between rounded-xl border p-5 text-left transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-amber cursor-pointer"
+              [ngClass]="
+                selectedVendor() === option.value
+                  ? option.accentColor + ' shadow-sm'
+                  : 'border-brand-950/10 bg-surface hover:border-brand-950/20 hover:bg-brand-950/[0.01]'
+              "
             >
-              <div class="flex items-start justify-between w-full">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-950/5 text-brand-950 font-bold"
-                  >
-                    @if (option.value === 'GEMINI') {
-                      <svg
-                        class="h-5 w-5 text-brand-amber-strong"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                        />
-                      </svg>
-                    } @else if (option.value === 'DEEPSEEK') {
-                      <svg
-                        class="h-5 w-5 text-sky-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z"
-                        />
-                      </svg>
-                    } @else {
-                      <svg
-                        class="h-5 w-5 text-emerald-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.75 5.1a1.5 1.5 0 011.2-.6h10.1a1.5 1.5 0 011.2.6l1.65 3.45a4.5 4.5 0 01.9 2.7"
-                        />
-                      </svg>
-                    }
-                  </span>
-                  <span class="font-semibold text-brand-950">{{ option.label }}</span>
+              <div>
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="flex h-10 w-10 items-center justify-center rounded-xl border font-bold shadow-xs transition-transform duration-200 group-hover:scale-105"
+                      [ngClass]="option.iconBg"
+                    >
+                      @if (option.value === 'GEMINI') {
+                        <svg
+                          class="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
+                          />
+                        </svg>
+                      } @else {
+                        <svg
+                          class="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z"
+                          />
+                        </svg>
+                      }
+                    </span>
+                    <div>
+                      <h4 class="font-display font-bold text-brand-950 text-base">
+                        {{ option.label }}
+                      </h4>
+                      <p class="text-xs text-brand-950/50 font-medium">{{ option.tagline }}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center">
+                    <span
+                      class="flex h-5 w-5 items-center justify-center rounded-full border transition-colors"
+                      [ngClass]="
+                        selectedVendor() === option.value
+                          ? 'border-brand-amber bg-brand-amber text-white'
+                          : 'border-brand-950/20 bg-transparent'
+                      "
+                    >
+                      @if (selectedVendor() === option.value) {
+                        <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      }
+                    </span>
+                  </div>
                 </div>
-                <input
-                  type="radio"
-                  formControlName="aiVendor"
-                  [value]="option.value"
-                  class="h-4 w-4 text-brand-amber focus:ring-brand-amber pointer-events-none"
-                  tabindex="-1"
-                />
+
+                <p class="mt-3.5 text-xs leading-relaxed text-brand-950/70">
+                  {{ option.description }}
+                </p>
               </div>
 
-              <p class="mt-3 text-xs text-brand-950/60 leading-relaxed">
-                {{ option.description }}
-              </p>
-
-              <div
-                class="mt-4 flex items-center justify-between border-t border-brand-950/5 pt-2 w-full"
-              >
+              <div class="mt-4 flex items-center justify-between border-t border-brand-950/5 pt-3">
                 <span
-                  class="rounded bg-brand-950/5 px-2 py-0.5 text-[11px] font-medium text-brand-950/70"
+                  class="inline-flex items-center gap-1.5 text-[11px] font-medium text-brand-950/60"
+                >
+                  <span
+                    class="h-1.5 w-1.5 rounded-full"
+                    [ngClass]="
+                      selectedVendor() === option.value ? 'bg-emerald-500' : 'bg-brand-950/30'
+                    "
+                  ></span>
+                  {{ option.recommendedFor }}
+                </span>
+                <span
+                  class="rounded bg-brand-950/5 px-2 py-0.5 text-[11px] font-semibold text-brand-950/80"
                 >
                   {{ option.badge }}
                 </span>
-                @if (form.get('aiVendor')?.value === option.value) {
-                  <span class="text-xs font-semibold text-brand-amber-strong">Selecionado</span>
-                }
               </div>
             </button>
           }
         </div>
       </app-ui-card>
 
-      <!-- Card: Seleção de Modelos -->
+      <!-- 2. MODELOS POR NÍVEL DE PROCESSAMENTO -->
       <app-ui-card
-        title="Modelos de Linguagem por Nível"
-        subtitle="Configure os modelos específicos a serem acionados para cada tipo de processamento"
+        title="2. Modelos de Linguagem por Nível"
+        subtitle="Selecione o modelo exato para a esteira de triagem rápida e para a esteira de análise profunda"
       >
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Modelo Rápido / Econômico (Cheap Model) -->
-          <div class="rounded-xl border border-brand-950/10 bg-surface p-5 space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
+          <div
+            class="flex flex-col justify-between rounded-xl border border-brand-950/10 bg-brand-950/[0.015] p-5"
+          >
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span
+                    class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200"
+                  >
+                    Cheap / Fast Tier
+                  </span>
+                  <h4 class="mt-1.5 font-bold text-brand-950 text-base">
+                    Modelo Rápido & Econômico
+                  </h4>
+                </div>
                 <span
-                  class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200"
+                  class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100/60 text-emerald-700 border border-emerald-200/50"
                 >
-                  Cheap / Fast Tier
+                  <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+                    />
+                  </svg>
                 </span>
-                <h4 class="mt-1 font-semibold text-brand-950">Modelo Econômico & Rápido</h4>
               </div>
-              <span
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100/50 text-emerald-600"
+
+              <p class="text-xs text-brand-950/70 leading-relaxed">
+                Utilizado na extração de lotes, validação preliminar e descarte de anúncios fora de
+                escopo. Prioriza altíssima velocidade e economia de tokens.
+              </p>
+
+              <app-ui-form-field
+                label="Modelo Selecionado"
+                [required]="true"
+                helperText="Escolha a variante leve do provedor atual."
               >
-                <svg
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
+                <select
+                  formControlName="cheapModel"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
-                  />
-                </svg>
-              </span>
+                  @for (model of availableCheapModels(); track model.id) {
+                    <option [value]="model.id">{{ model.name }} ({{ model.id }})</option>
+                  }
+                </select>
+              </app-ui-form-field>
             </div>
 
-            <p class="text-xs text-brand-950/60 leading-relaxed">
-              Utilizado na extração inicial em lote, triagem rápida de anúncios de marketplace e
-              validação estrutural de specs. Prioriza baixa latência e economia de tokens.
-            </p>
-
-            <app-ui-form-field
-              label="Identificador do Modelo Rápido"
-              [required]="true"
-              helperText="Selecione o modelo rápido para o provedor selecionado."
-            >
-              <select
-                formControlName="cheapModel"
-                class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 shadow-sm focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            @if (form.get('cheapModel')?.value) {
+              <div
+                class="mt-4 rounded-lg bg-surface border border-brand-950/10 p-3 text-xs text-brand-950/60"
               >
-                @for (model of availableCheapModels(); track model.modelId) {
-                  <option [value]="model.modelId">
-                    {{ model.displayName }} ({{ model.modelId }})
-                  </option>
-                }
-              </select>
-            </app-ui-form-field>
+                <span class="font-semibold text-brand-950">ID Ativo:</span>
+                <code
+                  class="ml-1 rounded bg-brand-950/5 px-1.5 py-0.5 font-mono text-[11px] text-brand-950"
+                  >{{ form.get('cheapModel')?.value }}</code
+                >
+              </div>
+            }
           </div>
 
           <!-- Modelo Forte / Especialista (Strong Model) -->
-          <div class="rounded-xl border border-brand-950/10 bg-surface p-5 space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
+          <div
+            class="flex flex-col justify-between rounded-xl border border-brand-950/10 bg-brand-950/[0.015] p-5"
+          >
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span
+                    class="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-800 border border-purple-200"
+                  >
+                    Strong / Pro Tier
+                  </span>
+                  <h4 class="mt-1.5 font-bold text-brand-950 text-base">
+                    Modelo Forte & Especialista
+                  </h4>
+                </div>
                 <span
-                  class="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700 border border-purple-200"
+                  class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100/60 text-purple-700 border border-purple-200/50"
                 >
-                  Strong / Pro Tier
+                  <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
+                    />
+                  </svg>
                 </span>
-                <h4 class="mt-1 font-semibold text-brand-950">Modelo Forte & Especialista</h4>
               </div>
-              <span
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100/50 text-purple-600"
+
+              <p class="text-xs text-brand-950/70 leading-relaxed">
+                Utilizado para investigações profundas de anúncios promissores, raciocínio lógico
+                rigoroso, pontuação e inspeção de detalhes técnicos via Tool Calling.
+              </p>
+
+              <app-ui-form-field
+                label="Modelo Selecionado"
+                [required]="true"
+                helperText="Escolha a variante de alto raciocínio do provedor atual."
               >
-                <svg
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
+                <select
+                  formControlName="strongModel"
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                  />
-                </svg>
-              </span>
+                  @for (model of availableStrongModels(); track model.id) {
+                    <option [value]="model.id">{{ model.name }} ({{ model.id }})</option>
+                  }
+                </select>
+              </app-ui-form-field>
             </div>
 
-            <p class="text-xs text-brand-950/60 leading-relaxed">
-              Utilizado em análises profundas, raciocínio complexo de custo-benefício e avaliação de
-              descrições complexas com tool calling e múltiplos parâmetros.
-            </p>
-
-            <app-ui-form-field
-              label="Identificador do Modelo Forte"
-              [required]="true"
-              helperText="Selecione o modelo forte / especialista para o provedor selecionado."
-            >
-              <select
-                formControlName="strongModel"
-                class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2 text-sm text-brand-950 shadow-sm focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            @if (form.get('strongModel')?.value) {
+              <div
+                class="mt-4 rounded-lg bg-surface border border-brand-950/10 p-3 text-xs text-brand-950/60"
               >
-                @for (model of availableStrongModels(); track model.modelId) {
-                  <option [value]="model.modelId">
-                    {{ model.displayName }} ({{ model.modelId }})
-                  </option>
-                }
-              </select>
-            </app-ui-form-field>
+                <span class="font-semibold text-brand-950">ID Ativo:</span>
+                <code
+                  class="ml-1 rounded bg-brand-950/5 px-1.5 py-0.5 font-mono text-[11px] text-brand-950"
+                  >{{ form.get('strongModel')?.value }}</code
+                >
+              </div>
+            }
           </div>
         </div>
       </app-ui-card>
 
-      <!-- Botões de Ação -->
+      <!-- BOTÕES DE AÇÃO -->
       <div class="flex items-center justify-end gap-3 pt-2">
         <app-ui-button
           type="button"

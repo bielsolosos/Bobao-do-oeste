@@ -99,6 +99,10 @@ textarea {
   color: var(--color-brand-950);
 }
 
+svg[stroke='currentColor'] {
+  fill: none;
+}
+
 /* Controles nativos compartilhados. O componente é dono do comportamento; estas classes mantêm o contrato visual. */
 .ui-input,
 .ui-select,

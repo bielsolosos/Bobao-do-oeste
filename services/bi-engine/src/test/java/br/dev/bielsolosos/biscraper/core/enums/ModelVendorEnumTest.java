@@ -23,12 +23,6 @@ class ModelVendorEnumTest {
         assertEquals(ModelVendorEnum.DEEPSEEK, ModelVendorEnum.fromPropertyValue(value));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"OLLAMA", "ollama", "Ollama"})
-    @DisplayName("Deve mapear variações de nome para OLLAMA")
-    void shouldMapOllamaAliases(String value) {
-        assertEquals(ModelVendorEnum.OLLAMA, ModelVendorEnum.fromPropertyValue(value));
-    }
 
     @Test
     @DisplayName("Deve lançar IllegalArgumentException para valor inválido ou nulo")

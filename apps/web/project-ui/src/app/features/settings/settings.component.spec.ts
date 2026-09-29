@@ -29,18 +29,22 @@ describe('SettingsComponent', () => {
   };
 
   const mockAvailableModels: AvailableAiModelsResponse = {
-    vendors: ['GEMINI', 'DEEPSEEK'],
-    modelsByVendor: {
-      GEMINI: [
-        { modelId: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', tier: 'CHEAP' },
-        { modelId: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', tier: 'STRONG' },
-      ],
-      DEEPSEEK: [
-        { modelId: 'deepseek-chat', displayName: 'DeepSeek V3 (Chat)', tier: 'CHEAP' },
-        { modelId: 'deepseek-reasoner', displayName: 'DeepSeek R1 (Reasoner)', tier: 'STRONG' },
-      ],
-      OLLAMA: [],
-    },
+    vendors: [
+      {
+        vendor: 'GEMINI',
+        displayName: 'Google Gemini',
+        cheapModels: [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast' }],
+        strongModels: [{ id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Strong' }],
+      },
+      {
+        vendor: 'DEEPSEEK',
+        displayName: 'DeepSeek',
+        cheapModels: [{ id: 'deepseek-chat', name: 'DeepSeek V3 (Chat)', description: 'Fast' }],
+        strongModels: [
+          { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner)', description: 'Strong' },
+        ],
+      },
+    ],
   };
 
   const mockConfig: UserConfig = {
@@ -92,7 +96,7 @@ describe('SettingsComponent', () => {
     component.selectVendor('DEEPSEEK');
     expect(component.form.value.aiVendor).toBe('DEEPSEEK');
     expect(component.availableCheapModels().length).toBe(1);
-    expect(component.availableCheapModels()[0].modelId).toBe('deepseek-chat');
-    expect(component.availableStrongModels()[0].modelId).toBe('deepseek-reasoner');
+    expect(component.availableCheapModels()[0].id).toBe('deepseek-chat');
+    expect(component.availableStrongModels()[0].id).toBe('deepseek-reasoner');
   });
 });
