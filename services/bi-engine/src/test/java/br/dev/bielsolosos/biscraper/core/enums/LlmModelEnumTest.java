@@ -33,16 +33,16 @@ class LlmModelEnumTest {
         assertTrue(geminiStrong.contains(LlmModelEnum.GEMINI_2_5_PRO));
 
         List<LlmModelEnum> deepSeekCheap = LlmModelEnum.getByVendorAndTier(ModelVendorEnum.DEEPSEEK, LlmModelEnum.ModelTier.CHEAP);
-        assertTrue(deepSeekCheap.contains(LlmModelEnum.DEEPSEEK_CHAT));
+        assertTrue(deepSeekCheap.contains(LlmModelEnum.DEEPSEEK_FLASH));
 
         List<LlmModelEnum> deepSeekStrong = LlmModelEnum.getByVendorAndTier(ModelVendorEnum.DEEPSEEK, LlmModelEnum.ModelTier.STRONG);
-        assertTrue(deepSeekStrong.contains(LlmModelEnum.DEEPSEEK_REASONER));
+        assertTrue(deepSeekStrong.contains(LlmModelEnum.DEEPSEEK_V4_PRO));
     }
 
     @Test
     @DisplayName("Deve resolver modelo a partir da string com fromModelName")
     void shouldResolveFromModelName() {
-        assertEquals(LlmModelEnum.DEEPSEEK_CHAT, LlmModelEnum.fromModelName("deepseek-chat"));
+        assertEquals(LlmModelEnum.DEEPSEEK_FLASH, LlmModelEnum.fromModelName("deepseek-flash"));
         assertEquals(LlmModelEnum.GEMINI_2_5_FLASH, LlmModelEnum.fromModelName("gemini-2.5-flash"));
         assertNull(LlmModelEnum.fromModelName("inexistente"));
         assertNull(LlmModelEnum.fromModelName(null));
