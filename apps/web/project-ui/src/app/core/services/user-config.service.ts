@@ -2,7 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AvailableAiModelsResponse, UpdateUserConfigRequest, UserConfig } from '../models/user-config.model';
+import {
+  AvailableAiModelsResponse,
+  UpdateUserConfigRequest,
+  UserConfig,
+} from '../models/user-config.model';
 
 @Injectable({
   providedIn: 'root',

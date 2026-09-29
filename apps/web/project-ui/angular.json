@@ -24,12 +24,8 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ],
-            "polyfills": [
-              "zone.js"
-            ]
+            "styles": ["src/styles.css"],
+            "polyfills": ["zone.js"]
           },
           "configurations": {
             "production": {

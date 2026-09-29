@@ -6,15 +6,7 @@ import {
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import {
-  catchError,
-  finalize,
-  map,
-  Observable,
-  shareReplay,
-  switchMap,
-  throwError,
-} from 'rxjs';
+import { catchError, finalize, map, Observable, shareReplay, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface RefreshResponse {

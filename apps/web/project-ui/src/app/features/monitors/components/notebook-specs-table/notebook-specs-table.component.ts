@@ -305,10 +305,7 @@ export class NotebookSpecsTableComponent {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    this.toast.success(
-      'Exportação concluída',
-      `${list.length} registros exportados com sucesso.`
-    );
+    this.toast.success('Exportação concluída', `${list.length} registros exportados com sucesso.`);
   }
 
   private getSpecsSortValue(item: ScrapedListingResponse, col: string): string | number {

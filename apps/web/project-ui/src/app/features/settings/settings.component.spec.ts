@@ -4,13 +4,29 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { SettingsComponent } from './settings.component';
 import { UserConfigService } from '../../core/services/user-config.service';
 import { AuthService } from '../../core/services/auth.service';
-import { of } from 'rxjs';
-import { AvailableAiModelsResponse, UserConfig } from '../../core/models/user-config.model';
+import { Observable, of } from 'rxjs';
+import {
+  AvailableAiModelsResponse,
+  UpdateUserConfigRequest,
+  UserConfig,
+} from '../../core/models/user-config.model';
 
 describe('SettingsComponent', () => {
   let component: SettingsComponent;
-  let userConfigServiceMock: any;
-  let authServiceMock: any;
+  let userConfigServiceMock: {
+    getAvailableModels: () => Observable<AvailableAiModelsResponse>;
+    updateConfig: (req: UpdateUserConfigRequest) => Observable<UserConfig>;
+  };
+  let authServiceMock: {
+    currentUser: () => {
+      id: string;
+      username: string;
+      active: boolean;
+      roles: string[];
+      config: UserConfig;
+    };
+    loadMe: () => Observable<null>;
+  };
 
   const mockAvailableModels: AvailableAiModelsResponse = {
     vendors: ['GEMINI', 'DEEPSEEK'],
@@ -36,7 +52,7 @@ describe('SettingsComponent', () => {
   beforeEach(async () => {
     userConfigServiceMock = {
       getAvailableModels: () => of(mockAvailableModels),
-      updateConfig: (req: any) => of(req),
+      updateConfig: (req: UpdateUserConfigRequest) => of(req as UserConfig),
     };
 
     authServiceMock = {

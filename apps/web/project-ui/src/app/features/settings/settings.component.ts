@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AvailableAiModelsResponse, LlmModelOption, ModelVendor } from '../../core/models/user-config.model';
+import {
+  AvailableAiModelsResponse,
+  LlmModelOption,
+  ModelVendor,
+} from '../../core/models/user-config.model';
 import { AuthService } from '../../core/services/auth.service';
 import { UserConfigService } from '../../core/services/user-config.service';
 import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
@@ -45,7 +49,13 @@ export class SettingsComponent implements OnInit {
 
   selectedVendor = signal<ModelVendor>('GEMINI');
 
-  vendorOptions: { value: ModelVendor; label: string; description: string; badge: string; icon: string }[] = [
+  vendorOptions: {
+    value: ModelVendor;
+    label: string;
+    description: string;
+    badge: string;
+    icon: string;
+  }[] = [
     {
       value: 'GEMINI',
       label: 'Google Gemini',
@@ -150,14 +160,18 @@ export class SettingsComponent implements OnInit {
     if (!models || !models.modelsByVendor || !models.modelsByVendor[vendor]) return;
 
     const vendorModels = models.modelsByVendor[vendor];
-    const cheap = vendorModels.find((m) => m.tier === 'CHEAP')?.modelId || vendorModels[0]?.modelId || '';
-    const strong = vendorModels.find((m) => m.tier === 'STRONG')?.modelId || vendorModels[0]?.modelId || '';
+    const cheap =
+      vendorModels.find((m) => m.tier === 'CHEAP')?.modelId || vendorModels[0]?.modelId || '';
+    const strong =
+      vendorModels.find((m) => m.tier === 'STRONG')?.modelId || vendorModels[0]?.modelId || '';
 
     const currentCheap = this.form.get('cheapModel')?.value;
     const currentStrong = this.form.get('strongModel')?.value;
 
     const cheapExists = vendorModels.some((m) => m.modelId === currentCheap && m.tier === 'CHEAP');
-    const strongExists = vendorModels.some((m) => m.modelId === currentStrong && m.tier === 'STRONG');
+    const strongExists = vendorModels.some(
+      (m) => m.modelId === currentStrong && m.tier === 'STRONG',
+    );
 
     this.form.patchValue({
       cheapModel: cheapExists ? currentCheap : cheap,
@@ -199,7 +213,10 @@ export class SettingsComponent implements OnInit {
         error: (err) => {
           this.isSaving.set(false);
           console.error('Erro ao salvar configurações de IA:', err);
-          this.toast.error('Erro ao salvar', err?.error?.message || 'Não foi possível salvar as configurações.');
+          this.toast.error(
+            'Erro ao salvar',
+            err?.error?.message || 'Não foi possível salvar as configurações.',
+          );
         },
       });
   }
