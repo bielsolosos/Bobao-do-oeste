@@ -52,6 +52,18 @@ public class AiAnalisysUtils {
         }
     }
 
+    /**
+     * Transforma uma lista arbitrária de mapas ou objetos em um payload JSON formatado para o prompt.
+     */
+    public static String formatBatchMapsForPrompt(List<?> batch) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.writeValueAsString(batch);
+        } catch (Exception e) {
+            return String.valueOf(batch);
+        }
+    }
+
     public static <T> String getJsonSchema(Class<T> object){
         return new BeanOutputConverter<>(object).getJsonSchema();
     }
