@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bi-scraper-email-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-12-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "AUTH_SECRET": "bi-scraper-email-secret-token",
+    "GMAIL_USER": "fatiarapidaautomation@gmail.com",
+    "FROM_NAME": "BI Scraper Notificações"
+  }
+}
