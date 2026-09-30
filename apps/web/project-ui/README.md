@@ -55,5 +55,4 @@ npm run build
 
 ## Documentação
 
-- [Plano de identidade visual e redesign](../../docs/UI_UX_REDESIGN_PLAN.md)
 - [README raiz](../../README.md)

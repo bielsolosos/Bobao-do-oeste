@@ -12,20 +12,21 @@ A aplicação segue uma arquitetura em camadas limpa e desacoplada:
 br.dev.bielsolosos.<projeto>
 ├── api
 │   ├── controller       # Controllers REST públicos e protegidos (@RestController)
-│   ├── mapper           # Classes dedicadas para conversão DTO <-> Entity
-│   └── model            # Records para DTOs (Request / Response) e agrupamentos
+│   ├── mapper           # Mappers dedicados de API (quando não encapsulados no domínio)
+│   └── model            # Records para DTOs globais ou de contratos de API
 ├── core
 │   ├── abstractfields   # Contratos polimórficos / schemas extensíveis
-│   ├── config           # Configurações gerais de Beans, CORS, etc.
+│   ├── config           # Configurações gerais de Beans, CORS, OpenAPI, etc.
 │   ├── enums            # Todos os Enums da aplicação centralizados
 │   ├── exception        # Hierarquia de exceções de negócio e GlobalExceptionHandler
 │   ├── security         # Filtros JWT, SecurityConfig, UserDetails
 │   └── utils            # Utilitários globais de segurança, criptografia, etc.
 ├── domain
 │   └── <bounded-context>
-│       ├── model        # Entidades JPA (@Entity, @Table, @Getter, @Setter)
-│       ├── repository   # Interfaces Spring Data JPA / Specifications
-│       └── service      # Regras de negócio, transações e validações
+│       ├── mapper       # Mappers dedicados de conversão DTO <-> Entity do domínio
+│       ├── model        # Entidades JPA (@Entity) e subpacote dto (Records)
+│       ├── repository   # Interfaces Spring Data JPA / Specifications / Projections
+│       └── service      # Regras de negócio, transações, validações e IA/Tools
 └── infrastructure       # Properties (@ConfigurationProperties), clientes HTTP e SDKs
 ```
 

@@ -15,7 +15,7 @@
 
 O usuário cadastra um monitor com termos de busca, faixa de preço, frequência e critérios de análise. O sistema consulta o marketplace periodicamente, deduplica os anúncios, analisa os novos resultados com o Google Gemini e os disponibiliza em um painel web.
 
-> **Estado do projeto:** MVP funcional voltado a uso interno. O fluxo completo está implementado para **OLX** com análise **SIMPLE**. Outros marketplaces, histórico de preços e notificações ainda fazem parte da evolução planejada.
+> **Estado do projeto:** MVP funcional voltado a uso interno. O fluxo completo está implementado para **OLX** com análises **SIMPLE** e especializada **NOTEBOOK**, suporte a múltiplos modelos de IA (Gemini e DeepSeek) e notificações automáticas via Discord Webhook. Outros marketplaces e análise histórica de tendências temporais de preços fazem parte da evolução planejada.
 
 ## Sumário
 
@@ -45,8 +45,9 @@ O projeto reduz o trabalho manual de repetir buscas e comparar anúncios de hard
 - Repetir buscas automaticamente por agendamento.
 - Consolidar anúncios sem duplicá-los.
 - Atualizar preço e última visualização de anúncios já conhecidos.
-- Analisar novos anúncios com Gemini e gerar score, tier, resumo, destaques e ressalvas.
-- Consultar monitores, anúncios, execuções, webhooks e auditorias de IA pela SPA.
+- Analisar novos anúncios com Gemini/DeepSeek e gerar score, tier, resumo, destaques, ressalvas e especificações técnicas de notebooks.
+- Enviar notificações automáticas em tempo real para canais como Discord Webhook.
+- Consultar monitores, anúncios, gráficos de telemetria, execuções, webhooks e auditorias de IA pela SPA.
 
 Atualmente, o sistema funciona como um **monitor inteligente de anúncios**. A visão de longo prazo é evoluí-lo para inteligência de preços com histórico, tendências e alertas de oportunidade.
 
@@ -69,7 +70,7 @@ O emblema vetorial no topo é o símbolo principal da marca e também é usado c
   </tr>
 </table>
 
-A aplicação da marca deve permanecer concentrada no shell, login, onboarding e estados ilustrados. Tabelas, formulários e gráficos continuam orientados à legibilidade. A estratégia completa está documentada no [plano de redesign da SPA](docs/UI_UX_REDESIGN_PLAN.md).
+A aplicação da marca permanece concentrada no shell, login, onboarding e estados ilustrados. Tabelas, formulários e gráficos continuam orientados à legibilidade máxima.
 
 ## Arquitetura
 
@@ -353,13 +354,23 @@ As rotas de negócio exigem `Authorization: Bearer <token>`, salvo autenticaçã
 | :--- | :--- |
 | `POST /api/v1/auth/login` | Autenticação e emissão de tokens |
 | `POST /api/v1/auth/refresh` | Renovação do access token |
-| `GET /api/v1/me` | Perfil do usuário autenticado |
+| `GET /api/v1/me` | Perfil e configurações do usuário autenticado |
+| `PUT /api/v1/me/configs` | Atualiza configurações de provedor/modelo de IA |
+| `GET /api/v1/me/configs/models` | Catálogo de provedores e modelos de IA disponíveis |
 | `GET/POST /api/v1/product-monitors` | Listagem e criação de monitores |
 | `GET/PUT/DELETE /api/v1/product-monitors/{id}` | Consulta, edição e remoção de um monitor |
 | `PATCH /api/v1/product-monitors/{id}/activate` | Ativação de um monitor |
 | `PATCH /api/v1/product-monitors/{id}/deactivate` | Pausa de um monitor |
-| `GET /api/v1/product-monitors/{id}/listings` | Anúncios pertencentes ao monitor |
-| `GET /api/v1/ai-logs` | Auditoria das análises de IA do usuário |
+| `GET /api/v1/product-monitors/listings` | Listagem agregada de todos os anúncios do usuário |
+| `GET /api/v1/product-monitors/{id}/listings` | Anúncios pertencentes ao monitor com filtros |
+| `GET /api/v1/product-monitors/{id}/ai-logs` | Logs de chamadas de IA de um monitor específico |
+| `GET /api/v1/product-monitors/frequencies` | Opções disponíveis de frequência de monitoramento |
+| `GET /api/v1/product-monitors/metrics/overview` | KPIs gerais para o dashboard (contadores e faixas) |
+| `GET /api/v1/product-monitors/metrics/tiers` | Distribuição de relevância de match para gráfico de rosquinha |
+| `GET /api/v1/product-monitors/metrics/prices` | Histograma de faixas de preço para gráfico de barras |
+| `GET /api/v1/product-monitors/metrics/brands` | Distribuição por marcas mais frequentes |
+| `GET /api/v1/product-monitors/metrics/timeline` | Série temporal de captação de anúncios para gráfico de linha |
+| `GET /api/v1/ai-logs` | Auditoria global das análises de IA do usuário |
 | `GET /api/v1/scraper/queue-status` | Proxy autenticado do estado das filas |
 | `POST /api/v1/webhooks/scraper` | Callback interno dos resultados do scraper |
 
@@ -375,6 +386,7 @@ Todas as rotas sob `/api/v1` exigem HTTP Basic.
 | `POST /api/v1/scrape/async` | Enfileira e retorna `202`; o resultado segue por webhook |
 | `POST /api/v1/scrape/detail` | Extrai detalhes de uma URL de anúncio |
 | `GET /api/v1/scrape/images/{id}` | Recupera uma imagem armazenada no cache |
+| `POST /api/v1/scrape/images/cleanup` | Executa rotina de exclusão de imagens expiradas no cache |
 | `GET /api/v1/listings` | Consulta anúncios no banco operacional |
 | `GET /api/v1/executions` | Consulta histórico e telemetria das execuções |
 | `GET /api/v1/queue/status` | Consulta contadores de jobs e webhooks |
@@ -525,21 +537,21 @@ Antes de um deploy de produção:
 | Fluxo monitor → scraper → webhook → PostgreSQL | Implementado |
 | Coleta OLX com fallback Playwright | Implementado |
 | Filas persistentes e retry de webhook | Implementado |
-| Análise Gemini `SIMPLE` e auditoria | Implementado |
-| CRUD, dashboard e consultas paginadas | Implementado |
-| Deep scraping e cache de imagens | Implementado no scraper, ainda sem integração com BI Engine/SPA |
+| Análises de IA `SIMPLE` e especializada `NOTEBOOK` | Implementado (Google Gemini e DeepSeek via Spring AI) |
+| Notificações automáticas via Discord Webhook | Implementado |
+| Deep scraping integrado via Spring AI Tools | Implementado (`ScrappingDetailsTools` -> `/scrape/detail`) |
+| CRUD, dashboard com gráficos ECharts e paginação | Implementado |
+| Configuração de IA por usuário | Implementado |
 | Mercado Livre e Enjoei | Presentes em partes do contrato/UI, sem providers funcionais |
-| Análise especializada `NOTEBOOK` | Contrato e formulário parciais; sem estratégia de análise implementada |
 | Histórico e tendências de preço | Não implementado; o preço atual é atualizado no anúncio |
-| Alertas por e-mail, push ou mensageria | Não implementado |
-| Stack completa no Docker Compose | Não implementada |
-| Autenticação e assinatura de webhooks | Pendente de endurecimento |
+| Alertas adicionais (e-mail, push mobile) | Não implementado |
+| Stack completa no Docker Compose | Scaffold atualizado; execução padrão via postgres + scraper |
+| Autenticação e assinatura HMAC de webhooks | Pendente de endurecimento |
 
 O SQLite atende ao MVP e oferece recuperação simples de filas, mas não substitui um broker distribuído caso o scraper precise escalar horizontalmente. Da mesma forma, o scheduler do BI Engine não possui lock distribuído para múltiplas réplicas.
 
 ## Documentação técnica
 
-- [Plano de identidade visual e redesign da SPA](docs/UI_UX_REDESIGN_PLAN.md)
 - [README do BI Engine](services/bi-engine/README.md)
 - [README do scraper](services/scraper/README.md)
 - [README da SPA](apps/web/project-ui/README.md)

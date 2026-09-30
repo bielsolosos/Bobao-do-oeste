@@ -525,6 +525,63 @@ wheels = [
 ]
 
 [[package]]
+name = "marketplace-scraper"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "aiosqlite" },
+    { name = "curl-cffi" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "jinja2" },
+    { name = "playwright" },
+    { name = "playwright-stealth" },
+    { name = "prometheus-client" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "python-json-logger" },
+    { name = "selectolax" },
+    { name = "sqlmodel" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyright" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.22.1" },
+    { name = "curl-cffi", specifier = ">=0.16.1" },
+    { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "playwright", specifier = ">=1.62.0" },
+    { name = "playwright-stealth", specifier = ">=2.0.3" },
+    { name = "prometheus-client", specifier = ">=0.23.1" },
+    { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "pydantic-settings", specifier = ">=2.15.0" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "python-json-logger", specifier = ">=3.3.0" },
+    { name = "selectolax", specifier = ">=0.4.11" },
+    { name = "sqlmodel", specifier = ">=0.0.39" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.4" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright", specifier = ">=1.1.411" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.16.4" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1100,63 +1157,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b5/b4/205b0d5241d934e8add0c38aa924c4f9fb7330834ff11e5444db964ec3f9/starlette-1.6.0.tar.gz", hash = "sha256:d4e3ac5e546444960c710297a3c9fc3f7ebae1b7e963f3d36173b49da535be9b", size = 2716969, upload-time = "2026-08-08T18:27:57.512Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/cb/6a6a47d5b464bd08695d254f3da6e7986cc70c9fa5d778eda57538edfe56/starlette-1.6.0-py3-none-any.whl", hash = "sha256:a86dd39d14bb45f85a3d18525215a9ef0cfd1f192ac793220e72598c90335f0c", size = 75969, upload-time = "2026-08-08T18:27:56.196Z" },
-]
-
-[[package]]
-name = "teste-scrap"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "aiosqlite" },
-    { name = "curl-cffi" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "jinja2" },
-    { name = "playwright" },
-    { name = "playwright-stealth" },
-    { name = "prometheus-client" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "python-json-logger" },
-    { name = "selectolax" },
-    { name = "sqlmodel" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyright" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiosqlite", specifier = ">=0.22.1" },
-    { name = "curl-cffi", specifier = ">=0.16.1" },
-    { name = "fastapi", specifier = ">=0.141.1" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "playwright", specifier = ">=1.62.0" },
-    { name = "playwright-stealth", specifier = ">=2.0.3" },
-    { name = "prometheus-client", specifier = ">=0.23.1" },
-    { name = "pydantic", specifier = ">=2.13.4" },
-    { name = "pydantic-settings", specifier = ">=2.15.0" },
-    { name = "pytest", specifier = ">=9.1.1" },
-    { name = "pytest-asyncio", specifier = ">=1.4.0" },
-    { name = "python-json-logger", specifier = ">=3.3.0" },
-    { name = "selectolax", specifier = ">=0.4.11" },
-    { name = "sqlmodel", specifier = ">=0.0.39" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.4" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pyright", specifier = ">=1.1.411" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "ruff", specifier = ">=0.16.4" },
 ]
 
 [[package]]

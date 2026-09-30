@@ -247,14 +247,14 @@ async def receive_scrape_result(request: Request):
 
 | De | Para | Gatilho | Onde |
 |---|---|---|---|
-| _(novo)_ | `PENDING` | `enqueue_with_job()` | `WebhookDeliveryService` |
+| _(novo)_ | `PENDING` | `enqueue_with_job()` | `AsyncScrapeService` |
 | `PENDING` | `READY` | `mark_ready(job_id)` | `ScrapeWorker._process_one` |
-| `READY` | `SENDING` | `claim_next()` | `WebhookDispatcher` |
-| `SENDING` | `DELIVERED` | `mark_delivered()` após 2xx | `WebhookDispatcher` |
-| `SENDING` | `SENDING` | `mark_retry()` após 5xx/timeout | `WebhookDispatcher` |
-| `SENDING` | `FAILED` | `mark_retry()` quando attempts >= max | `WebhookDeliveryService` |
-| `SENDING` | `FAILED` | `mark_failed_terminal()` após 4xx | `WebhookDispatcher` |
-| `SENDING` | `READY` | `recover_stuck_deliveries()` no startup | `WebhookDeliveryService` |
+| `READY` | `SENDING` | `claim_next()` | `WebhookWorker` |
+| `SENDING` | `DELIVERED` | `mark_delivered()` após 2xx | `WebhookWorker` |
+| `SENDING` | `SENDING` | `mark_retry()` após 5xx/timeout | `WebhookWorker` |
+| `SENDING` | `FAILED` | `mark_retry()` quando attempts >= max | `WebhookQueueService` |
+| `SENDING` | `FAILED` | `mark_failed_terminal()` após 4xx | `WebhookWorker` |
+| `SENDING` | `READY` | `recover_stuck_deliveries()` no startup | `WebhookQueueService` |
 
 ---
 
@@ -370,16 +370,15 @@ Cada tentativa após a primeira espera `2^(attempts-1)` segundos + jitter aleat�
 ### `src/domain/models.py` — `WebhookDelivery`
 Tabela completa. 14 colunas, FK para `scrape_jobs`, `request_id` com unique constraint.
 
-### `src/core/webhook_delivery.py` — `WebhookDeliveryService`
-Encapsula todas as operações:
-- `enqueue_with_job()` — cria ScrapeJob + delivery atomicamente
+### `src/core/queues/webhook.py` — `WebhookQueueService`
+Encapsula operações sobre a fila de entregas:
 - `mark_ready(scrape_job_id)` — PENDING → READY (chamado pelo ScrapeWorker)
 - `claim_next(worker_id)` — claim atômico do próximo (READY ou SENDING atrasado)
 - `mark_delivered()`, `mark_retry()`, `mark_failed_terminal()` — UPDATE statements
 - `recover_stuck_deliveries()` — reseta SENDING órfãs para READY
 - `get_by_request_id()` — usado pela API de status
 
-### `src/core/webhook_dispatcher.py` — `WebhookDispatcher`
+### `src/core/workers/webhook.py` — `WebhookWorker`
 Pool de N tasks asyncio:
 - `start()` / `stop()` — gerencia ciclo de vida (chamado no `lifespan`)
 - `_run_loop(worker_index)` — loop individual: claim → POST → mark
@@ -387,13 +386,13 @@ Pool de N tasks asyncio:
 - `_compute_next_attempt()` — backoff exponencial + jitter
 - Recovery de stuck deliveries no `start()`
 
-### `src/api/v1/async_scrape_routes.py` — `POST /scrape/async`
+### `src/api/v1/async_scrape_routes.py` — `POST /api/v1/scrape/async`
 - Valida body com `AsyncScrapeRequest`
-- Chama `enqueue_with_job()` — 409 se requestId duplicado
+- Chama `AsyncScrapeService.enqueue_async_scrape()` — 409 se requestId duplicado
 - Retorna `AsyncScrapeResponse` com 202
 
-### `src/api/v1/webhook_routes.py` — `GET /webhooks/{request_id}`
-- Busca por `request_id` (404 se não existir)
+### `src/api/v1/webhook_routes.py` — `GET /api/v1/webhooks/{request_id}`
+- Busca por `request_id` via `WebhookQueueService.get_by_request_id` (404 se não existir)
 - Retorna `WebhookStatusResponse`
 
 ### `src/main.py` — `lifespan`
@@ -401,19 +400,22 @@ Pool de N tasks asyncio:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    worker = get_worker()  # ScrapeWorker pool
-    await worker.start()
-    dispatcher = get_dispatcher()  # WebhookDispatcher pool
-    await dispatcher.start()
+    scrape_worker = get_scrape_worker()
+    webhook_worker = get_webhook_worker()
+    cleanup_worker = get_cache_cleanup_worker()
+    await scrape_worker.start()
+    await webhook_worker.start()
+    await cleanup_worker.start()
     try:
         yield
     finally:
-        await dispatcher.stop()
-        await worker.stop()
+        await cleanup_worker.stop()
+        await webhook_worker.stop()
+        await scrape_worker.stop()
 ```
 
-### `src/core/worker.py` — Modificação
-Ao final de `_process_one`, **sempre** chama `delivery_service.mark_ready(job.id)`. É no-op se o job não tem delivery associada (caso do endpoint síncrono).
+### `src/core/workers/scrape.py` — Notificação de Conclusão
+Ao final de `_process_one`, chama `webhook_queue.mark_ready(job.id)` para disponibilizar a entrega para o `WebhookWorker`. É no-op se o job não tem delivery associada (caso do endpoint síncrono).
 
 ---
 

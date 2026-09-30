@@ -108,11 +108,11 @@ Em resumo: **`ScrapeJob` é o envelope da fila, `ScrapingExecution` é a auditor
 
 | De | Para | Gatilho | Onde |
 |---|---|---|---|
-| _(novo)_ | `QUEUED` | `enqueue()` | `JobQueueService.enqueue` |
-| `QUEUED` | `RUNNING` | `claim_next()` | `JobQueueService.claim_next` |
-| `RUNNING` | `SUCCESS` | `mark_success()` | `JobQueueService.mark_success` |
-| `RUNNING` | `FAILED` | `mark_failed()` | `JobQueueService.mark_failed` |
-| `RUNNING` | `QUEUED` | `recover_orphaned_jobs()` no startup | `JobQueueService.recover_orphaned_jobs` |
+| _(novo)_ | `QUEUED` | `enqueue()` | `ScrapeQueueService.enqueue` |
+| `QUEUED` | `RUNNING` | `claim_next()` | `ScrapeQueueService.claim_next` |
+| `RUNNING` | `SUCCESS` | `mark_success()` | `ScrapeQueueService.mark_success` |
+| `RUNNING` | `FAILED` | `mark_failed()` | `ScrapeQueueService.mark_failed` |
+| `RUNNING` | `QUEUED` | `recover_orphaned_jobs()` no startup | `ScrapeQueueService.recover_orphaned_jobs` |
 
 > **Observação:** Não há transição `QUEUED → FAILED` direta. Um job só vira `FAILED` depois de ter sido `RUNNING` (ou seja, alguém tentou executá-lo). Cancelamento manual não é suportado nesta versão.
 
@@ -257,7 +257,7 @@ caller ──HTTP POST──▶ FastAPI
 
 ## 11. Detalhamento dos Componentes (Código)
 
-### `src/core/job_queue.py` — `JobQueueService`
+### `src/core/queues/scrape.py` — `ScrapeQueueService`
 Encapsula todas as operações sobre `scrape_jobs`:
 - `enqueue(request, priority=0)` → cria `ScrapeJob` QUEUED
 - `claim_next(worker_id)` → claim atômico do mais antigo
@@ -266,7 +266,7 @@ Encapsula todas as operações sobre `scrape_jobs`:
 - `recover_orphaned_jobs()` → reseta RUNNING → QUEUED
 - `get_stats()` → contadores por status (últimos 500 jobs)
 
-### `src/core/worker.py` — `ScrapeWorker` (na verdade um pool)
+### `src/core/workers/scrape.py` — `ScrapeWorker` (pool de workers)
 - `__init__(concurrency=None, poll_interval=None)` → lê de `settings` se não fornecido
 - `start()` → roda `recover_orphaned_jobs()` uma vez + lança N tasks asyncio
 - `stop()` → sinaliza `_stop_event`, aguarda com timeout de 10s, cancela se necessário
@@ -278,17 +278,23 @@ Encapsula todas as operações sobre `scrape_jobs`:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    worker = get_worker()
-    await worker.start()
+    scrape_worker = get_scrape_worker()
+    webhook_worker = get_webhook_worker()
+    cleanup_worker = get_cache_cleanup_worker()
+    await scrape_worker.start()
+    await webhook_worker.start()
+    await cleanup_worker.start()
     try:
         yield
     finally:
-        await worker.stop()
+        await cleanup_worker.stop()
+        await webhook_worker.stop()
+        await scrape_worker.stop()
 ```
 
 ### `src/api/v1/scrape_routes.py` — `POST /api/v1/scrape`
-- Enfileira via `JobQueueService.enqueue`
-- Aguarda via `JobQueueService.wait_for_completion`
+- Enfileira via `ScrapeQueueService.enqueue`
+- Aguarda via `ScrapeQueueService.wait_for_completion`
 - Retorna `ScrapeResponse` parseado de `response_payload`
 
 ---

@@ -99,4 +99,4 @@ Este documento detalha o funcionamento interno de cada componente do **`scraper-
 
 ### D. Camada de Apresentação & API (`src/api/v1/`)
 
-* **Controllers Desacoplados:** Os endpoints (`src/api/v1/scrape.py`, `src/api/v1/listings.py`, `src/api/v1/executions.py`, `src/api/v1/dashboard.py`) interagem exclusivamente através dos serviços (`ScrapingService`, `ListingService`, `ExecutionService`), sem acoplamento direto com queries SQL.
+* **Controllers Desacoplados:** Os endpoints (`src/api/v1/scrape_routes.py`, `src/api/v1/listing_routes.py`, `src/api/v1/execution_routes.py`, `src/api/v1/dashboard_routes.py`) interagem exclusivamente através dos serviços (`ScrapingService`, `ListingService`, `ExecutionService`), sem acoplamento direto com queries SQL.

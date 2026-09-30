@@ -1,5 +1,5 @@
 [project]
-name = "teste-scrap"
+name = "marketplace-scraper"
 version = "0.1.0"
 description = "Stateless Marketplace Scraper Service"
 readme = "README.md"
