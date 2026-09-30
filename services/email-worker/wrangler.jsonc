@@ -8,5 +8,21 @@
     "AUTH_SECRET": "bi-scraper-email-secret-token",
     "GMAIL_USER": "fatiarapidaautomation@gmail.com",
     "FROM_NAME": "BI Scraper Notificações"
-  }
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    },
+    "issue_detection": {
+      "enabled": false
+    }
+  },
 }
