@@ -68,12 +68,12 @@ public class NotificationEmailStrategy extends NotificationStrategy {
             return;
         }
 
-        NotificationTemplate template = event.getContentTemplate();
-        String subject = template != null ? template.getSubject() : "BI Scraper - Notificação";
-        String html = template != null ? template.toHtmlEmail() : "<p>Notificação BI Scraper</p>";
-        String text = template != null ? template.getMessageTemplate() : "Notificação BI Scraper";
-
         try {
+            NotificationTemplate template = event.getContentTemplate();
+            String subject = template != null ? template.getSubject() : "BI Scraper - Notificação";
+            String html = template != null ? template.toHtmlEmail() : "<p>Notificação BI Scraper</p>";
+            String text = template != null ? template.getMessageTemplate() : "Notificação BI Scraper";
+
             BiScraperProperties.Email.EmailProvider provider = properties.getEmail().getProvider();
 
             if (provider == BiScraperProperties.Email.EmailProvider.WORKER) {
