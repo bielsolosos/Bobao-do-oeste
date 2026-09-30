@@ -48,7 +48,7 @@ public class MonitoringEmailDigestService {
         log.info("[EmailDigest] Iniciando ciclo de envio de digests por e-mail (janela: últimas {} horas, corte: {}).",
                 windowHours, since);
 
-        List<UserConfig> configs = userConfigRepository.findAll();
+        List<UserConfig> configs = userConfigRepository.findAllWithUser();
         log.info("[EmailDigest] Total de configurações de usuários recuperadas para análise: {}", configs.size());
 
         int digestsDispatched = 0;

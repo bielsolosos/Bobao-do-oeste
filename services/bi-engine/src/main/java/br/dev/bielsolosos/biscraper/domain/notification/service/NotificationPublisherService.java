@@ -32,7 +32,16 @@ public class NotificationPublisherService {
                 ? event.getContentTemplate().getChannels()
                 : new NotificationChannel[]{NotificationChannel.DISCORD};
 
-        String username = event.getRecipient().getUsername();
+        String username = "desconhecido";
+        try {
+            if (event.getRecipient() != null && event.getRecipient().getUsername() != null) {
+                username = event.getRecipient().getUsername();
+            }
+        } catch (Exception ignored) {
+            if (event.getRecipient() != null && event.getRecipient().getId() != null) {
+                username = event.getRecipient().getId().toString();
+            }
+        }
         log.info("Notificação recebida para usuário '{}'. Canais configurados: {}", username, channels);
 
         for (NotificationChannel channel : channels) {

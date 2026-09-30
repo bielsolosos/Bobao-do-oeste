@@ -23,15 +23,20 @@ public class CloudflareEmailHttpClient {
     public EmailSendResponse sendEmail(EmailSendRequest request) {
         String baseUrl = properties.getEmail().getWorker().getBaseUrl();
         String authToken = properties.getEmail().getWorker().getAuthToken();
+        String endpoint = baseUrl.replaceAll("/+$", "") + "/send-email";
 
-        log.debug("Enviando e-mail via Cloudflare Worker em: {} para '{}'", baseUrl, request.to());
+        log.info("[EmailWorkerClient] Enviando requisição HTTP POST para '{}' | Destinatário: '{}' | Assunto: '{}'",
+                endpoint, request.to(), request.subject());
 
-        return restClient.post()
-                .uri(baseUrl + "/send-email")
+        EmailSendResponse response = restClient.post()
+                .uri(endpoint)
                 .header("x-auth-token", authToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
                 .retrieve()
                 .body(EmailSendResponse.class);
+
+        log.info("[EmailWorkerClient] Resposta recebida do Worker para '{}': {}", request.to(), response);
+        return response;
     }
 }

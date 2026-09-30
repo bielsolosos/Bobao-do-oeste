@@ -93,7 +93,7 @@ class MonitoringEmailDigestServiceTest {
                 .emailEnabled(true)
                 .build();
 
-        when(userConfigRepository.findAll()).thenReturn(List.of(config));
+        when(userConfigRepository.findAllWithUser()).thenReturn(List.of(config));
 
         ScrapedListing listing = ScrapedListing.builder()
                 .id(UUID.randomUUID())
@@ -134,7 +134,7 @@ class MonitoringEmailDigestServiceTest {
                 .emailEnabled(true)
                 .build();
 
-        when(userConfigRepository.findAll()).thenReturn(List.of(config));
+        when(userConfigRepository.findAllWithUser()).thenReturn(List.of(config));
         when(scrapedListingRepository.findByUserIdAndMatchTierAndFirstSeenAtAfter(eq(userId), eq(MatchTier.HIGH), any(OffsetDateTime.class)))
                 .thenReturn(Collections.emptyList());
 

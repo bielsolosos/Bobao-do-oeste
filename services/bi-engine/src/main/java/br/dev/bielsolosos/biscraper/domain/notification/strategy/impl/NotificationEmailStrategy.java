@@ -75,26 +75,35 @@ public class NotificationEmailStrategy extends NotificationStrategy {
             String text = template != null ? template.getMessageTemplate() : "Notificação BI Scraper";
 
             BiScraperProperties.Email.EmailProvider provider = properties.getEmail().getProvider();
+            log.info("[NotificationEmail] Preparando envio de e-mail via provedor '{}' para '{}' | Assunto: '{}'",
+                    provider, recipient.getEmail(), subject);
 
             if (provider == BiScraperProperties.Email.EmailProvider.WORKER) {
+                String workerUrl = properties.getEmail().getWorker().getBaseUrl();
+                log.info("[NotificationEmail] Encaminhando e-mail para Cloudflare Worker em: {} (endpoint: {}/send-email)",
+                        workerUrl, workerUrl.replaceAll("/+$", ""));
                 sendViaCloudflareWorker(recipient.getEmail(), subject, html, text);
             } else {
+                log.info("[NotificationEmail] Enviando e-mail via SMTP nativo do Spring Mail (From: '{}', Destinatário: '{}')",
+                        properties.getEmail().getFrom(), recipient.getEmail());
                 sendViaSmtp(recipient.getEmail(), subject, html, text);
             }
 
             String logDescription = String.format("E-mail (%s) enviado com sucesso para '%s' com assunto: '%s'.",
                     provider, recipient.getEmail(), subject);
             saveLog(event, logDescription);
-            log.info("E-mail entregue com sucesso para '{}' via provedor '{}'", recipient.getEmail(), provider);
+            log.info("[NotificationEmail] E-mail entregue com sucesso para '{}' via provedor '{}'", recipient.getEmail(), provider);
 
         } catch (Exception e) {
-            log.error("Erro ao enviar e-mail para usuário '{}' ({}): {}",
-                    recipient.getUsername(), recipient.getEmail(), e.getMessage(), e);
+            log.error("[NotificationEmail] Erro ao enviar e-mail para usuário '{}' ({}) via provedor '{}': {}",
+                    recipient.getUsername(), recipient.getEmail(), properties.getEmail().getProvider(), e.getMessage(), e);
             saveLog(event, "Falha ao enviar e-mail: " + e.getMessage());
         }
     }
 
     private void sendViaSmtp(String toEmail, String subject, String html, String text) throws Exception {
+        log.info("[NotificationEmail-SMTP] Montando MimeMessage para '{}' a partir de '{}' com codificação UTF-8",
+                toEmail, properties.getEmail().getFrom());
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
@@ -104,6 +113,7 @@ public class NotificationEmailStrategy extends NotificationStrategy {
         helper.setText(text, html);
 
         javaMailSender.send(mimeMessage);
+        log.info("[NotificationEmail-SMTP] MimeMessage despachado com sucesso para o servidor SMTP");
     }
 
     private void sendViaCloudflareWorker(String toEmail, String subject, String html, String text) {
