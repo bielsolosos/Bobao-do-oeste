@@ -30,4 +30,10 @@ public interface NotificationTemplate {
         payload.put("embeds", List.of(genericEmbed));
         return payload;
     }
+
+    default String toHtmlEmail() {
+        String msg = getMessageTemplate() != null ? getMessageTemplate().replace("\n", "<br/>") : "";
+        return "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"></head><body style=\"font-family: sans-serif; padding: 20px;\"><h2>"
+                + getSubject() + "</h2><p>" + msg + "</p></body></html>";
+    }
 }
