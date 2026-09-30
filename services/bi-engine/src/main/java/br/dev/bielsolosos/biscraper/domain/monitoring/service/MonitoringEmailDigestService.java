@@ -62,7 +62,7 @@ public class MonitoringEmailDigestService {
 
             try {
                 List<ScrapedListing> highMatchListings = scrapedListingRepository
-                        .findByUserIdAndMatchTierAndCreatedAtAfter(user.getId(), MatchTier.HIGH, since);
+                        .findByUserIdAndMatchTierAndFirstSeenAtAfter(user.getId(), MatchTier.HIGH, since);
 
                 if (highMatchListings.isEmpty()) {
                     log.debug("[EmailDigest] Usuário '{}' não possui anúncios HIGH match nas últimas {}h.",

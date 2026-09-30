@@ -104,7 +104,7 @@ class MonitoringEmailDigestServiceTest {
                 .matchScore(BigDecimal.valueOf(95.0))
                 .build();
 
-        when(scrapedListingRepository.findByUserIdAndMatchTierAndCreatedAtAfter(eq(userId), eq(MatchTier.HIGH), any(OffsetDateTime.class)))
+        when(scrapedListingRepository.findByUserIdAndMatchTierAndFirstSeenAtAfter(eq(userId), eq(MatchTier.HIGH), any(OffsetDateTime.class)))
                 .thenReturn(List.of(listing));
 
         emailDigestService.sendEmailDigests();
@@ -135,7 +135,7 @@ class MonitoringEmailDigestServiceTest {
                 .build();
 
         when(userConfigRepository.findAll()).thenReturn(List.of(config));
-        when(scrapedListingRepository.findByUserIdAndMatchTierAndCreatedAtAfter(eq(userId), eq(MatchTier.HIGH), any(OffsetDateTime.class)))
+        when(scrapedListingRepository.findByUserIdAndMatchTierAndFirstSeenAtAfter(eq(userId), eq(MatchTier.HIGH), any(OffsetDateTime.class)))
                 .thenReturn(Collections.emptyList());
 
         emailDigestService.sendEmailDigests();
