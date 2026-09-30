@@ -74,7 +74,7 @@ A aplicação da marca permanece concentrada no shell, login, onboarding e estad
 
 ## Arquitetura
 
-O repositório é um monorepo poliglota com três aplicações independentes. A SPA utiliza apenas a API Java; o BI Engine concentra a regra de negócio e orquestra o scraper Python.
+O repositório é um monorepo poliglota composto por quatro serviços integrados: a SPA Angular, o BI Engine Java, o Scraper Python e o Email Worker Cloudflare.
 
 ```mermaid
 flowchart LR
@@ -85,7 +85,10 @@ flowchart LR
     S -->|Fila, cache e histórico| Q[(SQLite)]
     S -->|HTTP + Playwright| O[OLX]
     S -->|Webhook com retry| B
-    B -->|Novos anúncios| G[Google Gemini]
+    B -->|Novos anúncios| G[Google Gemini / DeepSeek]
+    B -->|Alertas em tempo real| D[Discord Webhook]
+    B -->|Digest Periódico| EW[Email Worker<br/>Cloudflare Worker]
+    EW -->|SMTP TLS| M[Gmail / Destinatário]
 ```
 
 ### Web SPA
@@ -103,7 +106,7 @@ Interface Angular com componentes standalone e rotas carregadas sob demanda. Ela
 
 Localização: [`services/bi-engine`](services/bi-engine)
 
-Backend central da plataforma. É responsável por autenticação, ownership, persistência de negócio, agendamento, despacho das coletas, ingestão dos webhooks e análise dos anúncios.
+Backend central da plataforma. É responsável por autenticação, ownership, persistência de negócio, agendamento, despacho das coletas, ingestão dos webhooks, análise dos anúncios e orquestração de notificações (Discord e E-mail Digest).
 
 Sua organização segue uma arquitetura em camadas pragmática:
 
@@ -114,8 +117,9 @@ br.dev.bielsolosos.biscraper
 ├── domain
 │   ├── users           Usuários, autenticação e refresh tokens
 │   ├── monitoring      Monitores, anúncios, execuções e análises
+│   ├── notification    Estratégias de notificação (Discord e Email)
 │   └── ai              Auditoria das interações com IA
-└── infrastructure      Propriedades e cliente HTTP do scraper
+└── infrastructure      Propriedades, agendadores (crons) e clientes HTTP
 ```
 
 O PostgreSQL é a fonte de verdade dos dados de negócio. O schema é versionado pelo Flyway e validado pelo Hibernate durante a inicialização.
@@ -135,11 +139,22 @@ Serviço especializado em aquisição de dados, sem concentrar regras de negóci
 
 O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no desenho atual.
 
+### Email Worker
+
+Localização: [`services/email-worker`](services/email-worker)
+
+Microsserviço serverless construído como uma Cloudflare Worker em TypeScript para envio seguro de e-mails transacionais e resumos periódicos (digests).
+
+- Expõe `POST /send-email` protegido por autenticação via token Bearer (`x-auth-token`).
+- Integração SMTP TLS direta com Gmail via Nodemailer.
+- Permite isolar o tráfego de e-mails em edge serverless desacoplado da JVM.
+- Documentação detalhada em [Sistema de Notificações](docs/NOTIFICATIONS.md) e no [README do Email Worker](services/email-worker/README.md).
+
 ### Persistência
 
 | Banco | Responsabilidade | Principais dados |
 | :--- | :--- | :--- |
-| PostgreSQL | Fonte de verdade do produto | Usuários, monitores, queries, anúncios, execuções, webhooks e logs de IA |
+| PostgreSQL | Fonte de verdade do produto | Usuários, monitores, queries, anúncios, execuções, webhooks, logs de IA e logs de notificação |
 | SQLite | Estado operacional do scraper | Jobs, entregas, resultados locais, detalhes e imagens em cache |
 
 ## Fluxo principal
@@ -165,9 +180,13 @@ O SQLite funciona simultaneamente como banco operacional, fila persistente e cac
 │   └── web/
 │       └── project-ui/          Angular SPA e imagem Nginx
 ├── services/
-│   ├── bi-engine/               API e orquestração Java
+│   ├── bi-engine/               API, agendamentos e orquestração Java
+│   ├── email-worker/            Cloudflare Worker para envio e templates de e-mails
 │   └── scraper/                 Coleta e filas Python
 │       └── docs/                Guias técnicos do scraper
+├── docs/
+│   ├── NOTIFICATIONS.md         Arquitetura completa do sistema de notificações
+│   └── OBSERVABILITY_RASPBERRY.md
 ├── .github/
 │   └── workflows/               Pipelines independentes por módulo
 ├── docker-compose.yml           PostgreSQL e scraper para desenvolvimento
@@ -179,11 +198,12 @@ O SQLite funciona simultaneamente como banco operacional, fila persistente e cac
 | Componente | Stack principal |
 | :--- | :--- |
 | Web | Angular 22, TypeScript 6, RxJS, Tailwind CSS 4, Vitest e Nginx |
-| BI Engine | Java 21, Spring Boot 4.1.1, Spring MVC, Spring Security, JPA, Flyway, Spring AI e Maven |
+| BI Engine | Java 21, Spring Boot 4.1.1, Spring MVC, Spring Security, JPA, Flyway, Spring AI, JavaMailSender e Maven |
+| Email Worker | Cloudflare Workers, TypeScript 5, Wrangler 3 e Nodemailer |
 | Scraper | Python 3.11+, FastAPI, Pydantic 2, SQLModel, aiosqlite, curl_cffi, Playwright e uv |
 | Dados | PostgreSQL 16 e SQLite |
-| Integrações | OLX, Google Gemini e webhooks HTTP |
-| Entrega | Docker, Docker Compose e GitHub Actions |
+| Integrações | OLX, Google Gemini, DeepSeek, Discord Webhooks e Gmail SMTP |
+| Entrega | Docker, Docker Compose, Cloudflare Pages/Workers e GitHub Actions |
 
 ## Execução local
 
@@ -538,13 +558,14 @@ Antes de um deploy de produção:
 | Coleta OLX com fallback Playwright | Implementado |
 | Filas persistentes e retry de webhook | Implementado |
 | Análises de IA `SIMPLE` e especializada `NOTEBOOK` | Implementado (Google Gemini e DeepSeek via Spring AI) |
-| Notificações automáticas via Discord Webhook | Implementado |
+| Notificações em tempo real via Discord Webhook | Implementado |
+| Notificações periódicas (Digest 4x/dia) por E-mail | Implementado (SMTP direto ou Cloudflare Worker) |
 | Deep scraping integrado via Spring AI Tools | Implementado (`ScrappingDetailsTools` -> `/scrape/detail`) |
 | CRUD, dashboard com gráficos ECharts e paginação | Implementado |
-| Configuração de IA por usuário | Implementado |
+| Configuração de IA e Canais de Notificação por usuário | Implementado |
 | Mercado Livre e Enjoei | Presentes em partes do contrato/UI, sem providers funcionais |
 | Histórico e tendências de preço | Não implementado; o preço atual é atualizado no anúncio |
-| Alertas adicionais (e-mail, push mobile) | Não implementado |
+| Alertas push mobile (PWA/FCM) | Planejado |
 | Stack completa no Docker Compose | Scaffold atualizado; execução padrão via postgres + scraper |
 | Autenticação e assinatura HMAC de webhooks | Pendente de endurecimento |
 
@@ -552,6 +573,8 @@ O SQLite atende ao MVP e oferece recuperação simples de filas, mas não substi
 
 ## Documentação técnica
 
+- [Sistema de Notificações (Discord, Digest de E-mail e Cloudflare Worker)](docs/NOTIFICATIONS.md)
+- [README do Email Worker](services/email-worker/README.md)
 - [README do BI Engine](services/bi-engine/README.md)
 - [README do scraper](services/scraper/README.md)
 - [README da SPA](apps/web/project-ui/README.md)

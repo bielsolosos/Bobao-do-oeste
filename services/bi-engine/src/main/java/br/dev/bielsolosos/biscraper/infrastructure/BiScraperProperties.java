@@ -16,9 +16,11 @@ import java.util.List;
 @ConfigurationProperties(prefix = "biscraper")
 public class BiScraperProperties {
 
+    private String appUrl = "https://bi.bielsolosos.dev.br";
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
     private Scraper scraper = new Scraper();
+    private Email email = new Email();
 
     @Getter
     @Setter
@@ -47,5 +49,34 @@ public class BiScraperProperties {
         private String username = "admin";
         private String password = "admin";
         private String webhookUrl = "http://localhost:8080/api/v1/webhooks/scraper";
+    }
+
+    @Getter
+    @Setter
+    public static class Email {
+        private boolean enabled = true;
+        private EmailProvider provider = EmailProvider.SMTP;
+        private String from = "BI Scraper <fatiarapidaautomation@gmail.com>";
+        private Worker worker = new Worker();
+        private Digest digest = new Digest();
+
+        public enum EmailProvider {
+            SMTP, WORKER
+        }
+
+        @Getter
+        @Setter
+        public static class Worker {
+            private String baseUrl = "http://localhost:8787";
+            private String authToken = "bi-scraper-email-secret-token";
+        }
+
+        @Getter
+        @Setter
+        public static class Digest {
+            private String cron = "0 0 8,12,16,20 * * *";
+            private int windowHours = 4;
+            private int maxItems = 4;
+        }
     }
 }

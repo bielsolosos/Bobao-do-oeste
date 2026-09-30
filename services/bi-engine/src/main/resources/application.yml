@@ -24,6 +24,18 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:teste@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:quase consegui vazar esse negosio aqui}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
   ai:
     google:
       genai:
@@ -39,6 +51,7 @@ spring:
           model: ${DEEPSEEK_MODEL:deepseek-chat}
 
 biscraper:
+  app-url: ${APP_FRONTEND_URL:https://bi.bielsolosos.dev.br}
   jwt:
     secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3VyZS1kZWZhdWx0LXNlY3JldC1rZXktZm9yLWp3dC1hdXRoZW50aWNhdGlvbi0yNTYtYml0cw==}
     expiration: ${JWT_EXPIRATION:3600000}
@@ -50,6 +63,17 @@ biscraper:
     username: ${SCRAPER_USERNAME:admin}
     password: ${SCRAPER_PASSWORD:admin}
     webhook-url: ${SCRAPER_WEBHOOK_URL:http://localhost:8080/api/v1/webhooks/scraper}
+  email:
+    enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
+    provider: ${EMAIL_PROVIDER:SMTP}
+    from: ${EMAIL_FROM:BI Scraper <fatiarapidaautomation@gmail.com>}
+    worker:
+      base-url: ${EMAIL_WORKER_URL:http://localhost:8787}
+      auth-token: ${EMAIL_WORKER_AUTH_TOKEN:bi-scraper-email-secret-token}
+    digest:
+      cron: ${EMAIL_DIGEST_CRON:0 0 8,12,16,20 * * *}
+      window-hours: ${EMAIL_DIGEST_WINDOW_HOURS:4}
+      max-items: ${EMAIL_DIGEST_MAX_ITEMS:4}
 
 logging:
   structured:
