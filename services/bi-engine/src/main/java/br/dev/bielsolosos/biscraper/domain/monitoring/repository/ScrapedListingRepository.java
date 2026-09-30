@@ -39,7 +39,7 @@ public interface ScrapedListingRepository
 
     List<ScrapedListing> findByProductMonitorId(UUID productMonitorId);
 
-    @Query("SELECT s FROM ScrapedListing s WHERE s.productMonitor.user.id = :userId AND s.matchTier = :matchTier AND s.firstSeenAt >= :since ORDER BY s.matchScore DESC, s.firstSeenAt DESC")
+    @Query("SELECT s FROM ScrapedListing s JOIN FETCH s.productMonitor p WHERE p.user.id = :userId AND s.matchTier = :matchTier AND s.firstSeenAt >= :since ORDER BY s.matchScore DESC, s.firstSeenAt DESC")
     List<ScrapedListing> findByUserIdAndMatchTierAndFirstSeenAtAfter(
             @Param("userId") UUID userId,
             @Param("matchTier") MatchTier matchTier,

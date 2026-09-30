@@ -58,7 +58,7 @@ public class MonitoringEmailDigestService {
         for (UserConfig config : configs) {
             if (!config.isEmailEnabled()) {
                 String username = config.getUser() != null ? config.getUser().getUsername() : "desconhecido";
-                log.debug("[EmailDigest] Usuário '{}' possui notificações por e-mail desativadas (email_enabled = false). Pulando.", username);
+                log.info("[EmailDigest] Usuário '{}' possui notificações por e-mail desativadas (email_enabled = false). Pulando.", username);
                 skippedDisabledOrInvalid++;
                 continue;
             }

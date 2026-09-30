@@ -70,7 +70,15 @@ public class MonitoringEmailDigestNotificationTemplate implements NotificationTe
         List<ScrapedListing> displayed = listings.stream().limit(maxItems).toList();
 
         for (ScrapedListing listing : displayed) {
-            String monitorName = listing.getProductMonitor() != null ? listing.getProductMonitor().getName() : "Geral";
+            String monitorName = "Geral";
+            if (listing.getProductMonitor() != null) {
+                try {
+                    if (StringUtils.isNotBlank(listing.getProductMonitor().getName())) {
+                        monitorName = listing.getProductMonitor().getName();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
             String price = listing.getCurrentPrice() != null
                     ? NumberFormat.getCurrencyInstance(PT_BR).format(listing.getCurrentPrice())
                     : "N/A";
@@ -207,10 +215,20 @@ public class MonitoringEmailDigestNotificationTemplate implements NotificationTe
         String location = formatLocation(listing);
 
         ProductMonitor monitor = listing.getProductMonitor();
-        String monitorName = monitor != null ? monitor.getName() : "Geral";
-        String monitorDetailUrl = monitor != null && monitor.getId() != null
-                ? String.format("%s/monitors/%s", appUrl, monitor.getId())
-                : String.format("%s/monitors", appUrl);
+        String monitorName = "Geral";
+        String monitorDetailUrl = String.format("%s/monitors", appUrl);
+        if (monitor != null) {
+            try {
+                if (StringUtils.isNotBlank(monitor.getName())) {
+                    monitorName = monitor.getName();
+                }
+                if (monitor.getId() != null) {
+                    monitorDetailUrl = String.format("%s/monitors/%s", appUrl, monitor.getId());
+                }
+            } catch (Exception ignored) {
+                // Fallback gracioso caso proxy esteja desanexado sem sessão ativa
+            }
+        }
 
         String thumbnailHtml = "";
         if (listing.getImages() != null && !listing.getImages().isEmpty()) {
