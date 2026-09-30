@@ -60,6 +60,9 @@ class WebhookScrapperServiceTest {
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private WebhookScrapperService webhookScrapperService;
 

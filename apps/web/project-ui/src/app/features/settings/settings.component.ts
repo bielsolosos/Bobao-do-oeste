@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { startWith } from 'rxjs';
 import {
   AvailableAiModelsResponse,
   ModelOptionDto,
@@ -9,6 +11,7 @@ import {
 } from '../../core/models/user-config.model';
 import { AuthService } from '../../core/services/auth.service';
 import { UserConfigService } from '../../core/services/user-config.service';
+import { UiBadgeComponent } from '../../shared/components/ui-badge/ui-badge.component';
 import { UiButtonComponent } from '../../shared/components/ui-button/ui-button.component';
 import { UiCardComponent } from '../../shared/components/ui-card/ui-card.component';
 import { UiFormFieldComponent } from '../../shared/components/ui-form-field/ui-form-field.component';
@@ -37,6 +40,7 @@ interface VendorDisplayOption {
     UiCardComponent,
     UiFormFieldComponent,
     UiButtonComponent,
+    UiBadgeComponent,
     UiStatePanelComponent,
   ],
   templateUrl: './settings.component.html',
@@ -50,6 +54,7 @@ export class SettingsComponent implements OnInit {
   isLoading = signal(true);
   isSaving = signal(false);
   loadError = signal(false);
+  showWebhookInstructions = signal(false);
 
   availableModels = signal<AvailableAiModelsResponse | null>(null);
   selectedVendor = signal<ModelVendor>('GEMINI');
@@ -83,6 +88,28 @@ export class SettingsComponent implements OnInit {
     aiVendor: ['GEMINI' as ModelVendor, [Validators.required]],
     cheapModel: ['', [Validators.required]],
     strongModel: ['', [Validators.required]],
+    discordWebhookUrl: [
+      '',
+      [
+        Validators.pattern(
+          /^(https:\/\/)?(discord\.com|discordapp\.com)\/api\/webhooks\/[0-9]+\/[A-Za-z0-9_-]+.*$/i,
+        ),
+      ],
+    ],
+    discordEnabled: [true],
+    emailEnabled: [false],
+  });
+
+  private discordWebhookValue = toSignal(
+    this.form
+      .get('discordWebhookUrl')!
+      .valueChanges.pipe(startWith(this.form.get('discordWebhookUrl')!.value || '')),
+    { initialValue: '' },
+  );
+
+  isDiscordConfigured = computed(() => {
+    const url = this.discordWebhookValue();
+    return typeof url === 'string' && url.trim().length > 0;
   });
 
   currentVendorData = computed<VendorModelsDto | undefined>(() => {
@@ -127,6 +154,9 @@ export class SettingsComponent implements OnInit {
             aiVendor: vendor,
             cheapModel: currentConfig.cheapModel || '',
             strongModel: currentConfig.strongModel || '',
+            discordWebhookUrl: currentConfig.discordWebhookUrl || '',
+            discordEnabled: currentConfig.discordEnabled ?? true,
+            emailEnabled: currentConfig.emailEnabled ?? false,
           });
           this.ensureValidSelection(vendor);
         } else {
@@ -138,6 +168,9 @@ export class SettingsComponent implements OnInit {
               aiVendor: vendor,
               cheapModel: config?.cheapModel || '',
               strongModel: config?.strongModel || '',
+              discordWebhookUrl: config?.discordWebhookUrl || '',
+              discordEnabled: config?.discordEnabled ?? true,
+              emailEnabled: config?.emailEnabled ?? false,
             });
             this.ensureValidSelection(vendor);
           });
@@ -158,6 +191,15 @@ export class SettingsComponent implements OnInit {
       this.form.patchValue({ aiVendor: vendor });
       this.form.markAsDirty();
     }
+  }
+
+  toggleWebhookInstructions() {
+    this.showWebhookInstructions.update((v) => !v);
+  }
+
+  clearDiscordWebhook() {
+    this.form.patchValue({ discordWebhookUrl: '' });
+    this.form.markAsDirty();
   }
 
   private ensureValidSelection(vendor: ModelVendor) {
@@ -195,7 +237,7 @@ export class SettingsComponent implements OnInit {
   onSubmit() {
     this.form.markAllAsTouched();
     if (this.form.invalid) {
-      this.toast.warning('Atenção', 'Selecione os modelos válidos para continuar.');
+      this.toast.warning('Atenção', 'Verifique os campos obrigatórios e formatos antes de salvar.');
       return;
     }
 
@@ -207,6 +249,9 @@ export class SettingsComponent implements OnInit {
         aiVendor: formValue.aiVendor!,
         cheapModel: formValue.cheapModel!,
         strongModel: formValue.strongModel!,
+        discordWebhookUrl: formValue.discordWebhookUrl ? formValue.discordWebhookUrl.trim() : null,
+        discordEnabled: formValue.discordEnabled ?? true,
+        emailEnabled: formValue.emailEnabled ?? false,
       })
       .subscribe({
         next: (updatedConfig) => {
@@ -221,11 +266,11 @@ export class SettingsComponent implements OnInit {
             });
           }
 
-          this.toast.success('Sucesso', 'Configurações de IA salvas com sucesso!');
+          this.toast.success('Sucesso', 'Configurações e Webhook salvos com sucesso!');
         },
         error: (err) => {
           this.isSaving.set(false);
-          console.error('Erro ao salvar configurações de IA:', err);
+          console.error('Erro ao salvar configurações:', err);
           this.toast.error(
             'Erro ao salvar',
             err?.error?.message || 'Não foi possível salvar as configurações.',

@@ -8,5 +8,12 @@ public record UserConfigResponse(
         UUID id,
         ModelVendorEnum aiVendor,
         String cheapModel,
-        String strongModel
-) {}
+        String strongModel,
+        String discordWebhookUrl,
+        boolean discordEnabled,
+        boolean emailEnabled
+) {
+    public UserConfigResponse(UUID id, ModelVendorEnum aiVendor, String cheapModel, String strongModel) {
+        this(id, aiVendor, cheapModel, strongModel, null, true, false);
+    }
+}

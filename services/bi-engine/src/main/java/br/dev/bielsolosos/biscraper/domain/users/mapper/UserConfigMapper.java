@@ -15,7 +15,10 @@ public class UserConfigMapper {
                 config.getId(),
                 config.getAiVendor(),
                 config.getCheapModel(),
-                config.getStrongModel()
+                config.getStrongModel(),
+                config.getDiscordWebhookUrl(),
+                config.isDiscordEnabled(),
+                config.isEmailEnabled()
         );
     }
 }

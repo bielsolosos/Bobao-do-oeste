@@ -51,6 +51,9 @@ describe('SettingsComponent', () => {
     aiVendor: 'GEMINI',
     cheapModel: 'gemini-2.5-flash',
     strongModel: 'gemini-2.5-pro',
+    discordWebhookUrl: 'https://discord.com/api/webhooks/123456/tokenABC',
+    discordEnabled: true,
+    emailEnabled: false,
   };
 
   beforeEach(async () => {
@@ -85,11 +88,16 @@ describe('SettingsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create and load initial config', () => {
+  it('should create and load initial config including discord webhook', () => {
     expect(component).toBeTruthy();
     expect(component.form.value.aiVendor).toBe('GEMINI');
     expect(component.form.value.cheapModel).toBe('gemini-2.5-flash');
     expect(component.form.value.strongModel).toBe('gemini-2.5-pro');
+    expect(component.form.value.discordWebhookUrl).toBe(
+      'https://discord.com/api/webhooks/123456/tokenABC',
+    );
+    expect(component.form.value.discordEnabled).toBe(true);
+    expect(component.isDiscordConfigured()).toBe(true);
   });
 
   it('should filter available models when vendor changes', () => {
@@ -98,5 +106,11 @@ describe('SettingsComponent', () => {
     expect(component.availableCheapModels().length).toBe(1);
     expect(component.availableCheapModels()[0].id).toBe('deepseek-chat');
     expect(component.availableStrongModels()[0].id).toBe('deepseek-reasoner');
+  });
+
+  it('should clear discord webhook when clearDiscordWebhook is called', () => {
+    component.clearDiscordWebhook();
+    expect(component.form.value.discordWebhookUrl).toBe('');
+    expect(component.isDiscordConfigured()).toBe(false);
   });
 });

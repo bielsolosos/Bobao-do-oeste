@@ -18,13 +18,20 @@ export interface AvailableAiModelsResponse {
 }
 
 export interface UserConfig {
+  id?: string;
   aiVendor: ModelVendor;
   cheapModel: string;
   strongModel: string;
+  discordWebhookUrl?: string | null;
+  discordEnabled?: boolean;
+  emailEnabled?: boolean;
 }
 
 export interface UpdateUserConfigRequest {
   aiVendor: ModelVendor;
   cheapModel: string;
   strongModel: string;
+  discordWebhookUrl?: string | null;
+  discordEnabled?: boolean;
+  emailEnabled?: boolean;
 }
