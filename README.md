@@ -74,7 +74,7 @@ A aplicação da marca permanece concentrada no shell, login, onboarding e estad
 
 ## Arquitetura
 
-O repositório é um monorepo poliglota composto por quatro serviços integrados: a SPA Angular, o BI Engine Java, o Scraper Python e o Email Worker Cloudflare.
+O repositório é um monorepo poliglota composto por três serviços integrados: a SPA Angular, o BI Engine Java e o Scraper Python.
 
 ```mermaid
 flowchart LR
@@ -87,8 +87,7 @@ flowchart LR
     S -->|Webhook com retry| B
     B -->|Novos anúncios| G[Google Gemini / DeepSeek]
     B -->|Alertas em tempo real| D[Discord Webhook]
-    B -->|Digest Periódico| EW[Email Worker<br/>Cloudflare Worker]
-    EW -->|SMTP TLS| M[Gmail / Destinatário]
+    B -->|Digest Periódico (SMTP)| M[Gmail / Destinatário]
 ```
 
 ### Web SPA
@@ -139,16 +138,20 @@ Serviço especializado em aquisição de dados, sem concentrar regras de negóci
 
 O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no desenho atual.
 
-### Email Worker
+### Scraper
 
-Localização: [`services/email-worker`](services/email-worker)
+Localização: [`services/scraper`](services/scraper)
 
-Microsserviço serverless construído como uma Cloudflare Worker em TypeScript para envio seguro de e-mails transacionais e resumos periódicos (digests).
+Serviço especializado em aquisição de dados, sem concentrar regras de negócio do produto. Para a OLX, ele tenta primeiro uma requisição HTTP com fingerprint de navegador e utiliza Playwright stealth como fallback em bloqueios.
 
-- Expõe `POST /send-email` protegido por autenticação via token Bearer (`x-auth-token`).
-- Integração SMTP TLS direta com Gmail via Nodemailer.
-- Permite isolar o tráfego de e-mails em edge serverless desacoplado da JVM.
-- Documentação detalhada em [Sistema de Notificações](docs/NOTIFICATIONS.md) e no [README do Email Worker](services/email-worker/README.md).
+- Expõe operações síncronas e assíncronas de scraping.
+- Mantém uma fila persistente de jobs em SQLite.
+- Recupera jobs interrompidos após reinicialização.
+- Entrega resultados por webhook com retry exponencial e jitter.
+- Mantém histórico operacional, deduplicação e caches de detalhes e imagens.
+- Executa workers separados para scraping, webhooks e limpeza de cache.
+
+O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no desenho atual.
 
 ### Persistência
 
@@ -181,7 +184,6 @@ Microsserviço serverless construído como uma Cloudflare Worker em TypeScript p
 │       └── project-ui/          Angular SPA e imagem Nginx
 ├── services/
 │   ├── bi-engine/               API, agendamentos e orquestração Java
-│   ├── email-worker/            Cloudflare Worker para envio e templates de e-mails
 │   └── scraper/                 Coleta e filas Python
 │       └── docs/                Guias técnicos do scraper
 ├── docs/
@@ -199,11 +201,10 @@ Microsserviço serverless construído como uma Cloudflare Worker em TypeScript p
 | :--- | :--- |
 | Web | Angular 22, TypeScript 6, RxJS, Tailwind CSS 4, Vitest e Nginx |
 | BI Engine | Java 21, Spring Boot 4.1.1, Spring MVC, Spring Security, JPA, Flyway, Spring AI, JavaMailSender e Maven |
-| Email Worker | Cloudflare Workers, TypeScript 5, Wrangler 3 e Nodemailer |
 | Scraper | Python 3.11+, FastAPI, Pydantic 2, SQLModel, aiosqlite, curl_cffi, Playwright e uv |
 | Dados | PostgreSQL 16 e SQLite |
 | Integrações | OLX, Google Gemini, DeepSeek, Discord Webhooks e Gmail SMTP |
-| Entrega | Docker, Docker Compose, Cloudflare Pages/Workers e GitHub Actions |
+| Entrega | Docker, Docker Compose e GitHub Actions |
 
 ## Execução local
 
@@ -559,7 +560,7 @@ Antes de um deploy de produção:
 | Filas persistentes e retry de webhook | Implementado |
 | Análises de IA `SIMPLE` e especializada `NOTEBOOK` | Implementado (Google Gemini e DeepSeek via Spring AI) |
 | Notificações em tempo real via Discord Webhook | Implementado |
-| Notificações periódicas (Digest 4x/dia) por E-mail | Implementado (SMTP direto ou Cloudflare Worker) |
+| Notificações periódicas (Digest 4x/dia) por E-mail | Implementado (SMTP direto via Spring Mail) |
 | Deep scraping integrado via Spring AI Tools | Implementado (`ScrappingDetailsTools` -> `/scrape/detail`) |
 | CRUD, dashboard com gráficos ECharts e paginação | Implementado |
 | Configuração de IA e Canais de Notificação por usuário | Implementado |
@@ -573,8 +574,7 @@ O SQLite atende ao MVP e oferece recuperação simples de filas, mas não substi
 
 ## Documentação técnica
 
-- [Sistema de Notificações (Discord, Digest de E-mail e Cloudflare Worker)](docs/NOTIFICATIONS.md)
-- [README do Email Worker](services/email-worker/README.md)
+- [Sistema de Notificações (Discord e Digest de E-mail via SMTP)](docs/NOTIFICATIONS.md)
 - [README do BI Engine](services/bi-engine/README.md)
 - [README do scraper](services/scraper/README.md)
 - [README da SPA](apps/web/project-ui/README.md)

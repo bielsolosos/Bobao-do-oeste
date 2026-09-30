@@ -9,9 +9,6 @@ import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
 import br.dev.bielsolosos.biscraper.domain.users.repository.UserConfigRepository;
 import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
-import br.dev.bielsolosos.biscraper.infrastructure.client.email.CloudflareEmailHttpClient;
-import br.dev.bielsolosos.biscraper.infrastructure.client.email.dto.EmailSendRequest;
-import br.dev.bielsolosos.biscraper.infrastructure.client.email.dto.EmailSendResponse;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,20 +25,17 @@ public class NotificationEmailStrategy extends NotificationStrategy {
     private final UserConfigRepository userConfigRepository;
     private final BiScraperProperties properties;
     private final JavaMailSender javaMailSender;
-    private final CloudflareEmailHttpClient cloudflareEmailHttpClient;
 
     public NotificationEmailStrategy(
             NotificationLogRepository notificationLogRepository,
             UserConfigRepository userConfigRepository,
             BiScraperProperties properties,
-            JavaMailSender javaMailSender,
-            CloudflareEmailHttpClient cloudflareEmailHttpClient
+            JavaMailSender javaMailSender
     ) {
         super(notificationLogRepository);
         this.userConfigRepository = userConfigRepository;
         this.properties = properties;
         this.javaMailSender = javaMailSender;
-        this.cloudflareEmailHttpClient = cloudflareEmailHttpClient;
     }
 
     @Override
@@ -74,29 +68,19 @@ public class NotificationEmailStrategy extends NotificationStrategy {
             String html = template != null ? template.toHtmlEmail() : "<p>Notificação BI Scraper</p>";
             String text = template != null ? template.getMessageTemplate() : "Notificação BI Scraper";
 
-            BiScraperProperties.Email.EmailProvider provider = properties.getEmail().getProvider();
-            log.info("[NotificationEmail] Preparando envio de e-mail via provedor '{}' para '{}' | Assunto: '{}'",
-                    provider, recipient.getEmail(), subject);
+            log.info("[NotificationEmail] Preparando envio de e-mail SMTP para '{}' (From: '{}') | Assunto: '{}'",
+                    recipient.getEmail(), properties.getEmail().getFrom(), subject);
 
-            if (provider == BiScraperProperties.Email.EmailProvider.WORKER) {
-                String workerUrl = properties.getEmail().getWorker().getBaseUrl();
-                log.info("[NotificationEmail] Encaminhando e-mail para Cloudflare Worker em: {} (endpoint: {}/send-email)",
-                        workerUrl, workerUrl.replaceAll("/+$", ""));
-                sendViaCloudflareWorker(recipient.getEmail(), subject, html, text);
-            } else {
-                log.info("[NotificationEmail] Enviando e-mail via SMTP nativo do Spring Mail (From: '{}', Destinatário: '{}')",
-                        properties.getEmail().getFrom(), recipient.getEmail());
-                sendViaSmtp(recipient.getEmail(), subject, html, text);
-            }
+            sendViaSmtp(recipient.getEmail(), subject, html, text);
 
-            String logDescription = String.format("E-mail (%s) enviado com sucesso para '%s' com assunto: '%s'.",
-                    provider, recipient.getEmail(), subject);
+            String logDescription = String.format("E-mail (SMTP) enviado com sucesso para '%s' com assunto: '%s'.",
+                    recipient.getEmail(), subject);
             saveLog(event, logDescription);
-            log.info("[NotificationEmail] E-mail entregue com sucesso para '{}' via provedor '{}'", recipient.getEmail(), provider);
+            log.info("[NotificationEmail] E-mail entregue com sucesso para '{}' via SMTP", recipient.getEmail());
 
         } catch (Exception e) {
-            log.error("[NotificationEmail] Erro ao enviar e-mail para usuário '{}' ({}) via provedor '{}': {}",
-                    recipient.getUsername(), recipient.getEmail(), properties.getEmail().getProvider(), e.getMessage(), e);
+            log.error("[NotificationEmail] Erro ao enviar e-mail para usuário '{}' ({}) via SMTP: {}",
+                    recipient.getUsername(), recipient.getEmail(), e.getMessage(), e);
             saveLog(event, "Falha ao enviar e-mail: " + e.getMessage());
         }
     }
@@ -114,14 +98,5 @@ public class NotificationEmailStrategy extends NotificationStrategy {
 
         javaMailSender.send(mimeMessage);
         log.info("[NotificationEmail-SMTP] MimeMessage despachado com sucesso para o servidor SMTP");
-    }
-
-    private void sendViaCloudflareWorker(String toEmail, String subject, String html, String text) {
-        EmailSendRequest request = new EmailSendRequest(toEmail, subject, html, text);
-        EmailSendResponse response = cloudflareEmailHttpClient.sendEmail(request);
-
-        if (response != null && !response.success()) {
-            throw new RuntimeException("Worker retornou erro: " + response.error());
-        }
     }
 }

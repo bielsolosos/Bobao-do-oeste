@@ -55,21 +55,8 @@ public class BiScraperProperties {
     @Setter
     public static class Email {
         private boolean enabled = true;
-        private EmailProvider provider = EmailProvider.SMTP;
         private String from = "BI Scraper <fatiarapidaautomation@gmail.com>";
-        private Worker worker = new Worker();
         private Digest digest = new Digest();
-
-        public enum EmailProvider {
-            SMTP, WORKER
-        }
-
-        @Getter
-        @Setter
-        public static class Worker {
-            private String baseUrl = "http://localhost:8787";
-            private String authToken = "bi-scraper-email-secret-token";
-        }
 
         @Getter
         @Setter

@@ -9,9 +9,6 @@ import br.dev.bielsolosos.biscraper.domain.users.model.User;
 import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
 import br.dev.bielsolosos.biscraper.domain.users.repository.UserConfigRepository;
 import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
-import br.dev.bielsolosos.biscraper.infrastructure.client.email.CloudflareEmailHttpClient;
-import br.dev.bielsolosos.biscraper.infrastructure.client.email.dto.EmailSendRequest;
-import br.dev.bielsolosos.biscraper.infrastructure.client.email.dto.EmailSendResponse;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,9 +39,6 @@ class NotificationEmailStrategyTest {
     private JavaMailSender javaMailSender;
 
     @Mock
-    private CloudflareEmailHttpClient cloudflareEmailHttpClient;
-
-    @Mock
     private NotificationTemplate notificationTemplate;
 
     private BiScraperProperties properties;
@@ -54,15 +48,13 @@ class NotificationEmailStrategyTest {
     void setUp() {
         properties = new BiScraperProperties();
         properties.getEmail().setEnabled(true);
-        properties.getEmail().setProvider(BiScraperProperties.Email.EmailProvider.SMTP);
         properties.getEmail().setFrom("BI Scraper <test@bi.com>");
 
         strategy = new NotificationEmailStrategy(
                 notificationLogRepository,
                 userConfigRepository,
                 properties,
-                javaMailSender,
-                cloudflareEmailHttpClient
+                javaMailSender
         );
     }
 
@@ -73,7 +65,7 @@ class NotificationEmailStrategyTest {
     }
 
     @Test
-    @DisplayName("Deve enviar via SMTP quando provider for SMTP")
+    @DisplayName("Deve enviar via SMTP quando configurado")
     void shouldSendViaSmtpSuccessfully() {
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).username("biel").email("biel@test.com").build();
@@ -104,33 +96,6 @@ class NotificationEmailStrategyTest {
     }
 
     @Test
-    @DisplayName("Deve enviar via Cloudflare Worker quando provider for WORKER")
-    void shouldSendViaWorkerSuccessfully() {
-        properties.getEmail().setProvider(BiScraperProperties.Email.EmailProvider.WORKER);
-
-        UUID userId = UUID.randomUUID();
-        User user = User.builder().id(userId).username("biel").email("biel@test.com").build();
-        UserConfig config = UserConfig.builder().user(user).emailEnabled(true).build();
-
-        NotificationEvent event = NotificationEvent.builder()
-                .recipient(user)
-                .contentTemplate(notificationTemplate)
-                .build();
-
-        when(userConfigRepository.findByUserId(userId)).thenReturn(Optional.of(config));
-        when(notificationTemplate.getSubject()).thenReturn("Teste Worker");
-        when(notificationTemplate.toHtmlEmail()).thenReturn("<p>HTML</p>");
-        when(notificationTemplate.getMessageTemplate()).thenReturn("Texto");
-        when(cloudflareEmailHttpClient.sendEmail(any(EmailSendRequest.class)))
-                .thenReturn(new EmailSendResponse(true, "msg-123", null));
-
-        strategy.sendNotification(event);
-
-        verify(cloudflareEmailHttpClient, times(1)).sendEmail(any(EmailSendRequest.class));
-        verify(notificationLogRepository, times(1)).save(any(NotificationLog.class));
-    }
-
-    @Test
     @DisplayName("Não deve enviar se o usuário tiver emailEnabled = false")
     void shouldNotSendIfEmailDisabledForUser() {
         UUID userId = UUID.randomUUID();
@@ -146,7 +111,6 @@ class NotificationEmailStrategyTest {
         strategy.sendNotification(event);
 
         verifyNoInteractions(javaMailSender);
-        verifyNoInteractions(cloudflareEmailHttpClient);
         verifyNoInteractions(notificationLogRepository);
     }
 }

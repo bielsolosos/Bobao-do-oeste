@@ -65,11 +65,7 @@ biscraper:
     webhook-url: ${SCRAPER_WEBHOOK_URL:http://localhost:8080/api/v1/webhooks/scraper}
   email:
     enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
-    provider: ${EMAIL_PROVIDER:SMTP}
     from: ${EMAIL_FROM:BI Scraper <fatiarapidaautomation@gmail.com>}
-    worker:
-      base-url: ${EMAIL_WORKER_URL:http://localhost:8787}
-      auth-token: ${EMAIL_WORKER_AUTH_TOKEN:bi-scraper-email-secret-token}
     digest:
       cron: ${EMAIL_DIGEST_CRON:0 0 8,12,16,20 * * *}
       window-hours: ${EMAIL_DIGEST_WINDOW_HOURS:4}
