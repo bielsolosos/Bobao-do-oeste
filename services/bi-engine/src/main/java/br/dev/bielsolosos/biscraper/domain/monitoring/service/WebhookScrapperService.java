@@ -21,9 +21,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import br.dev.bielsolosos.biscraper.core.enums.NotificationChannel;
+import br.dev.bielsolosos.biscraper.domain.monitoring.notification.MonitoringListingNotificationTemplate;
+import br.dev.bielsolosos.biscraper.domain.notification.event.NotificationEvent;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -43,6 +48,7 @@ public class WebhookScrapperService {
     private final ProductMonitorRepository productMonitorRepository;
     private final AnalisyFactorySelector analisysSelector;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Async("webhookProcessorExecutor")
     @Transactional
@@ -163,6 +169,8 @@ public class WebhookScrapperService {
             }
         }
 
+        List<ScrapedListing> newlyCreatedListings = new ArrayList<>();
+
         // 2. Processa a análise com IA / regras para os itens novos
         if (!newListings.isEmpty()) {
             AnalisysFactory factory = analisysSelector.getFactory(monitor.getAnalysisType());
@@ -197,6 +205,7 @@ public class WebhookScrapperService {
                         .build();
 
                 listingsToSave.add(newListing);
+                newlyCreatedListings.add(newListing);
             }
         }
 
@@ -214,5 +223,24 @@ public class WebhookScrapperService {
         // 5. Atualiza o timestamp de última raspagem no monitor
         monitor.setLastScrapedAt(now);
         productMonitorRepository.save(monitor);
+
+        // 6. Publica evento de notificação para novos anúncios encontrados
+        if (!newlyCreatedListings.isEmpty() && monitor.getUser() != null) {
+            log.info("Publicando evento de notificação para {} novos anúncios do monitor '{}'",
+                    newlyCreatedListings.size(), monitor.getName());
+
+            MonitoringListingNotificationTemplate template = new MonitoringListingNotificationTemplate(
+                    monitor,
+                    newlyCreatedListings,
+                    new NotificationChannel[]{NotificationChannel.DISCORD}
+            );
+
+            NotificationEvent notificationEvent = NotificationEvent.builder()
+                    .recipient(monitor.getUser())
+                    .contentTemplate(template)
+                    .build();
+
+            eventPublisher.publishEvent(notificationEvent);
+        }
     }
 }

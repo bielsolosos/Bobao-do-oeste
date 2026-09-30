@@ -53,6 +53,16 @@ public class UserConfigService {
         config.setCheapModel(request.cheapModel().trim());
         config.setStrongModel(request.strongModel().trim());
 
+        if (request.discordWebhookUrl() != null) {
+            config.setDiscordWebhookUrl(request.discordWebhookUrl().trim());
+        }
+        if (request.discordEnabled() != null) {
+            config.setDiscordEnabled(request.discordEnabled());
+        }
+        if (request.emailEnabled() != null) {
+            config.setEmailEnabled(request.emailEnabled());
+        }
+
         UserConfig saved = userConfigRepository.save(config);
         return UserConfigMapper.toResponse(saved);
     }

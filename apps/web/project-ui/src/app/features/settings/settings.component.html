@@ -1,7 +1,7 @@
 <div class="mx-auto max-w-4xl space-y-6 pb-12">
   <app-ui-page-header
-    title="Configurações de Inteligência Artificial"
-    subtitle="Configure o provedor e os modelos de linguagem que processarão a triagem e avaliação dos seus monitores"
+    title="Configurações do Sistema"
+    subtitle="Configure o provedor de IA e os canais de notificação em tempo real (Webhook Discord & E-mail)"
   >
   </app-ui-page-header>
 
@@ -9,12 +9,13 @@
     <div class="space-y-4">
       <div class="h-44 animate-pulse rounded-xl bg-surface border border-brand-950/10"></div>
       <div class="h-64 animate-pulse rounded-xl bg-surface border border-brand-950/10"></div>
+      <div class="h-48 animate-pulse rounded-xl bg-surface border border-brand-950/10"></div>
     </div>
   } @else if (loadError()) {
     <app-ui-state-panel
       type="error"
       title="Erro ao carregar configurações"
-      description="Não foi possível obter o catálogo de modelos disponíveis. Verifique a conexão com o servidor e tente novamente."
+      description="Não foi possível obter os dados de configuração. Verifique a conexão com o servidor e tente novamente."
       actionLabel="Tentar novamente"
       (action)="loadData()"
     ></app-ui-state-panel>
@@ -181,7 +182,7 @@
               <app-ui-form-field
                 label="Modelo Selecionado"
                 [required]="true"
-                helperText="Escolha a variante leve do provedor atual."
+                hint="Escolha a variante leve do provedor atual."
               >
                 <select
                   formControlName="cheapModel"
@@ -250,7 +251,7 @@
               <app-ui-form-field
                 label="Modelo Selecionado"
                 [required]="true"
-                helperText="Escolha a variante de alto raciocínio do provedor atual."
+                hint="Escolha a variante de alto raciocínio do provedor atual."
               >
                 <select
                   formControlName="strongModel"
@@ -274,6 +275,251 @@
                 >
               </div>
             }
+          </div>
+        </div>
+      </app-ui-card>
+
+      <!-- 3. NOTIFICAÇÕES & WEBHOOK DO DISCORD -->
+      <app-ui-card
+        title="3. Notificações & Webhook do Discord"
+        subtitle="Receba alertas automáticos no seu servidor do Discord assim que novas oportunidades forem mineradas"
+      >
+        <div class="space-y-6">
+          <!-- Banner Discord Header -->
+          <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-[#5865F2]/20 bg-[#5865F2]/5 p-4"
+          >
+            <div class="flex items-center gap-3.5">
+              <span
+                class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#5865F2] text-white shadow-xs"
+              >
+                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"
+                  />
+                </svg>
+              </span>
+              <div>
+                <h4 class="font-bold text-brand-950 text-base">Integração com Discord Webhook</h4>
+                <p class="text-xs text-brand-950/60">
+                  Cards detalhados com fotos, preço em destaque, pontuação e links diretos dos
+                  anúncios.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              @if (isDiscordConfigured()) {
+                <app-ui-badge variant="success" size="sm">Webhook Ativo</app-ui-badge>
+              } @else {
+                <app-ui-badge variant="neutral" size="sm">Não Configurado</app-ui-badge>
+              }
+            </div>
+          </div>
+
+          <!-- Formulário do Webhook -->
+          <div class="space-y-4">
+            <app-ui-form-field
+              label="URL do Webhook do Discord"
+              hint="Cole aqui a URL gerada nas configurações de integração do seu canal no Discord."
+              [error]="
+                form.get('discordWebhookUrl')?.hasError('pattern')
+                  ? 'A URL deve ser um webhook válido do Discord (ex: https://discord.com/api/webhooks/123456/token...)'
+                  : ''
+              "
+            >
+              <div class="relative flex items-center">
+                <input
+                  type="url"
+                  formControlName="discordWebhookUrl"
+                  placeholder="https://discord.com/api/webhooks/1234567890/seu_token_aqui..."
+                  class="w-full rounded-lg border border-brand-950/20 bg-surface px-3.5 py-2.5 text-sm font-mono text-brand-950 placeholder-brand-950/30 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+                  [ngClass]="{
+                    'border-red-500 focus:border-red-500 focus:ring-red-500':
+                      form.get('discordWebhookUrl')?.invalid &&
+                      form.get('discordWebhookUrl')?.touched,
+                  }"
+                />
+                @if (form.get('discordWebhookUrl')?.value) {
+                  <button
+                    type="button"
+                    (click)="clearDiscordWebhook()"
+                    title="Limpar URL do Webhook"
+                    class="absolute right-2.5 p-1 text-brand-950/40 hover:text-brand-950 transition-colors cursor-pointer"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                }
+              </div>
+            </app-ui-form-field>
+
+            <!-- Toggles de Notificação -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <label
+                class="flex items-start gap-3 rounded-xl border border-brand-950/10 bg-brand-950/[0.015] p-4 cursor-pointer hover:bg-brand-950/[0.03] transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  formControlName="discordEnabled"
+                  class="mt-1 h-4 w-4 rounded border-brand-950/20 text-brand-amber focus:ring-brand-amber"
+                />
+                <div>
+                  <span class="block text-sm font-bold text-brand-950"
+                    >Ativar Notificações no Discord</span
+                  >
+                  <span class="block text-xs text-brand-950/60 mt-0.5">
+                    Envia os alertas em tempo real assim que novos anúncios correspondentes forem
+                    encontrados.
+                  </span>
+                </div>
+              </label>
+
+              <label
+                class="flex items-start gap-3 rounded-xl border border-brand-950/10 bg-brand-950/[0.015] p-4 cursor-pointer hover:bg-brand-950/[0.03] transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  formControlName="emailEnabled"
+                  class="mt-1 h-4 w-4 rounded border-brand-950/20 text-brand-amber focus:ring-brand-amber"
+                />
+                <div>
+                  <span class="block text-sm font-bold text-brand-950"
+                    >Notificações por E-mail</span
+                  >
+                  <span class="block text-xs text-brand-950/60 mt-0.5">
+                    Envia resumos consolidados diretamente para o e-mail cadastrado na sua conta.
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Guia de Como Criar o Webhook -->
+          <div class="rounded-xl border border-brand-950/10 bg-surface overflow-hidden">
+            <button
+              type="button"
+              (click)="toggleWebhookInstructions()"
+              class="w-full flex items-center justify-between p-4 text-left font-medium text-sm text-brand-950 hover:bg-brand-950/[0.02] transition-colors cursor-pointer"
+            >
+              <span class="flex items-center gap-2">
+                <svg
+                  class="h-4 w-4 text-brand-amber-strong"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                  />
+                </svg>
+                Como criar um Webhook no seu canal do Discord?
+              </span>
+              <svg
+                class="h-4 w-4 text-brand-950/50 transition-transform duration-200"
+                [class.rotate-180]="showWebhookInstructions()"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
+              </svg>
+            </button>
+
+            @if (showWebhookInstructions()) {
+              <div
+                class="border-t border-brand-950/5 bg-brand-950/[0.015] p-4 text-xs text-brand-950/75 space-y-2.5"
+              >
+                <p class="font-semibold text-brand-950">Passo a passo rápido:</p>
+                <ol class="list-decimal list-inside space-y-1.5 ml-1">
+                  <li>
+                    No seu aplicativo do Discord, clique com o botão direito no canal onde deseja
+                    receber alertas e selecione
+                    <strong>Editar Canal</strong> (ou clique no ícone de engrenagem).
+                  </li>
+                  <li>
+                    Clique na aba <strong>Integrações</strong> e selecione
+                    <strong>Webhooks</strong> &gt; <strong>Novo Webhook</strong>.
+                  </li>
+                  <li>
+                    Nomeie como desejar (ex: <em>BI Scraper Bot</em>), clique no botão
+                    <strong>Copiar URL do webhook</strong> e cole no campo acima.
+                  </li>
+                </ol>
+              </div>
+            }
+          </div>
+
+          <!-- Mockup Visual do Card do Discord -->
+          <div
+            class="rounded-xl border border-brand-950/10 bg-[#2B2D31] p-4 text-white shadow-inner"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-[#949BA4]">
+                Exemplo de Notificação que chegará no Discord
+              </span>
+            </div>
+            <div
+              class="border-l-4 border-[#57F287] bg-[#1E1F22] rounded-r-lg p-3 space-y-2 text-xs"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-[#5865F2] hover:underline cursor-pointer">
+                  Macbook Air M2 8GB 256GB Cinza Espacial
+                </span>
+                <span
+                  class="bg-[#57F287]/20 text-[#57F287] px-2 py-0.5 rounded font-bold text-[10px]"
+                >
+                  95% (HIGH)
+                </span>
+              </div>
+              <p class="text-[#DBDEE1] text-[11px] leading-relaxed">
+                Macbook em estado impecável na caixa com todos os acessórios originais. Sem detalhes
+                ou riscos.
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
+                <div>
+                  <span class="block text-[#949BA4] font-medium">💰 Preço</span>
+                  <span class="font-bold text-white">R$ 4.200,00</span>
+                </div>
+                <div>
+                  <span class="block text-[#949BA4] font-medium">🏪 Plataforma</span>
+                  <span class="font-bold text-white">OLX</span>
+                </div>
+                <div>
+                  <span class="block text-[#949BA4] font-medium">📍 Local</span>
+                  <span class="font-bold text-white">São Paulo, SP</span>
+                </div>
+                <div>
+                  <span class="block text-[#949BA4] font-medium">🚚 Entrega</span>
+                  <span class="font-bold text-emerald-400">Disponível</span>
+                </div>
+              </div>
+              <div
+                class="pt-2 border-t border-[#313338] flex items-center justify-between text-[10px] text-[#949BA4]"
+              >
+                <span>BI Scraper • Monitor de Notebooks</span>
+                <span>Hoje às 14:30</span>
+              </div>
+            </div>
           </div>
         </div>
       </app-ui-card>

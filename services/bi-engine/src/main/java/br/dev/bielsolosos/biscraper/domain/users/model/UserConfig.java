@@ -47,6 +47,17 @@ public class UserConfig {
     @Builder.Default
     private String strongModel = "gemini-2.5-pro";
 
+    @Column(name = "discord_webhook_url", length = 500)
+    private String discordWebhookUrl;
+
+    @Builder.Default
+    @Column(name = "discord_enabled", nullable = false)
+    private boolean discordEnabled = true;
+
+    @Builder.Default
+    @Column(name = "email_enabled", nullable = false)
+    private boolean emailEnabled = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

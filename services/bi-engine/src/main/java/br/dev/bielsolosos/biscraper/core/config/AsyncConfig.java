@@ -14,14 +14,21 @@ import java.util.concurrent.Executor;
 public class AsyncConfig {
 
     @Bean(name = "scraperDispatcherExecutor")
-    public Executor scraperDispatcherExecutor() {
+    Executor scraperDispatcherExecutor() {
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("ScrapDispatch-");
         executor.setVirtualThreads(true);
         return executor;
     }
 
+    @Bean(name = "notificationDispatcherExecutor")
+    Executor notificationDispatcherExecutor() {
+        SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("Notification-");
+        executor.setVirtualThreads(true);
+        return executor;
+    }
+
     @Bean(name = "webhookProcessorExecutor")
-    public Executor webhookProcessorExecutor() {
+    Executor webhookProcessorExecutor() {
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("WebhookProc-");
         executor.setVirtualThreads(true);
         return executor;

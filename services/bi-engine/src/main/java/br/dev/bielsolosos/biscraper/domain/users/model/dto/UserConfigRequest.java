@@ -12,5 +12,15 @@ public record UserConfigRequest(
         String cheapModel,
 
         @NotBlank(message = "O modelo avançado (strongModel) é obrigatório.")
-        String strongModel
-) {}
+        String strongModel,
+
+        String discordWebhookUrl,
+
+        Boolean discordEnabled,
+
+        Boolean emailEnabled
+) {
+    public UserConfigRequest(ModelVendorEnum aiVendor, String cheapModel, String strongModel) {
+        this(aiVendor, cheapModel, strongModel, null, true, false);
+    }
+}
