@@ -38,25 +38,36 @@ public class MonitoringEmailDigestService {
     @Transactional(readOnly = true)
     public void sendEmailDigests() {
         if (!properties.getEmail().isEnabled()) {
-            log.debug("[EmailDigest] Notificações por e-mail desativadas globalmente. Ignorando envio.");
+            log.debug("[EmailDigest] Notificações por e-mail desativadas globalmente (biscraper.email.enabled = false). Ignorando envio.");
             return;
         }
 
         int windowHours = properties.getEmail().getDigest().getWindowHours();
         OffsetDateTime since = OffsetDateTime.now().minusHours(windowHours);
 
-        log.info("[EmailDigest] Iniciando ciclo de envio de e-mails periódicos (janela: últimas {} horas, desde {})",
+        log.info("[EmailDigest] Iniciando ciclo de envio de digests por e-mail (janela: últimas {} horas, corte: {}).",
                 windowHours, since);
 
         List<UserConfig> configs = userConfigRepository.findAll();
+        log.info("[EmailDigest] Total de configurações de usuários recuperadas para análise: {}", configs.size());
+
+        int digestsDispatched = 0;
+        int skippedDisabledOrInvalid = 0;
+        int skippedNoListings = 0;
 
         for (UserConfig config : configs) {
             if (!config.isEmailEnabled()) {
+                String username = config.getUser() != null ? config.getUser().getUsername() : "desconhecido";
+                log.debug("[EmailDigest] Usuário '{}' possui notificações por e-mail desativadas (email_enabled = false). Pulando.", username);
+                skippedDisabledOrInvalid++;
                 continue;
             }
 
             User user = config.getUser();
             if (user == null || !user.isActive() || user.getEmail() == null || user.getEmail().isBlank()) {
+                String identifier = user != null ? user.getUsername() : "ID desconhecido";
+                log.warn("[EmailDigest] Usuário '{}' está inativo, sem e-mail válido ou nulo. Ignorando envio de digest.", identifier);
+                skippedDisabledOrInvalid++;
                 continue;
             }
 
@@ -65,13 +76,17 @@ public class MonitoringEmailDigestService {
                         .findByUserIdAndMatchTierAndFirstSeenAtAfter(user.getId(), MatchTier.HIGH, since);
 
                 if (highMatchListings.isEmpty()) {
-                    log.debug("[EmailDigest] Usuário '{}' não possui anúncios HIGH match nas últimas {}h.",
-                            user.getUsername(), windowHours);
+                    log.info("[EmailDigest] Usuário '{}' ({}) não possui anúncios HIGH match nas últimas {}h. Nenhum e-mail enviado.",
+                            user.getUsername(), user.getEmail(), windowHours);
+                    skippedNoListings++;
                     continue;
                 }
 
                 String appUrl = properties.getAppUrl();
                 int maxItems = properties.getEmail().getDigest().getMaxItems();
+
+                log.info("[EmailDigest] Usuário '{}' possui {} anúncios HIGH match encontrados. Montando digest (Top {} no template, link: {})...",
+                        user.getUsername(), highMatchListings.size(), maxItems, appUrl);
 
                 MonitoringEmailDigestNotificationTemplate template =
                         new MonitoringEmailDigestNotificationTemplate(user, highMatchListings, windowHours, appUrl, maxItems);
@@ -82,13 +97,18 @@ public class MonitoringEmailDigestService {
                         .build();
 
                 eventPublisher.publishEvent(event);
+                digestsDispatched++;
+
+                log.info("[EmailDigest] Evento de notificação publicado com sucesso para usuário '{}' ({}) com {} anúncios.",
+                        user.getUsername(), user.getEmail(), highMatchListings.size());
 
             } catch (Exception ex) {
-                log.error("[EmailDigest] Erro ao processar resumo de e-mail para usuário '{}': {}",
-                        user.getUsername(), ex.getMessage(), ex);
+                log.error("[EmailDigest] Erro ao processar resumo de e-mail para usuário '{}' (ID: {}): {}",
+                        user.getUsername(), user.getId(), ex.getMessage(), ex);
             }
         }
 
-        log.info("[EmailDigest] Ciclo de e-mails periódicos finalizado.");
+        log.info("[EmailDigest] Ciclo de e-mails periódicos finalizado. Total avaliados: {}, Digests disparados: {}, Sem novos anúncios: {}, Desativados/Inválidos: {}.",
+                configs.size(), digestsDispatched, skippedNoListings, skippedDisabledOrInvalid);
     }
 }
