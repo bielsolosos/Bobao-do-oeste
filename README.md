@@ -136,7 +136,7 @@ Serviço especializado em aquisição de dados, sem concentrar regras de negóci
 - Mantém histórico operacional, deduplicação e caches de detalhes e imagens.
 - Executa workers separados para scraping, webhooks e limpeza de cache.
 
-O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no desenho atual.
+O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no projeto por motivos de custo. Como projetei para funcionar em uma VPS barata e uma máquina em IP local (raspberry) eu optei por uma solução via webhook para melhorar os custos
 
 ### Scraper
 
