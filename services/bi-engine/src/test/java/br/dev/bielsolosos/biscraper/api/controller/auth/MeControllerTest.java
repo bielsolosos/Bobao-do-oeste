@@ -8,7 +8,9 @@ import br.dev.bielsolosos.biscraper.domain.users.model.UserConfig;
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.AvailableAiModelsResponse;
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.UserConfigRequest;
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.UserConfigResponse;
-import br.dev.bielsolosos.biscraper.domain.users.repository.UserRepository;
+import br.dev.bielsolosos.biscraper.domain.users.model.dto.ChangePasswordRequest;
+import br.dev.bielsolosos.biscraper.domain.users.model.dto.EditUserRequest;
+import br.dev.bielsolosos.biscraper.domain.users.service.UserService;
 import br.dev.bielsolosos.biscraper.domain.users.service.UserConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,14 +28,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MeControllerTest {
 
     @Mock
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Mock
     private UserConfigService userConfigService;
@@ -85,7 +88,7 @@ class MeControllerTest {
     void getProfileSuccess() throws Exception {
         Principal principal = new UsernamePasswordAuthenticationToken("biel", "password", Collections.emptyList());
 
-        when(userRepository.findByUsername("biel")).thenReturn(Optional.of(user));
+        when(userService.findUserByUsername("biel")).thenReturn(user);
         when(userConfigService.getConfigForUser(user)).thenReturn(userConfig);
 
         mockMvc.perform(get("/api/v1/me").principal(principal))
@@ -105,7 +108,7 @@ class MeControllerTest {
         UserConfigRequest request = new UserConfigRequest(ModelVendorEnum.DEEPSEEK, "deepseek-chat", "deepseek-reasoner");
         UserConfigResponse response = new UserConfigResponse(userConfig.getId(), ModelVendorEnum.DEEPSEEK, "deepseek-chat", "deepseek-reasoner");
 
-        when(userRepository.findByUsername("biel")).thenReturn(Optional.of(user));
+        when(userService.findUserByUsername("biel")).thenReturn(user);
         when(userConfigService.updateConfigForUser(eq(user), any(UserConfigRequest.class))).thenReturn(response);
 
         mockMvc.perform(put("/api/v1/me/configs")
@@ -136,5 +139,63 @@ class MeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.vendors[0].vendor").value("GEMINI"))
                 .andExpect(jsonPath("$.vendors[0].cheapModels[0].id").value("gemini-2.5-flash"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/me/change-password/{id} - Deve trocar senha com sucesso quando senhas coincidem")
+    void changePasswordSuccess() throws Exception {
+        Principal principal = new UsernamePasswordAuthenticationToken("biel", "password", Collections.emptyList());
+        ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "oldPass123", "newPass456");
+
+        when(userService.findUserByUsername("biel")).thenReturn(user);
+
+        mockMvc.perform(put("/api/v1/me/change-password/{id}", user.getId())
+                        .principal(principal)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.Message").value("Senha trocada com sucesso."));
+
+        verify(userService).changePassword(user, "oldPass123", "newPass456");
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/me/change-password/{id} - Deve retornar 400 quando confirmação não coincide")
+    void changePasswordMismatch() throws Exception {
+        Principal principal = new UsernamePasswordAuthenticationToken("biel", "password", Collections.emptyList());
+        ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "differentPass", "newPass456");
+
+        mockMvc.perform(put("/api/v1/me/change-password/{id}", user.getId())
+                        .principal(principal)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.Message").value("As senhas não coincidem."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/me/edit-credentials - Deve atualizar dados cadastrais com sucesso")
+    void editCredentialsSuccess() throws Exception {
+        Principal principal = new UsernamePasswordAuthenticationToken("biel", "password", Collections.emptyList());
+        EditUserRequest request = new EditUserRequest("biel_updated", "biel_new@email.com");
+
+        User updatedUser = User.builder()
+                .id(user.getId())
+                .username("biel_updated")
+                .email("biel_new@email.com")
+                .active(true)
+                .roles(user.getRoles())
+                .build();
+
+        when(userService.findUserByUsername("biel")).thenReturn(user);
+        when(userService.editUser(user, "biel_updated", "biel_new@email.com")).thenReturn(updatedUser);
+
+        mockMvc.perform(post("/api/v1/me/edit-credentials")
+                        .principal(principal)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("biel_updated"))
+                .andExpect(jsonPath("$.email").value("biel_new@email.com"));
     }
 }
