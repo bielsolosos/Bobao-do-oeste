@@ -4,6 +4,7 @@ import br.dev.bielsolosos.biscraper.domain.users.model.dto.LoginRequest;
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.RefreshRequest;
 import br.dev.bielsolosos.biscraper.domain.users.model.dto.TokenResponse;
 import br.dev.bielsolosos.biscraper.domain.users.service.AuthService;
+import br.dev.bielsolosos.biscraper.infrastructure.BiScraperProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,6 +29,9 @@ class AuthControllerTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private BiScraperProperties properties;
 
     @InjectMocks
     private AuthController authController;
@@ -38,6 +43,22 @@ class AuthControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
         objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/config - Deve retornar disponibilidade das features de autenticação")
+    void getAuthConfigSuccess() throws Exception {
+        BiScraperProperties.Auth auth = new BiScraperProperties.Auth();
+        auth.getOtp().setEnabled(true);
+        BiScraperProperties.Email email = new BiScraperProperties.Email();
+        email.setEnabled(true);
+
+        when(properties.getAuth()).thenReturn(auth);
+        when(properties.getEmail()).thenReturn(email);
+
+        mockMvc.perform(get("/api/v1/auth/config"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailOtpEnabled").value(true));
     }
 
     @Test

@@ -15,6 +15,24 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface AuthConfigResponse {
+  emailOtpEnabled: boolean;
+}
+
+export interface SendOtpRequest {
+  identifier: string;
+}
+
+export interface SendOtpResponse {
+  message: string;
+  expiresInSeconds: number;
+}
+
+export interface VerifyOtpRequest {
+  identifier: string;
+  code: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -31,22 +49,42 @@ export class AuthService {
     }
   }
 
+  getAuthConfig(): Observable<AuthConfigResponse> {
+    return this.http.get<AuthConfigResponse>(`${environment.apiUrl}/auth/config`);
+  }
+
   login(credentials: LoginCredentials, redirectTo: string = '/'): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
       tap((response) => {
-        if (response.token) {
-          localStorage.setItem('jwt_token', response.token);
-          if (response.refreshToken) {
-            localStorage.setItem('refresh_token', response.refreshToken);
-          }
-          this.isAuthenticated.set(true);
-
-          this.loadMe().subscribe(() => {
-            this.router.navigateByUrl(redirectTo);
-          });
-        }
+        this.handleAuthSuccess(response, redirectTo);
       }),
     );
+  }
+
+  sendOtp(request: SendOtpRequest): Observable<SendOtpResponse> {
+    return this.http.post<SendOtpResponse>(`${environment.apiUrl}/auth/otp/send`, request);
+  }
+
+  verifyOtp(request: VerifyOtpRequest, redirectTo: string = '/'): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/otp/verify`, request).pipe(
+      tap((response) => {
+        this.handleAuthSuccess(response, redirectTo);
+      }),
+    );
+  }
+
+  private handleAuthSuccess(response: LoginResponse, redirectTo: string = '/'): void {
+    if (response.token) {
+      localStorage.setItem('jwt_token', response.token);
+      if (response.refreshToken) {
+        localStorage.setItem('refresh_token', response.refreshToken);
+      }
+      this.isAuthenticated.set(true);
+
+      this.loadMe().subscribe(() => {
+        this.router.navigateByUrl(redirectTo);
+      });
+    }
   }
 
   loadMe(): Observable<UserResponse | null> {
