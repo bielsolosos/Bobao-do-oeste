@@ -190,7 +190,7 @@ class MeControllerTest {
         when(userService.findUserByUsername("biel")).thenReturn(user);
         when(userService.editUser(user, "biel_updated", "biel_new@email.com")).thenReturn(updatedUser);
 
-        mockMvc.perform(post("/api/v1/me/edit-credentials")
+        mockMvc.perform(put("/api/v1/me/edit-credentials")
                         .principal(principal)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
