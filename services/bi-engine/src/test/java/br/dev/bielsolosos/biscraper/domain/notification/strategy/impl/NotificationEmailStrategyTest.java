@@ -113,4 +113,29 @@ class NotificationEmailStrategyTest {
         verifyNoInteractions(javaMailSender);
         verifyNoInteractions(notificationLogRepository);
     }
+
+    @Test
+    @DisplayName("Deve enviar e-mail mesmo se usuário tiver emailEnabled = false quando o evento for transacional")
+    void shouldSendEvenIfEmailDisabledForUserWhenEventIsTransactional() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("biel").email("biel@test.com").build();
+
+        NotificationEvent event = NotificationEvent.builder()
+                .recipient(user)
+                .contentTemplate(notificationTemplate)
+                .transactional(true)
+                .build();
+
+        MimeMessage mockMimeMessage = mock(MimeMessage.class);
+        when(javaMailSender.createMimeMessage()).thenReturn(mockMimeMessage);
+        when(notificationTemplate.getSubject()).thenReturn("Código OTP Transacional");
+        when(notificationTemplate.toHtmlEmail()).thenReturn("<p>OTP</p>");
+        when(notificationTemplate.getMessageTemplate()).thenReturn("OTP");
+
+        strategy.sendNotification(event);
+
+        verify(javaMailSender, times(1)).send(mockMimeMessage);
+        verifyNoInteractions(userConfigRepository);
+        verify(notificationLogRepository, times(1)).save(any(NotificationLog.class));
+    }
 }

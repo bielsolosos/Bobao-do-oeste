@@ -21,6 +21,22 @@ public class BiScraperProperties {
     private Cors cors = new Cors();
     private Scraper scraper = new Scraper();
     private Email email = new Email();
+    private Auth auth = new Auth();
+
+    @Getter
+    @Setter
+    public static class Auth {
+        private Otp otp = new Otp();
+
+        @Getter
+        @Setter
+        public static class Otp {
+            private boolean enabled = false;
+            private int expirationMinutes = 10;
+            private int maxAttempts = 5;
+            private int cooldownSeconds = 60;
+        }
+    }
 
     @Getter
     @Setter

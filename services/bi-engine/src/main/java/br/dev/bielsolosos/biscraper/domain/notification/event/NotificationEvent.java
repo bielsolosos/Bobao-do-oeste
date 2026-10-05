@@ -21,6 +21,7 @@ public class NotificationEvent {
     private User recipient;
     private NotificationTemplate contentTemplate;
     private Map<String, Object> items;
+    private boolean transactional;
 
     @Data
     @Builder

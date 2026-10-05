@@ -56,10 +56,12 @@ public class NotificationEmailStrategy extends NotificationStrategy {
             return;
         }
 
-        Optional<UserConfig> configOpt = userConfigRepository.findByUserId(recipient.getId());
-        if (configOpt.isEmpty() || !configOpt.get().isEmailEnabled()) {
-            log.info("Notificações por e-mail estão desativadas para o usuário '{}'", recipient.getUsername());
-            return;
+        if (!event.isTransactional()) {
+            Optional<UserConfig> configOpt = userConfigRepository.findByUserId(recipient.getId());
+            if (configOpt.isEmpty() || !configOpt.get().isEmailEnabled()) {
+                log.info("Notificações por e-mail estão desativadas para o usuário '{}'", recipient.getUsername());
+                return;
+            }
         }
 
         try {
