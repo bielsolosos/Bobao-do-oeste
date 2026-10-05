@@ -58,6 +58,9 @@ biscraper:
       expiration-minutes: ${AUTH_EMAIL_OTP_EXPIRATION_MINUTES:10}
       max-attempts: ${AUTH_EMAIL_OTP_MAX_ATTEMPTS:5}
       cooldown-seconds: ${AUTH_EMAIL_OTP_COOLDOWN_SECONDS:60}
+    invites:
+      enabled: ${AUTH_INVITES_ENABLED:true}
+      expiration-hours: ${AUTH_INVITES_EXPIRATION_HOURS:48}
   jwt:
     secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3VyZS1kZWZhdWx0LXNlY3JldC1rZXktZm9yLWp3dC1hdXRoZW50aWNhdGlvbi0yNTYtYml0cw==}
     expiration: ${JWT_EXPIRATION:3600000}

@@ -9,7 +9,7 @@ interface NavItem {
   label: string;
   shortLabel: string;
   path: string;
-  icon: 'dashboard' | 'monitors' | 'events' | 'ai-logs';
+  icon: 'dashboard' | 'monitors' | 'events' | 'ai-logs' | 'invites';
   adminOnly?: boolean;
 }
 
@@ -176,6 +176,23 @@ interface NavItem {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                    }
+                    @case ('invites') {
+                      <svg
+                        class="h-5 w-5 flex-shrink-0"
+                        [class.mr-3]="!isSidebarCollapsed()"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
                         />
                       </svg>
                     }
@@ -454,6 +471,22 @@ interface NavItem {
                   />
                 </svg>
               }
+              @case ('invites') {
+                <svg
+                  class="h-6 w-6 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+              }
             }
             <span class="text-[11px] font-medium">{{ item.shortLabel }}</span>
           </a>
@@ -505,6 +538,13 @@ export class AppLayoutComponent {
       adminOnly: true,
       icon: 'ai-logs',
     },
+    {
+      label: 'Convites de Usuários',
+      shortLabel: 'Convites',
+      path: '/invites',
+      adminOnly: true,
+      icon: 'invites',
+    },
   ];
 
   isAdmin = computed(() => this.authService.isAdmin());
@@ -512,8 +552,7 @@ export class AppLayoutComponent {
   mobileNav = computed<NavItem[]>(() => {
     const nav: NavItem[] = [...this.productNav];
     if (this.isAdmin()) {
-      nav.push(this.operationNav[0]);
-      nav.push(this.operationNav[1]);
+      nav.push(...this.operationNav);
     }
     return nav;
   });
@@ -537,6 +576,7 @@ export class AppLayoutComponent {
     if (url.startsWith('/monitors')) return 'Monitores';
     if (url.startsWith('/events')) return 'Eventos e webhooks';
     if (url.startsWith('/ai-logs')) return 'Auditoria de IA';
+    if (url.startsWith('/invites')) return 'Convites de Usuários';
     if (url.startsWith('/settings')) return 'Configurações de IA';
     if (url.startsWith('/profile')) return 'Perfil e Segurança';
     return 'Visão geral';
@@ -548,6 +588,8 @@ export class AppLayoutComponent {
       return 'Ajuste de provedor e modelos de inteligência artificial';
     if (this.pageTitle() === 'Perfil e Segurança')
       return 'Gerenciamento de credenciais e segurança da sua conta';
+    if (this.pageTitle() === 'Convites de Usuários')
+      return 'Envie e gerencie convites de acesso para novos membros do sistema';
     return 'Bobão do Oeste · Monitor inteligente de oportunidades';
   });
 

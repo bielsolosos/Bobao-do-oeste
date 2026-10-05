@@ -27,6 +27,7 @@ public class BiScraperProperties {
     @Setter
     public static class Auth {
         private Otp otp = new Otp();
+        private Invites invites = new Invites();
 
         @Getter
         @Setter
@@ -35,6 +36,13 @@ public class BiScraperProperties {
             private int expirationMinutes = 10;
             private int maxAttempts = 5;
             private int cooldownSeconds = 60;
+        }
+
+        @Getter
+        @Setter
+        public static class Invites {
+            private boolean enabled = true;
+            private int expirationHours = 48;
         }
     }
 

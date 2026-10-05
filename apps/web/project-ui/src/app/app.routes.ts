@@ -13,6 +13,15 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     title: 'Entrar · Bobão do Oeste',
   },
+  {
+    path: 'accept-invite',
+    loadComponent: () =>
+      import('./features/auth/accept-invite/accept-invite.component').then(
+        (m) => m.AcceptInviteComponent,
+      ),
+    canActivate: [guestGuard],
+    title: 'Ativar Conta · Bobão do Oeste',
+  },
   //TODO aqui nesse path daqui também tem que passar o título da barra de cima do componente AppLayoutComponent.
   {
     path: '',
@@ -75,6 +84,15 @@ export const routes: Routes = [
           import('./features/ai-logs/ai-logs-list.component').then((m) => m.AiLogsListComponent),
         canActivate: [adminGuard],
         title: 'Auditoria de IA · Bobão do Oeste',
+      },
+      {
+        path: 'invites',
+        loadComponent: () =>
+          import('./features/admin/invites/invites-list.component').then(
+            (m) => m.InvitesListComponent,
+          ),
+        canActivate: [adminGuard],
+        title: 'Gestão de Convites · Bobão do Oeste',
       },
       {
         path: 'settings',
