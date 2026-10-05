@@ -1,0 +1,217 @@
+<div class="space-y-6">
+  <!-- Header da Página -->
+  <app-ui-page-header
+    title="Convites de Acesso"
+    subtitle="Gere links de convite para cadastrar novos membros e acompanhe o status de ativação das contas."
+  >
+    <div class="flex items-center gap-3">
+      <app-ui-button (clicked)="toggleCreateForm()" [variant]="showCreateForm() ? 'secondary' : 'primary'">
+        <svg
+          class="mr-2 h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          @if (showCreateForm()) {
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          } @else {
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          }
+        </svg>
+        {{ showCreateForm() ? 'Fechar Formulário' : 'Novo Convite' }}
+      </app-ui-button>
+    </div>
+  </app-ui-page-header>
+
+  <!-- Card Expansível para Criar Novo Convite -->
+  @if (showCreateForm()) {
+    <app-ui-card extraClasses="animate-fadeIn">
+      <div class="p-6">
+        <h3 class="font-display text-base font-bold text-brand-950">Enviar Novo Convite</h3>
+        <p class="mt-1 text-sm text-brand-950/60">
+          O destinatário receberá um e-mail com link exclusivo para definir seu usuário e senha.
+        </p>
+
+        <form [formGroup]="createForm" (ngSubmit)="onCreateInvite()" class="mt-5 space-y-4" novalidate>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="sm:col-span-2">
+              <label for="invite-email-input" class="mb-1 block text-sm font-medium text-brand-950">
+                E-mail do Convidado
+              </label>
+              <input
+                id="invite-email-input"
+                type="email"
+                formControlName="email"
+                placeholder="exemplo@empresa.com"
+                class="w-full rounded-lg border border-brand-950/20 bg-surface px-4 py-2 text-sm text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+              />
+              @if (createForm.get('email')?.touched && createForm.get('email')?.invalid) {
+                <p class="mt-1 text-xs text-red-600">Informe um e-mail válido.</p>
+              }
+            </div>
+
+            <div>
+              <label for="invite-role-select" class="mb-1 block text-sm font-medium text-brand-950">
+                Perfil de Acesso
+              </label>
+              <select
+                id="invite-role-select"
+                formControlName="role"
+                class="w-full rounded-lg border border-brand-950/20 bg-surface px-4 py-2 text-sm text-brand-950 transition-colors focus:border-brand-amber-strong focus:outline-none focus:ring-2 focus:ring-brand-amber-strong"
+              >
+                <option value="ROLE_USER">Usuário (Padrão)</option>
+                <option value="ROLE_ADMIN">Administrador</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <app-ui-button type="button" variant="ghost" (clicked)="toggleCreateForm()">
+              Cancelar
+            </app-ui-button>
+            <app-ui-button
+              type="submit"
+              variant="primary"
+              [loading]="isCreating()"
+              [disabled]="createForm.invalid || isCreating()"
+            >
+              Enviar Convite por E-mail
+            </app-ui-button>
+          </div>
+        </form>
+      </div>
+    </app-ui-card>
+  }
+
+  <!-- Tabela de Convites -->
+  <app-ui-card [noPadding]="true">
+    @if (state() === 'loading') {
+      <div class="p-12 text-center">
+        <svg
+          class="mx-auto h-8 w-8 animate-spin text-brand-amber-strong"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <p class="mt-4 text-sm text-brand-950/60">Carregando convites...</p>
+      </div>
+    }
+
+    @if (state() === 'ready' && invites().length === 0) {
+      <div class="p-12">
+        <app-ui-state-panel
+          title="Nenhum convite gerado"
+          description="Você ainda não enviou nenhum convite de acesso. Clique no botão acima para convidar o primeiro usuário."
+        />
+      </div>
+    }
+
+    @if (state() === 'ready' && invites().length > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-brand-950">
+          <thead class="border-b border-brand-950/10 bg-brand-950/5 text-xs font-semibold uppercase tracking-wider text-brand-950/70">
+            <tr>
+              <th scope="col" class="px-6 py-3.5">E-mail Convidado</th>
+              <th scope="col" class="px-6 py-3.5">Perfil</th>
+              <th scope="col" class="px-6 py-3.5">Status</th>
+              <th scope="col" class="px-6 py-3.5">Convidado por</th>
+              <th scope="col" class="px-6 py-3.5">Criado em</th>
+              <th scope="col" class="px-6 py-3.5">Validade</th>
+              <th scope="col" class="px-6 py-3.5 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-brand-950/5">
+            @for (invite of invites(); track invite.id) {
+              <tr class="transition-colors hover:bg-brand-950/2">
+                <!-- E-mail -->
+                <td class="whitespace-nowrap px-6 py-4 font-medium text-brand-950">
+                  {{ invite.email }}
+                </td>
+
+                <!-- Perfil -->
+                <td class="whitespace-nowrap px-6 py-4">
+                  <app-ui-badge [variant]="invite.role === 'ROLE_ADMIN' ? 'brand' : 'neutral'" size="xs">
+                    {{ invite.role === 'ROLE_ADMIN' ? 'Admin' : 'Usuário' }}
+                  </app-ui-badge>
+                </td>
+
+                <!-- Status -->
+                <td class="whitespace-nowrap px-6 py-4">
+                  <app-ui-badge [variant]="getStatusVariant(invite.status)" size="xs">
+                    {{ getStatusLabel(invite.status) }}
+                  </app-ui-badge>
+                </td>
+
+                <!-- Quem convidou -->
+                <td class="whitespace-nowrap px-6 py-4 text-xs text-brand-950/70">
+                  {{ invite.invitedByUsername || '-' }}
+                </td>
+
+                <!-- Data de criação -->
+                <td class="whitespace-nowrap px-6 py-4 text-xs text-brand-950/60">
+                  {{ invite.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </td>
+
+                <!-- Validade -->
+                <td class="whitespace-nowrap px-6 py-4 text-xs text-brand-950/60">
+                  {{ invite.expiresAt | date: 'dd/MM/yyyy HH:mm' }}
+                </td>
+
+                <!-- Ações -->
+                <td class="whitespace-nowrap px-6 py-4 text-right text-xs">
+                  <div class="flex items-center justify-end gap-2">
+                    @if (invite.status === 'PENDING' || invite.status === 'EXPIRED') {
+                      <button
+                        type="button"
+                        (click)="resendInvite(invite.id)"
+                        title="Reenviar convite por e-mail"
+                        class="rounded-lg p-1.5 text-brand-amber-strong transition-colors hover:bg-brand-amber/10"
+                      >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    }
+
+                    @if (invite.status === 'PENDING') {
+                      <button
+                        type="button"
+                        (click)="cancelInvite(invite.id)"
+                        title="Cancelar convite"
+                        class="rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50"
+                      >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      <div class="border-t border-brand-950/10 p-4">
+        <app-ui-pagination
+          [currentPage]="page()"
+          [totalPages]="totalPages()"
+          [totalElements]="totalElements()"
+          [pageSize]="pageSize()"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        />
+      </div>
+    }
+  </app-ui-card>
+</div>

@@ -18,8 +18,8 @@ public abstract class NotificationStrategy {
     public abstract void sendNotification(NotificationEvent event);
 
     public NotificationLog saveLog(NotificationEvent event, String description) {
-        if (event.getRecipient() == null) {
-            log.warn("Tentativa de salvar log de notificação sem destinatário.");
+        if (event.getRecipient() == null || event.getRecipient().getId() == null) {
+            log.debug("Log de notificação ignorado: destinatário nulo ou sem ID persistido.");
             return null;
         }
 

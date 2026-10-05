@@ -73,7 +73,7 @@ export class AuthService {
     );
   }
 
-  private handleAuthSuccess(response: LoginResponse, redirectTo: string = '/'): void {
+  handleAuthSuccess(response: LoginResponse, redirectTo: string = '/'): void {
     if (response.token) {
       localStorage.setItem('jwt_token', response.token);
       if (response.refreshToken) {
