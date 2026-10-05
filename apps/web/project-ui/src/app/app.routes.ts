@@ -82,6 +82,12 @@ export const routes: Routes = [
           import('./features/settings/settings.component').then((m) => m.SettingsComponent),
         title: 'Configurações de IA · Bobão do Oeste',
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/profile/profile.component').then((m) => m.ProfileComponent),
+        title: 'Perfil e Segurança · Bobão do Oeste',
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

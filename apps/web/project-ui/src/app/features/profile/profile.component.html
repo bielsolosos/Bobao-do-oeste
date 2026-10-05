@@ -1,0 +1,164 @@
+<div class="mx-auto max-w-4xl space-y-6 pb-12">
+  <app-ui-page-header
+    title="Meu Perfil e Segurança"
+    subtitle="Gerencie suas credenciais de acesso, e-mail e alteração de senha da sua conta"
+  >
+  </app-ui-page-header>
+
+  @if (isLoading()) {
+    <div class="space-y-4">
+      <div class="h-36 animate-pulse rounded-xl border border-brand-950/10 bg-surface"></div>
+      <div class="h-64 animate-pulse rounded-xl border border-brand-950/10 bg-surface"></div>
+      <div class="h-64 animate-pulse rounded-xl border border-brand-950/10 bg-surface"></div>
+    </div>
+  } @else {
+    <!-- 1. RESUMO DA CONTA / PERFIL -->
+    <app-ui-card
+      title="Informações da Conta"
+      subtitle="Dados de identificação e privilégios de acesso associados à sua sessão"
+    >
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-4">
+          <div
+            class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-amber/20 text-2xl font-bold text-brand-amber-strong border border-brand-amber/30 shadow-xs"
+          >
+            {{ (currentUser()?.username || 'U').charAt(0).toUpperCase() }}
+          </div>
+          <div class="min-w-0">
+            <h3 class="truncate text-lg font-bold text-brand-950">
+              {{ currentUser()?.username }}
+            </h3>
+            <p class="truncate text-sm text-brand-950/60 font-medium">
+              {{ currentUser()?.email || 'Nenhum e-mail cadastrado' }}
+            </p>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <app-ui-badge variant="success" size="xs">
+                <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                Conta Ativa
+              </app-ui-badge>
+              <app-ui-badge variant="brand" size="xs">
+                {{ primaryRoleLabel() }}
+              </app-ui-badge>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-brand-950/10 bg-brand-950/[0.02] p-4 text-xs sm:text-right">
+          <span class="block text-brand-950/50 font-medium">Identificador Único (UUID)</span>
+          <span class="mt-0.5 block font-mono text-[11px] text-brand-950/80 select-all">
+            {{ currentUser()?.id || '—' }}
+          </span>
+        </div>
+      </div>
+    </app-ui-card>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <!-- 2. EDITAR CREDENCIAIS BÁSICAS -->
+      <app-ui-card
+        title="Editar Credenciais"
+        subtitle="Atualize o seu nome de usuário e endereço de e-mail"
+      >
+        <form [formGroup]="credentialsForm" (ngSubmit)="onSaveCredentials()" class="space-y-4">
+          <app-ui-form-field
+            label="Nome de usuário"
+            [required]="true"
+            hint="Identificador único utilizado para efetuar login."
+          >
+            <input
+              type="text"
+              formControlName="username"
+              placeholder="Digite seu novo username"
+              class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            />
+          </app-ui-form-field>
+
+          <app-ui-form-field
+            label="Endereço de e-mail"
+            [required]="true"
+            hint="E-mail principal para contato e alertas."
+          >
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="exemplo@dominio.com"
+              class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            />
+          </app-ui-form-field>
+
+          <div class="pt-2">
+            <app-ui-button
+              type="submit"
+              variant="primary"
+              [loading]="isSavingCredentials()"
+              [disabled]="credentialsForm.invalid || credentialsForm.pristine"
+              [fullWidth]="true"
+            >
+              Salvar alterações
+            </app-ui-button>
+          </div>
+        </form>
+      </app-ui-card>
+
+      <!-- 3. ALTERAÇÃO DE SENHA -->
+      <app-ui-card
+        title="Segurança & Senha"
+        subtitle="Altere sua senha de acesso informando a credencial atual"
+      >
+        <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" class="space-y-4">
+          <app-ui-form-field
+            label="Senha atual"
+            [required]="true"
+            hint="Informe sua senha atual para validação."
+          >
+            <input
+              type="password"
+              formControlName="oldPassword"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            />
+          </app-ui-form-field>
+
+          <app-ui-form-field
+            label="Confirmação da senha atual"
+            [required]="true"
+            hint="Repita a sua senha atual para confirmação."
+          >
+            <input
+              type="password"
+              formControlName="oldPasswordConfirmation"
+              placeholder="••••••••"
+              class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            />
+          </app-ui-form-field>
+
+          <app-ui-form-field
+            label="Nova senha"
+            [required]="true"
+            hint="Mínimo de 6 caracteres recomendados."
+          >
+            <input
+              type="password"
+              formControlName="newPassword"
+              placeholder="••••••••"
+              autocomplete="new-password"
+              class="w-full rounded-lg border border-brand-950/20 bg-surface px-3 py-2.5 text-sm font-medium text-brand-950 shadow-xs transition-colors focus:border-brand-amber focus:outline-none focus:ring-1 focus:ring-brand-amber"
+            />
+          </app-ui-form-field>
+
+          <div class="pt-2">
+            <app-ui-button
+              type="submit"
+              variant="outline"
+              [loading]="isChangingPassword()"
+              [disabled]="passwordForm.invalid"
+              [fullWidth]="true"
+            >
+              Atualizar senha
+            </app-ui-button>
+          </div>
+        </form>
+      </app-ui-card>
+    </div>
+  }
+</div>
