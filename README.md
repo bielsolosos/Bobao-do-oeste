@@ -79,15 +79,15 @@ O repositório é um monorepo poliglota composto por três serviços integrados:
 ```mermaid
 flowchart LR
     U[Usuário] --> W[Angular SPA]
-    W -->|REST + JWT| B[BI Engine<br/>Java + Spring Boot]
-    B -->|JPA + Flyway| P[(PostgreSQL)]
-    B -->|POST /scrape/async<br/>HTTP Basic| S[Scraper<br/>Python + FastAPI]
-    S -->|Fila, cache e histórico| Q[(SQLite)]
-    S -->|HTTP + Playwright| O[OLX]
-    S -->|Webhook com retry| B
-    B -->|Novos anúncios| G[Google Gemini / DeepSeek]
-    B -->|Alertas em tempo real| D[Discord Webhook]
-    B -->|Digest Periódico (SMTP)| M[Gmail / Destinatário]
+    W -->|"REST + JWT"| B[BI Engine<br/>Java + Spring Boot]
+    B -->|"JPA + Flyway"| P[(PostgreSQL)]
+    B -->|"POST /scrape/async<br/>HTTP Basic"| S[Scraper<br/>Python + FastAPI]
+    S -->|"Fila, cache e histórico"| Q[(SQLite)]
+    S -->|"HTTP + Playwright"| O[OLX]
+    S -->|"Webhook com retry"| B
+    B -->|"Novos anúncios"| G[Google Gemini / DeepSeek]
+    B -->|"Alertas em tempo real"| D[Discord Webhook]
+    B -->|"Digest Periódico (SMTP)"| M[Gmail / Destinatário]
 ```
 
 ### Web SPA
