@@ -313,6 +313,27 @@ interface NavItem {
                   </p>
                 </div>
                 <a
+                  routerLink="/profile"
+                  (click)="closeMenu()"
+                  role="menuitem"
+                  class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-950 transition-colors hover:bg-brand-950/5"
+                >
+                  <svg
+                    class="h-4 w-4 text-brand-950/60"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                    />
+                  </svg>
+                  Meu Perfil e Segurança
+                </a>
+                <a
                   routerLink="/settings"
                   (click)="closeMenu()"
                   role="menuitem"
@@ -517,6 +538,7 @@ export class AppLayoutComponent {
     if (url.startsWith('/events')) return 'Eventos e webhooks';
     if (url.startsWith('/ai-logs')) return 'Auditoria de IA';
     if (url.startsWith('/settings')) return 'Configurações de IA';
+    if (url.startsWith('/profile')) return 'Perfil e Segurança';
     return 'Visão geral';
   });
 
@@ -524,6 +546,8 @@ export class AppLayoutComponent {
     if (this.pageTitle() === 'Visão geral') return 'Resumo da sua operação de caça a oportunidades';
     if (this.pageTitle() === 'Configurações de IA')
       return 'Ajuste de provedor e modelos de inteligência artificial';
+    if (this.pageTitle() === 'Perfil e Segurança')
+      return 'Gerenciamento de credenciais e segurança da sua conta';
     return 'Bobão do Oeste · Monitor inteligente de oportunidades';
   });
 
