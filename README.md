@@ -136,22 +136,7 @@ Serviço especializado em aquisição de dados, sem concentrar regras de negóci
 - Mantém histórico operacional, deduplicação e caches de detalhes e imagens.
 - Executa workers separados para scraping, webhooks e limpeza de cache.
 
-O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no projeto por motivos de custo. Como projetei para funcionar em uma VPS barata e uma máquina em IP local (raspberry) eu optei por uma solução via webhook para melhorar os custos
-
-### Scraper
-
-Localização: [`services/scraper`](services/scraper)
-
-Serviço especializado em aquisição de dados, sem concentrar regras de negócio do produto. Para a OLX, ele tenta primeiro uma requisição HTTP com fingerprint de navegador e utiliza Playwright stealth como fallback em bloqueios.
-
-- Expõe operações síncronas e assíncronas de scraping.
-- Mantém uma fila persistente de jobs em SQLite.
-- Recupera jobs interrompidos após reinicialização.
-- Entrega resultados por webhook com retry exponencial e jitter.
-- Mantém histórico operacional, deduplicação e caches de detalhes e imagens.
-- Executa workers separados para scraping, webhooks e limpeza de cache.
-
-O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no desenho atual.
+O SQLite funciona simultaneamente como banco operacional, fila persistente e cache local. Não há RabbitMQ ou Kafka no projeto por motivos de custo e simplicidade operacional; a comunicação com o BI Engine ocorre via HTTP Webhook com retry, viabilizando a execução em VPS econômica e máquina local com IP residencial (ex: Raspberry Pi).
 
 ### Persistência
 
@@ -162,7 +147,7 @@ O SQLite funciona simultaneamente como banco operacional, fila persistente e cac
 
 ## Fluxo principal
 
-1. O usuário autentica-se em `POST /api/v1/auth/login` e recebe access e refresh tokens.
+1. O usuário é integrado ao sistema via **Convite por E-mail** (emitido por um administrador) ou autentica-se diretamente via **Senha** ou **Código OTP por E-mail** em `/api/v1/auth/*`, recebendo access token JWT e refresh token.
 2. A SPA cria um `ProductMonitor` com uma ou mais queries.
 3. O BI Engine persiste o monitor e publica um evento após o commit.
 4. O dispatcher cria os registros de execução e webhook no PostgreSQL.
@@ -187,7 +172,8 @@ O SQLite funciona simultaneamente como banco operacional, fila persistente e cac
 │   └── scraper/                 Coleta e filas Python
 │       └── docs/                Guias técnicos do scraper
 ├── docs/
-│   ├── NOTIFICATIONS.md         Arquitetura completa do sistema de notificações
+│   ├── ARCHITECTURE_AUTH_HYBRID.md  Arquitetura de autenticação híbrida e convites
+│   ├── NOTIFICATIONS.md             Arquitetura do sistema de notificações
 │   └── OBSERVABILITY_RASPBERRY.md
 ├── .github/
 │   └── workflows/               Pipelines independentes por módulo
@@ -373,11 +359,21 @@ As rotas de negócio exigem `Authorization: Bearer <token>`, salvo autenticaçã
 
 | Método e rota | Finalidade |
 | :--- | :--- |
-| `POST /api/v1/auth/login` | Autenticação e emissão de tokens |
+| `POST /api/v1/auth/login` | Autenticação tradicional por usuário e senha |
 | `POST /api/v1/auth/refresh` | Renovação do access token |
+| `GET /api/v1/auth/config` | Descoberta de configurações de auth (flags de MFA/OTP ativas) |
+| `POST /api/v1/auth/otp/send` | Disparo de código de uso único (OTP) por e-mail |
+| `POST /api/v1/auth/otp/verify` | Validação de OTP com emissão de tokens JWT |
+| `GET /api/v1/auth/invites/validate` | Validação pública de token de convite de novo usuário |
+| `POST /api/v1/auth/invites/accept` | Ativação de conta por convite, definição de senha e auto-login |
 | `GET /api/v1/me` | Perfil e configurações do usuário autenticado |
+| `PUT /api/v1/users/me` | Atualização de dados cadastrais (username/email) |
+| `PUT /api/v1/users/me/password` | Alteração segura de senha do usuário |
 | `PUT /api/v1/me/configs` | Atualiza configurações de provedor/modelo de IA |
 | `GET /api/v1/me/configs/models` | Catálogo de provedores e modelos de IA disponíveis |
+| `GET/POST /api/v1/admin/invites` | Listagem paginada e envio de convites (Admin) |
+| `POST /api/v1/admin/invites/{id}/resend` | Reenvio e renovação de convite pendente (Admin) |
+| `DELETE /api/v1/admin/invites/{id}` | Cancelamento de convite pendente (Admin) |
 | `GET/POST /api/v1/product-monitors` | Listagem e criação de monitores |
 | `GET/PUT/DELETE /api/v1/product-monitors/{id}` | Consulta, edição e remoção de um monitor |
 | `PATCH /api/v1/product-monitors/{id}/activate` | Ativação de um monitor |
@@ -564,6 +560,9 @@ Antes de um deploy de produção:
 | Deep scraping integrado via Spring AI Tools | Implementado (`ScrappingDetailsTools` -> `/scrape/detail`) |
 | CRUD, dashboard com gráficos ECharts e paginação | Implementado |
 | Configuração de IA e Canais de Notificação por usuário | Implementado |
+| Autenticação Híbrida (Senha tradicional + Passwordless OTP por E-mail) | Implementado (com suporte a ativação condicional) |
+| Onboarding Fechado por Convites (Admin -> E-mail -> Ativação e auto-login) | Implementado |
+| Perfil de Usuário, Alteração de Senha e Auditoria de Segurança | Implementado |
 | Mercado Livre e Enjoei | Presentes em partes do contrato/UI, sem providers funcionais |
 | Histórico e tendências de preço | Não implementado; o preço atual é atualizado no anúncio |
 | Alertas push mobile (PWA/FCM) | Planejado |
@@ -574,6 +573,7 @@ O SQLite atende ao MVP e oferece recuperação simples de filas, mas não substi
 
 ## Documentação técnica
 
+- [Arquitetura de Autenticação Híbrida & Gestão de Convites](docs/ARCHITECTURE_AUTH_HYBRID.md)
 - [Sistema de Notificações (Discord e Digest de E-mail via SMTP)](docs/NOTIFICATIONS.md)
 - [README do BI Engine](services/bi-engine/README.md)
 - [README do scraper](services/scraper/README.md)
