@@ -1,6 +1,6 @@
-# Arquitetura e Implementação de Autenticação Híbrida (Senha + OTP por E-mail)
+# Arquitetura e Implementação de Autenticação Híbrida & Gestão de Convites (User Invites)
 
-Este documento descreve detalhadamente o funcionamento, arquitetura de software, modelo de dados e implementação em código do sistema de autenticação híbrida (Senha tradicional + Passwordless/MFA por código OTP via e-mail) desenvolvido para a plataforma Bobão do Oeste (`bi-engine` e `project-ui`).
+Este documento descreve detalhadamente o funcionamento, arquitetura de software, modelo de dados e implementação em código do sistema de **Autenticação Híbrida** (Senha tradicional + Passwordless/MFA por código OTP via e-mail) e do subsistema de **Onboarding Fechado por Convites (User Invites)** desenvolvido para a plataforma Bobão do Oeste (`bi-engine` e `project-ui`).
 
 Este guia foi elaborado para servir como **padrão de referência** reutilizável em outros projetos e microsserviços do ecossistema.
 
@@ -366,17 +366,233 @@ Gerencia autenticação através de Angular Signals:
 
 ---
 
-## 8. Guia para Replicação em Novos Projetos
+## 9. Subsistema de Onboarding por Convites (User Invites)
 
-Para replicar essa mesma autenticação em outros projetos backend/frontend:
+### 9.1. Motivação e Filosofia de Segurança
+Em aplicações SaaS B2B e sistemas corporativos fechados, **não deve haver formulário aberto de autocadastro público** (`/register`). O onboarding por convites garante:
+1. **Controle Estrito de Acesso:** Apenas administradores autenticados (`ROLE_ADMIN`) podem convidar novos membros para a plataforma.
+2. **Definição Prévia de Papéis (RBAC):** O administrador já determina no momento do envio se o novo usuário terá perfil comum (`ROLE_USER`) ou administrativo (`ROLE_ADMIN`).
+3. **Verificação Implícita de E-mail:** O futuro usuário só consegue definir seu `username` e senha caso acesse o link enviado diretamente à sua caixa postal, comprovando posse do endereço.
+4. **Proteção Anti-Brute-Force & Token Criptográfico:** O link de ativação contém um token UUID v4 aleatório de uso único, com expiração temporal (padrão de 48 horas) e transição atômica de estados.
+5. **Auto-Login Transparente:** Ao aceitar o convite e registrar a senha, o backend emite imediatamente o par de tokens JWT (`AccessToken` + `RefreshToken`), redirecionando o usuário autenticado direto ao `/dashboard`.
 
-1. **Dependências Necessárias:**
-   - Backend: `spring-boot-starter-security`, `spring-boot-starter-mail`, `jjwt` (ou `java-jwt`), `flyway-core`.
-   - Frontend: `@angular/forms`, `rxjs`.
-2. **Passo a Passo de Criação:**
-   - [ ] Criar a tabela `email_login_otps` via migração do banco.
-   - [ ] Criar a entidade JPA `EmailLoginOtp` com hash BCrypt para o código.
-   - [ ] Criar o DTO `AuthConfigResponse` e expor `GET /api/v1/auth/config`.
-   - [ ] Isolar `EmailOtpController` e `EmailOtpService` com anotação `@ConditionalOnExpression`.
-   - [ ] Criar template de e-mail e integrar com publicação de eventos assíncronos (`@TransactionalEventListener(phase = AFTER_COMMIT)`).
-   - [ ] No frontend, adicionar o seletor condicional de abas e o componente de digitação de OTP de 6 dígitos com cooldown.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Administrador
+    participant AdminUI as UI Admin (/invites)
+    participant Back as UserInviteService
+    participant Notif as NotificationEngine
+    actor User as Usuário Convidado
+    participant PublicUI as UI Ativação (/accept-invite)
+    participant DB as PostgreSQL
+
+    Admin->>AdminUI: Preenche e-mail e Role
+    AdminUI->>Back: POST /api/v1/admin/invites
+    Back->>DB: Salva UserInvite (Status: PENDING, Token UUID v4)
+    Back->>Notif: Publica NotificationEvent (transactional=true)
+    Notif-->>User: Envia e-mail com CTA e link exclusivo
+    Back-->>AdminUI: 201 Created (UserInviteResponse)
+
+    Note over User,PublicUI: O usuário clica no link do e-mail
+    User->>PublicUI: Acessa /accept-invite?token={token}
+    PublicUI->>Back: GET /api/v1/auth/invites/validate?token={token}
+    Back->>DB: Valida integridade, status PENDING e expires_at
+    Back-->>PublicUI: 200 OK (e-mail confirmado, status válido)
+
+    User->>PublicUI: Preenche username e define senha
+    PublicUI->>Back: POST /api/v1/auth/invites/accept {token, username, password}
+    Back->>DB: Cria User, vincula Role, marca UserInvite ACCEPTED
+    Back->>Back: Gera Access Token JWT + Refresh Token
+    Back-->>PublicUI: 200 OK (TokenResponse)
+    PublicUI->>PublicUI: Salva sessão e redireciona para /dashboard
+```
+
+---
+
+## 10. Modelo de Dados de Convites (`user_invites`)
+
+### 10.1. Migration Flyway
+Criada na migration [`V10__create_user_invites.sql`](../services/bi-engine/src/main/resources/db/migration/V10__create_user_invites.sql):
+
+```sql
+CREATE TABLE IF NOT EXISTS user_invites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER',
+    token VARCHAR(255) NOT NULL UNIQUE,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    invited_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    accepted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_invites_token ON user_invites(token);
+CREATE INDEX IF NOT EXISTS idx_user_invites_email ON user_invites(email);
+CREATE INDEX IF NOT EXISTS idx_user_invites_status ON user_invites(status);
+```
+
+### 10.2. Enum de Estados de Ciclo de Vida: [`UserInviteStatus.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/core/enums/UserInviteStatus.java)
+- `PENDING`: Convite emitido e aguardando ativação pelo convidado.
+- `ACCEPTED`: Convite ativado com sucesso; usuário cadastrado no sistema.
+- `EXPIRED`: Prazo de validade esgotado (avaliado dinamicamente ou via rotina).
+- `CANCELLED`: Revogado manualmente por um administrador antes do aceite.
+
+### 10.3. Entidade JPA: [`UserInvite.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/domain/users/model/UserInvite.java)
+```java
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "user_invites")
+public class UserInvite {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(updatable = false, nullable = false)
+    private UUID id;
+
+    @Column(nullable = false)
+    private String email;
+
+    @Column(nullable = false, length = 50)
+    private String role; // 'ROLE_USER' ou 'ROLE_ADMIN'
+
+    @Column(nullable = false, unique = true)
+    private String token;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private UserInviteStatus status;
+
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invited_by_user_id")
+    private User invitedBy;
+
+    @Column(name = "accepted_at")
+    private Instant acceptedAt;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+}
+```
+
+---
+
+## 11. Configurações e Notificações de Convite
+
+### 11.1. Propriedades Configuráveis
+Definidas em [`BiScraperProperties.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/infrastructure/BiScraperProperties.java) e [`application.yml`](../services/bi-engine/src/main/resources/application.yml):
+```yaml
+biscraper:
+  auth:
+    invites:
+      enabled: ${AUTH_INVITES_ENABLED:true}
+      expiration-hours: ${AUTH_INVITES_EXPIRATION_HOURS:48}
+```
+
+### 11.2. Template de E-mail Responsivo: [`UserInviteNotificationTemplate.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/domain/users/notification/UserInviteNotificationTemplate.java)
+- Layout HTML responsivo com tipografia moderna e cores institucionais (`#1c1917` e âmbar `#d97706`).
+- Botão CTA direcionando para: `{baseUrl}/accept-invite?token={token}`.
+- Exibição do prazo de validade em horas e link alternativo textual caso o cliente de e-mail bloqueie botões.
+
+### 11.3. Resiliência de Auditoria para Destinatários Transientes
+No pipeline de notificações, a entidade `NotificationLog` exige FK para a tabela `users`. Como o convidado ainda não foi persistido no banco no momento do envio do convite, o método `saveLog` em [`NotificationStrategy.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/domain/notification/strategy/NotificationStrategy.java) foi projetado para:
+```java
+// Se o destinatário for transiente (ex: convite de novo usuário ainda não cadastrado),
+// despacha o e-mail via SMTP normalmente sem falhar na auditoria de logs.
+if (event.getRecipient() == null || event.getRecipient().getId() == null) {
+    return null;
+}
+```
+
+---
+
+## 12. Regras de Negócio e Endpoints
+
+### 12.1. Serviço de Domínio: [`UserInviteService.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/domain/users/service/UserInviteService.java)
+1. **`createInvite(CreateInviteRequest request)`:**
+   - Valida se já existe usuário cadastrado com o e-mail informado.
+   - Se já houver convite pendente anterior para esse e-mail, invalida-o marcando como `CANCELLED`.
+   - Gera novo token UUID v4 aleatório e calcula `expiresAt = now + expirationHours`.
+   - Salva a entidade vinculada ao administrador logado (`meService.getMe()`).
+   - Publica o evento assíncrono transacional de e-mail.
+2. **`resendInvite(UUID inviteId)`:**
+   - Gera novo token criptográfico e renova a data de expiração para mais 48 horas.
+   - Atualiza o status para `PENDING` e redispara o e-mail de ativação.
+3. **`cancelInvite(UUID inviteId)`:**
+   - Marca o status do convite como `CANCELLED`.
+4. **`listInvites(UserInviteStatus status, Pageable pageable)`:**
+   - Retorna listagem paginada para o painel administrativo.
+5. **`validateInvite(String token)`:**
+   - Valida se o token existe e está com status `PENDING`.
+   - Se `expiresAt.isBefore(now)`, atualiza o status para `EXPIRED` e lança exceção amigável.
+   - Retorna dados seguros para o formulário no frontend (e-mail e data de expiração).
+6. **`acceptInvite(AcceptInviteRequest request)`:**
+   - Executa validação de token e expiração.
+   - Valida se o `username` escolhido já está em uso por outro membro.
+   - Cria a entidade `User` com senha criptografada via BCrypt.
+   - Atribui o papel (`Role`) configurado no momento do convite (`ROLE_USER` ou `ROLE_ADMIN`).
+   - Marca o convite como `ACCEPTED` registrando `acceptedAt = Instant.now()`.
+   - Invoca `jwtUtil.generateToken(...)` e `refreshTokenService.createRefreshToken(...)` para gerar as credenciais de sessão e retornar um `TokenResponse` completo.
+
+### 12.2. Controladores REST
+- **Administrativo (`ROLE_ADMIN`):** [`UserInviteAdminController.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/api/controller/user/UserInviteAdminController.java)
+  - `POST /api/v1/admin/invites` (Criação de convite)
+  - `GET /api/v1/admin/invites` (Listagem paginada)
+  - `POST /api/v1/admin/invites/{id}/resend` (Reenvio)
+  - `DELETE /api/v1/admin/invites/{id}` (Cancelamento)
+- **Público (Não autenticado):** [`UserInvitePublicController.java`](../services/bi-engine/src/main/java/br/dev/bielsolosos/biscraper/api/controller/auth/UserInvitePublicController.java)
+  - `GET /api/v1/auth/invites/validate?token={token}` (Checagem de token)
+  - `POST /api/v1/auth/invites/accept` (Submissão de credenciais)
+
+---
+
+## 13. Implementação no Frontend (Angular 22)
+
+### 13.1. Telas e Componentes
+1. **Painel de Gestão de Convites ([`InvitesListComponent`](../apps/web/project-ui/src/app/features/admin/invites/invites-list.component.ts)):**
+   - Rota `/invites` protegida por `adminGuard`.
+   - Exibição de cards estatísticos, formulário dinâmico expansível para envio de convites e tabela paginada.
+   - Badges coloridos por status (`PENDING`, `ACCEPTED`, `EXPIRED`, `CANCELLED`).
+   - Ações inline com cópia rápida do link direto para a área de transferência (`navigator.clipboard.writeText`), reenvio de e-mail e cancelamento imediato.
+2. **Tela Pública de Ativação ([`AcceptInviteComponent`](../apps/web/project-ui/src/app/features/auth/accept-invite/accept-invite.component.ts)):**
+   - Rota `/accept-invite?token=...` protegida por `guestGuard`.
+   - Captura e valida automaticamente o token na inicialização (`ngOnInit`).
+   - Exibe estado visual amigável em caso de link expirado ou inexistente.
+   - Formulário com campos de nome de usuário, senha e confirmação de senha, com regras de matching e tamanho mínimo.
+   - Ao submeter, utiliza `authService.handleAuthSuccess` para armazenar o JWT e direcionar direto ao dashboard.
+3. **Navegação Lateral ([`AppLayoutComponent`](../apps/web/project-ui/src/app/layout/app-layout.component.ts)):**
+   - Item "Convites de Usuários" adicionado na categoria **Operação**, condicionado a `isAdmin()`.
+
+---
+
+## 14. Guia para Replicação em Novos Projetos
+
+Para implementar o fluxo completo de **Autenticação Híbrida + Convites** em outro projeto:
+
+1. **Passo a Passo do Backend:**
+   - [ ] Aplicar migrations `email_login_otps` (OTP) e `user_invites` (Convites).
+   - [ ] Criar entidades `EmailLoginOtp` e `UserInvite`.
+   - [ ] Configurar propriedades em `application.yml` (`auth.otp` e `auth.invites`).
+   - [ ] Criar templates HTML de notificação e eventos transacionais (`@TransactionalEventListener`).
+   - [ ] Configurar rotas públicas no `SecurityConfig` (`/api/v1/auth/invites/**`).
+   - [ ] Criar controllers protegidos com `@PreAuthorize("hasRole('ADMIN')")` para emissão de convites.
+2. **Passo a Passo do Frontend:**
+   - [ ] Implementar serviços `AuthService` e `InviteService`.
+   - [ ] Criar rota `/login` com seleção de método (Senha vs OTP por e-mail).
+   - [ ] Criar rota protegida `/invites` para administradores gerenciarem acessos.
+   - [ ] Criar rota pública `/accept-invite` para ativação de contas e auto-login.
+   - [ ] Configurar `adminGuard` e `guestGuard` para proteger as rotas apropriadas.
