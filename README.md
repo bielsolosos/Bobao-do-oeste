@@ -21,6 +21,7 @@ O usuário cadastra um monitor com termos de busca, faixa de preço, frequência
 
 - [Objetivo](#objetivo)
 - [Identidade visual](#identidade-visual)
+- [Telas da plataforma](#telas-da-plataforma)
 - [Arquitetura](#arquitetura)
 - [Fluxo principal](#fluxo-principal)
 - [Estrutura do monorepo](#estrutura-do-monorepo)
@@ -72,6 +73,31 @@ O emblema vetorial no topo é o símbolo principal da marca e também é usado c
 </table>
 
 A aplicação da marca permanece concentrada no shell, login, onboarding e estados ilustrados. Tabelas, formulários e gráficos continuam orientados à legibilidade máxima.
+
+## Telas da plataforma
+
+Visualização prática da SPA Angular em execução, consolidando métricas gerais de telemetria, painel de monitoramento e garimpo de oportunidades enriquecido por inteligência artificial:
+
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/projects-screenshots/home-dashboard.png" alt="Visão Geral e Métricas da Plataforma" width="100%"><br>
+      <sub><strong>Visão Geral & Métricas.</strong> Dashboard analítica com gráficos ECharts (distribuição de relevância, evolução de capturas nos últimos 14 dias, faixas de preço e marcas frequentes).</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/projects-screenshots/monitor-home.png" alt="Painel do Monitor e Distribuição" width="100%"><br>
+      <sub><strong>Painel do Monitor.</strong> Detalhes do monitor com filtros avançados (título, relevância, ordenação, entrega), faixas de preço e primeiros anúncios capturados.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center" valign="top">
+      <img src="docs/projects-screenshots/monitor-table.png" alt="Tabela Detalhada de Anúncios e IA" width="100%"><br>
+      <sub><strong>Garimpo de Oportunidades.</strong> Anúncios enriquecidos com extração técnica de hardware (processador, geração, memória, SSD NVMe), badge de relevância (Score) e link para o dossiê de IA.</sub>
+    </td>
+  </tr>
+</table>
+
+> Para visualização das métricas de infraestrutura, JVM e telemetria de tokens do Spring AI no Grafana, consulte a seção [Observabilidade](#observabilidade).
 
 ## Arquitetura
 
@@ -503,6 +529,25 @@ Importe as dashboards no Grafana e selecione o data source Prometheus solicitado
 
 - [`docs/grafana/observability-test-dashboard.json`](docs/grafana/observability-test-dashboard.json): visão geral de HTTP, Python, JVM, PostgreSQL, Raspberry e processos.
 - [`docs/grafana/spring-ai-and-boot-dashboard.json`](docs/grafana/spring-ai-and-boot-dashboard.json): tokens, chamadas, latência, ferramentas do Spring AI e métricas automáticas adicionais do Spring Boot.
+
+<table>
+  <tr>
+    <td colspan="2" align="center" valign="top">
+      <img src="docs/grafana/screenshots/dashboard-grafana-ia.png" alt="Dashboard de Consumo e Operações do Spring AI" width="100%"><br>
+      <sub><strong>Spring AI & LLM Observability.</strong> Telemetria de consumo de tokens (entrada, saída e total), distribuição de latência, taxa de chamadas por segundo e acompanhamento de modelos (DeepSeek e Gemini).</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/grafana/screenshots/dashboard-grafana1.png" alt="Telemetria do Scraper Python e Sistema" width="100%"><br>
+      <sub><strong>Scraper (Python + FastAPI).</strong> Saúde do serviço, throughput de requisições, latência p50/p95, memória do processo (RSS/Virtual), CPU, Garbage Collector e descritores de arquivo.</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/grafana/screenshots/dashboard-granafa2.png" alt="Telemetria da JVM e BI Engine" width="100%"><br>
+      <sub><strong>BI Engine (Java + Spring Boot).</strong> Consumo de Heap/Non-heap da JVM, threads por estado, CPU/overhead de GC, latência HTTP e conexões do pool PostgreSQL (HikariCP).</sub>
+    </td>
+  </tr>
+</table>
 
 As séries `gen_ai_*` somente aparecem depois que ao menos uma chamada real ao Gemini termina. O Micrometer contabiliza tokens de entrada, saída e total, mas não calcula custo financeiro; isso exige aplicar externamente a tabela de preços do modelo.
 
