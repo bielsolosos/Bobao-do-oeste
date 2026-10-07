@@ -21,7 +21,7 @@ public class OpenApiConfig {
                         .title("Marketplace BI Scraper Engine API")
                         .version("1.0.0")
                         .description("API analítica de precificação e inteligência de mercado de hardware usado")
-                        .contact(new Contact().name("Gabriel Solos").email("gabriel@bielsolosos.dev.br")))
+                        .contact(new Contact().name("Gabriel Coutinho").email("gabriel@bielsolosos.dev.br")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,
