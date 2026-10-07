@@ -34,6 +34,7 @@ O usuário cadastra um monitor com termos de busca, faixa de preço, frequência
 - [Segurança](#segurança)
 - [Escopo atual e limitações](#escopo-atual-e-limitações)
 - [Documentação técnica](#documentação-técnica)
+- [Licença e Aviso Legal](#licença-e-aviso-legal)
 
 ## Objetivo
 
@@ -583,3 +584,26 @@ O SQLite atende ao MVP e oferece recuperação simples de filas, mas não substi
 - [Fila de execução e workers](services/scraper/docs/QUEUE_GUIDE.md)
 - [Entrega de webhooks](services/scraper/docs/WEBHOOK_GUIDE.md)
 - [Deep scraping e cache de imagens](services/scraper/docs/DETAIL_AND_IMAGE_CACHE_GUIDE.md)
+
+## Licença e Aviso Legal
+
+Este projeto está licenciado sob os termos da [Apache License 2.0](LICENSE). Consulte o arquivo [LICENSE](LICENSE) e o arquivo [NOTICE](NOTICE) para o texto completo e termos legais.
+
+### Reconhecimento e Uso da Comunidade (Forks & Usabilidade)
+
+> [!TIP]
+> **Uma mensagem do autor:**
+> Este ecossistema foi construído com muito empenho, pesquisa e dedicação técnica. Se você fizer um **fork**, utilizar partes deste código, adaptá-lo para seus próprios estudos, automações ou criar algo novo a partir dele:
+>
+> 1. **Mantenha o reconhecimento e atribuição** ao autor original ([`NOTICE`](NOTICE)).
+> 2. **Mande uma mensagem avisando que usou!** A única coisa que peço de volta é um toque/mensagem me contando onde ou como este projeto foi útil para você. Adoraria trocar ideias sobre o que você construiu!
+>
+> 📬 **Contato:**
+> - GitHub: [@bielsolosos](https://github.com/bielsolosos)
+> - E-mail: [bielrochasantoscoutinho@gmail.com](mailto:bielrochasantoscoutinho@gmail.com)
+
+### Isenção de Responsabilidade (Disclaimer)
+
+* Este software foi concebido e disponibilizado estritamente para propósitos de monitoramento pessoal, automação de conveniência e aprendizado técnico de engenharia de software e inteligência artificial.
+* O usuário deste software é o único e exclusivo responsável por definir intervalos razoáveis e seguros de requisições, cumprindo a legislação aplicável (como a Lei Geral de Proteção de Dados - LGPD) e respeitando os Termos de Serviço (ToS) das plataformas terceiras consultadas (ex: OLX).
+* O autor e eventuais contribuidores não se responsabilizam por qualquer uso indevido, abusivo, bloqueios de rede/IP ou quaisquer sanções e danos diretos ou indiretos causados pela utilização desta ferramenta.
